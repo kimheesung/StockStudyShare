@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 배경 애니메이션 */
+    .bg-glow {
+      position: fixed;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.3;
+      pointer-events: none;
+      animation: float 8s ease-in-out infinite;
+    }
+    .bg-glow.one { background: #4f46e5; top: -100px; left: -100px; }
+    .bg-glow.two { background: #06b6d4; bottom: -100px; right: -100px; animation-delay: 4s; }
+    .bg-glow.three { background: #a855f7; top: 50%; left: 50%; animation-delay: 2s; }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(30px, -30px) scale(1.1); }
+    }
+
+    /* 네비게이션 */
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 40px;
+      background: rgba(15, 12, 41, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .logo {
+      font-size: 1.4rem; font-weight: 900;
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+    .nav-login {
+      padding: 10px 24px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.3s;
+    }
+    .nav-login:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* 히어로 */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      text-align: center;
+      padding: 120px 20px 80px;
+      position: relative;
+    }
+    .badge {
+      display: inline-block;
+      padding: 8px 20px;
+      background: rgba(79, 70, 229, 0.2);
+      border: 1px solid rgba(79, 70, 229, 0.4);
+      border-radius: 50px;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      margin-bottom: 30px;
+      animation: fadeUp 0.8s ease-out;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 24px;
+      animation: fadeUp 0.8s ease-out 0.1s both;
+    }
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, #4f46e5, #06b6d4, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      color: rgba(255,255,255,0.6);
+      max-width: 600px;
+      line-height: 1.8;
+      margin-bottom: 50px;
+      animation: fadeUp 0.8s ease-out 0.2s both;
+    }
+    .cta-group {
+      display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp 0.8s ease-out 0.3s both;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 36px;
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border-radius: 50px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.05rem;
+      font-weight: 700;
+      transition: all 0.3s;
+      box-shadow: 0 4px 30px rgba(79, 70, 229, 0.4);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 40px rgba(79, 70, 229, 0.6);
+    }
+    .btn-primary svg { width: 20px; height: 20px; }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 36px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.05rem;
+      font-weight: 700;
+      transition: all 0.3s;
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.1);
+      transform: translateY(-2px);
+    }
+
+    /* 차트 애니메이션 */
+    .chart-visual {
+      margin-top: 60px;
+      display: flex; align-items: flex-end; gap: 6px;
+      height: 80px;
+      animation: fadeUp 0.8s ease-out 0.4s both;
+    }
+    .chart-bar {
+      width: 8px;
+      border-radius: 4px;
+      background: linear-gradient(to top, #4f46e5, #06b6d4);
+      animation: grow 1.5s ease-out forwards;
+      opacity: 0.6;
+    }
+    @keyframes grow {
+      from { height: 0; }
+    }
+
+    /* 특징 섹션 */
+    .features {
+      padding: 100px 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .features-title {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 900;
+      margin-bottom: 60px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      padding: 40px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      transition: all 0.3s;
+    }
+    .feature-card:hover {
+      background: rgba(255,255,255,0.06);
+      transform: translateY(-4px);
+      border-color: rgba(79, 70, 229, 0.3);
+    }
+    .feature-icon {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+    .feature-icon.study { background: rgba(79, 70, 229, 0.2); }
+    .feature-icon.share { background: rgba(6, 182, 212, 0.2); }
+    .feature-icon.grow { background: rgba(168, 85, 247, 0.2); }
+    .feature-card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+    }
+    .feature-card p {
+      color: rgba(255,255,255,0.5);
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+
+    /* 숫자 섹션 */
+    .stats {
+      padding: 80px 20px;
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      flex-wrap: wrap;
+    }
+    .stat-item { text-align: center; }
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      color: rgba(255,255,255,0.4);
+      margin-top: 8px;
+      font-size: 0.95rem;
+    }
+
+    /* CTA 섹션 */
+    .cta-section {
+      padding: 100px 20px;
+      text-align: center;
+    }
+    .cta-box {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 60px 40px;
+      background: linear-gradient(135deg, rgba(79,70,229,0.15), rgba(6,182,212,0.1));
+      border: 1px solid rgba(79, 70, 229, 0.2);
+      border-radius: 30px;
+    }
+    .cta-box h2 {
+      font-size: 2rem;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+    .cta-box p {
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 36px;
+      line-height: 1.7;
+    }
+
+    /* 푸터 */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: rgba(255,255,255,0.25);
+      font-size: 0.85rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow one"></div>
+  <div class="bg-glow two"></div>
+  <div class="bg-glow three"></div>
+
+  <nav>
+    <div class="logo">StockStudyShare</div>
+    <a href="/auth/google" class="nav-login">Google로 시작하기</a>
+  </nav>
+
+  <section class="hero">
+    <div class="badge">함께 공부하고, 함께 성장하는 투자</div>
+    <h1>
+      혼자 공부하는 투자는 끝.<br>
+      <span class="highlight">함께하면 수익이 달라진다.</span>
+    </h1>
+    <p>
+      검증된 투자 인사이트를 나누고, 서로의 전략을 공유하세요.<br>
+      StockStudyShare에서 당신의 투자 실력이 한 단계 올라갑니다.
+    </p>
+    <div class="cta-group">
+      <a href="/auth/google" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.033s2.701-6.033,6.033-6.033c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
+        Google로 시작하기
+      </a>
+      <a href="#features" class="btn-secondary">더 알아보기</a>
+    </div>
+    <div class="chart-visual">
+      <div class="chart-bar" style="height:20px;animation-delay:0.1s"></div>
+      <div class="chart-bar" style="height:35px;animation-delay:0.2s"></div>
+      <div class="chart-bar" style="height:25px;animation-delay:0.3s"></div>
+      <div class="chart-bar" style="height:50px;animation-delay:0.4s"></div>
+      <div class="chart-bar" style="height:40px;animation-delay:0.5s"></div>
+      <div class="chart-bar" style="height:55px;animation-delay:0.6s"></div>
+      <div class="chart-bar" style="height:45px;animation-delay:0.7s"></div>
+      <div class="chart-bar" style="height:70px;animation-delay:0.8s"></div>
+      <div class="chart-bar" style="height:60px;animation-delay:0.9s"></div>
+      <div class="chart-bar" style="height:80px;animation-delay:1.0s"></div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <h2 class="features-title">왜 StockStudyShare인가?</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon study">📚</div>
+        <h3>체계적인 스터디</h3>
+        <p>기초부터 심화까지, 함께 공부하면 이해가 빨라집니다. 서로 모르는 부분을 채워주며 투자 지식을 단단하게 쌓아가세요.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon share">🤝</div>
+        <h3>인사이트 공유</h3>
+        <p>나만 아는 종목 분석, 시장 흐름 읽는 법. 공유할수록 더 큰 시너지가 생깁니다. 혼자서는 볼 수 없던 기회를 발견하세요.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon grow">📈</div>
+        <h3>함께 성장하는 수익</h3>
+        <p>상부상조의 힘으로 리스크는 줄이고 수익은 키우세요. 검증된 전략을 나누면 모두의 포트폴리오가 성장합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat-item">
+      <div class="stat-number">1,200+</div>
+      <div class="stat-label">스터디 멤버</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">340+</div>
+      <div class="stat-label">공유된 분석</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">89%</div>
+      <div class="stat-label">멤버 만족도</div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <div class="cta-box">
+      <h2>지금 바로 시작하세요</h2>
+      <p>공부해서 돈 버는 길, 혼자 걷지 마세요.<br>함께할 동료들이 여기 있습니다.</p>
+      <a href="/auth/google" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.033s2.701-6.033,6.033-6.033c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
+        무료로 시작하기
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    &copy; 2026 StockStudyShare. All rights reserved.
+  </footer>
+</body>
+</html>
