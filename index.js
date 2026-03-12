@@ -243,6 +243,17 @@ app.post('/study-new', isLoggedIn, (req, res) => {
   res.redirect('/dashboard');
 });
 
+// 디버그용 (배포 확인 후 삭제)
+app.get('/debug/oauth', (req, res) => {
+  res.json({
+    clientIdSet: !!process.env.GOOGLE_CLIENT_ID,
+    clientIdPrefix: GOOGLE_CLIENT_ID.slice(0, 10) + '...',
+    secretSet: !!process.env.GOOGLE_CLIENT_SECRET,
+    secretPrefix: GOOGLE_CLIENT_SECRET.slice(0, 8) + '...',
+    callbackURL: process.env.CALLBACK_URL || `http://localhost:${port}/auth/google/callback`,
+  });
+});
+
 // Google 로그인
 app.get('/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
