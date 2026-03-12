@@ -29,6 +29,9 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
+  cookie: {
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30일
+  },
 }));
 app.use(passport.initialize());
 app.use(passport.session());
