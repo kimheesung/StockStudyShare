@@ -8,7 +8,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
-    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
     .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
     .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
     .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
@@ -117,8 +117,8 @@
         <span class="badge-duration permanent">영구</span>
         <div class="shop-card-title">광고 제거</div>
         <div class="shop-card-desc">사이트 내 모든 광고 배너가 표시되지 않습니다. 한 번 구매하면 영구 적용됩니다.</div>
-        <div class="shop-card-price">50,000P</div>
-        <button class="btn-buy {{adRemoveOwned}}" {{adRemoveDisabled}} onclick="openShop('ad_remove','광고 제거','🚫',50000,false)">{{adRemoveText}}</button>
+        <div class="shop-card-price">100,000P</div>
+        <button class="btn-buy {{adRemoveOwned}}" {{adRemoveDisabled}} onclick="openShop('ad_remove','광고 제거','🚫',100000,false)">{{adRemoveText}}</button>
       </div>
 
       <div class="shop-card">
@@ -126,9 +126,9 @@
         <span class="badge-duration monthly">1개월</span>
         <div class="shop-card-title">리포트 업로드 회피권 (월간)</div>
         <div class="shop-card-desc">1개월간 리포트를 제출하지 않아도 스터디방에서 강퇴되지 않습니다.</div>
-        <div class="shop-card-price">10,000P</div>
+        <div class="shop-card-price">100,000P</div>
         <div class="shop-card-note">구매 금액은 선택한 스터디방 포인트에 합산됩니다.<br>리포트 미제출 벌금이 스터디방에 귀속되는 것과 같은 원리입니다.</div>
-        <button class="btn-buy" onclick="openShop('skip_monthly','리포트 회피권 (월간)','🛡️',10000,true)">구매하기</button>
+        <button class="btn-buy" onclick="openShop('skip_monthly','리포트 회피권 (월간)','🛡️',100000,true)">구매하기</button>
       </div>
 
       <div class="shop-card">
@@ -137,9 +137,9 @@
         <span class="badge-duration annual">1년</span>
         <div class="shop-card-title">리포트 업로드 회피권 (연간)</div>
         <div class="shop-card-desc">1년간 리포트를 제출하지 않아도 스터디방에서 강퇴되지 않습니다.</div>
-        <div class="shop-card-price">100,000P <span class="unit">월간 대비 17% 할인</span></div>
+        <div class="shop-card-price">1,000,000P <span class="unit">월간 대비 17% 할인</span></div>
         <div class="shop-card-note">구매 금액은 선택한 스터디방 포인트에 합산됩니다.<br>리포트 미제출 벌금이 스터디방에 귀속되는 것과 같은 원리입니다.</div>
-        <button class="btn-buy" onclick="openShop('skip_annual','리포트 회피권 (연간)','🛡️',100000,true)">구매하기</button>
+        <button class="btn-buy" onclick="openShop('skip_annual','리포트 회피권 (연간)','🛡️',1000000,true)">구매하기</button>
       </div>
     </div>
 

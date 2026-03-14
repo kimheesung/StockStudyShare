@@ -357,9 +357,9 @@ router.post('/shop/purchase', isLoggedIn, (req, res) => {
   const { item_key, price, study_room_id } = req.body;
 
   const validItems = {
-    ad_remove: { price: 50000, needRoom: false, duration: null },
-    skip_monthly: { price: 10000, needRoom: true, duration: 30 },
-    skip_annual: { price: 100000, needRoom: true, duration: 365 },
+    ad_remove: { price: 100000, needRoom: false, duration: null },
+    skip_monthly: { price: 100000, needRoom: true, duration: 30 },
+    skip_annual: { price: 1000000, needRoom: true, duration: 365 },
   };
 
   const item = validItems[item_key];
