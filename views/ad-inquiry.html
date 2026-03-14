@@ -8,33 +8,64 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
-    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
     .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
-    .container { max-width: 640px; margin: 0 auto; padding: 40px 20px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #fff; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 700px; margin: 0 auto; padding: 40px 20px; }
     .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
     .back-link:hover { color: #fff; }
     h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
     h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .page-desc { color: rgba(255,255,255,0.5); font-size: 0.92rem; margin-bottom: 32px; line-height: 1.7; }
-    .info-box { padding: 24px 28px; background: linear-gradient(135deg, rgba(79,70,229,0.08), rgba(6,182,212,0.05)); border: 1px solid rgba(79,70,229,0.25); border-radius: 18px; margin-bottom: 32px; font-size: 0.88rem; color: rgba(255,255,255,0.65); line-height: 1.8; }
-    .info-box strong { color: #a5b4fc; font-weight: 700; }
-    .info-items { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px; }
-    .info-item { text-align: center; padding: 16px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; }
-    .info-item-icon { font-size: 1.4rem; margin-bottom: 6px; }
-    .info-item-title { font-size: 0.78rem; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 2px; }
-    .info-item-desc { font-size: 0.72rem; color: rgba(255,255,255,0.35); }
+
+    .section-label { font-size: 1rem; font-weight: 900; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .placement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+    @media (max-width: 500px) { .placement-grid { grid-template-columns: 1fr; } }
+    .placement-card {
+      padding: 18px; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.08);
+      border-radius: 16px; cursor: pointer; transition: all 0.2s; position: relative;
+    }
+    .placement-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
+    .placement-card.selected { border-color: rgba(79,70,229,0.6); background: rgba(79,70,229,0.08); }
+    .placement-card input[type="checkbox"] { display: none; }
+    .placement-check {
+      position: absolute; top: 12px; right: 12px; width: 22px; height: 22px;
+      border: 2px solid rgba(255,255,255,0.15); border-radius: 6px; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; font-size: 0.7rem;
+    }
+    .placement-card.selected .placement-check { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    .placement-icon { font-size: 1.5rem; margin-bottom: 8px; }
+    .placement-name { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+    .placement-desc { font-size: 0.75rem; color: rgba(255,255,255,0.4); line-height: 1.5; margin-bottom: 8px; }
+    .placement-price { font-size: 0.88rem; font-weight: 900; color: #fbbf24; }
+    .placement-unit { font-size: 0.7rem; color: rgba(255,255,255,0.3); }
+
+    .price-summary {
+      padding: 20px 24px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2);
+      border-radius: 16px; margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .price-summary .label { font-size: 0.9rem; color: rgba(255,255,255,0.5); }
+    .price-summary .total { font-size: 1.6rem; font-weight: 900; color: #fbbf24; }
+    .price-summary .count { font-size: 0.82rem; color: rgba(255,255,255,0.4); }
+
     .form-group { margin-bottom: 22px; }
     .form-group label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; color: rgba(255,255,255,0.85); }
     .form-group label .req { color: #ef4444; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .form-group input, .form-group textarea {
+    .form-group input, .form-group textarea, .form-group select {
       width: 100%; padding: 14px 18px; background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; color: #fff;
       font-size: 0.95rem; font-family: inherit; transition: border-color 0.3s;
     }
     .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(255,255,255,0.25); }
-    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: rgba(79,70,229,0.5); background: rgba(255,255,255,0.08); }
-    .form-group textarea { min-height: 140px; resize: vertical; line-height: 1.7; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: rgba(79,70,229,0.5); }
+    .form-group textarea { min-height: 120px; resize: vertical; line-height: 1.7; }
+    .form-group select option { background: #1a1a2e; color: #fff; }
     .btn-submit {
       width: 100%; padding: 16px; background: linear-gradient(135deg, #4f46e5, #6366f1); border: none;
       border-radius: 14px; color: #fff; font-size: 1.05rem; font-weight: 700;
@@ -53,27 +84,66 @@
   <div class="container">
     <a href="/dashboard" class="back-link">&larr; 돌아가기</a>
     <h1><span class="highlight">광고</span> 문의</h1>
-    <p class="page-desc">StockStudyShare에 광고를 게재하고 싶으시다면 아래 양식을 작성해주세요.</p>
+    <p class="page-desc">광고를 게재할 위치를 선택하고 문의를 보내주세요. 선택한 위치에 따라 예상 가격이 자동 산정됩니다.</p>
 
-    <div class="info-box">
-      StockStudyShare의 투자자 커뮤니티에 광고를 게재하세요.
-      <div class="info-items">
-        <div class="info-item">
-          <div class="info-item-icon">📍</div>
-          <div class="info-item-title">광고 위치</div>
-          <div class="info-item-desc">AI 분석 대기 화면<br>대시보드 등</div>
-        </div>
-        <div class="info-item">
-          <div class="info-item-icon">👥</div>
-          <div class="info-item-title">노출 대상</div>
-          <div class="info-item-desc">투자 스터디 참여자<br>리포트 작성자/구매자</div>
-        </div>
-        <div class="info-item">
-          <div class="info-item-icon">📋</div>
-          <div class="info-item-title">진행 절차</div>
-          <div class="info-item-desc">문의 접수 → 견적 안내<br>→ 광고 게재</div>
-        </div>
+    <div class="section-label">📍 광고 위치 선택</div>
+    <div class="placement-grid" id="placement-grid">
+      <label class="placement-card" onclick="togglePlacement(this)">
+        <input type="checkbox" name="position" value="dashboard_top" data-price="500000">
+        <div class="placement-check"></div>
+        <div class="placement-icon">🏠</div>
+        <div class="placement-name">대시보드 상단</div>
+        <div class="placement-desc">로그인 후 첫 화면 최상단. 모든 유저에게 노출</div>
+        <div class="placement-price">500,000P <span class="placement-unit">/ 월</span></div>
+      </label>
+      <label class="placement-card" onclick="togglePlacement(this)">
+        <input type="checkbox" name="position" value="report_detail" data-price="300000">
+        <div class="placement-check"></div>
+        <div class="placement-icon">📄</div>
+        <div class="placement-name">리포트 상세 페이지</div>
+        <div class="placement-desc">리포트 열람 시 본문 하단에 노출</div>
+        <div class="placement-price">300,000P <span class="placement-unit">/ 월</span></div>
+      </label>
+      <label class="placement-card" onclick="togglePlacement(this)">
+        <input type="checkbox" name="position" value="report_list" data-price="300000">
+        <div class="placement-check"></div>
+        <div class="placement-icon">🔍</div>
+        <div class="placement-name">리포트 검색 페이지</div>
+        <div class="placement-desc">리포트 목록 상단에 노출</div>
+        <div class="placement-price">300,000P <span class="placement-unit">/ 월</span></div>
+      </label>
+      <label class="placement-card" onclick="togglePlacement(this)">
+        <input type="checkbox" name="position" value="study_room" data-price="200000">
+        <div class="placement-check"></div>
+        <div class="placement-icon">📚</div>
+        <div class="placement-name">스터디방 내부</div>
+        <div class="placement-desc">스터디방 페이지 하단에 노출</div>
+        <div class="placement-price">200,000P <span class="placement-unit">/ 월</span></div>
+      </label>
+      <label class="placement-card" onclick="togglePlacement(this)">
+        <input type="checkbox" name="position" value="report_viewer" data-price="400000">
+        <div class="placement-check"></div>
+        <div class="placement-icon">👁️</div>
+        <div class="placement-name">리포트 뷰어</div>
+        <div class="placement-desc">리포트 전문 열람 화면에 노출. 구매자 대상</div>
+        <div class="placement-price">400,000P <span class="placement-unit">/ 월</span></div>
+      </label>
+      <label class="placement-card" onclick="togglePlacement(this)">
+        <input type="checkbox" name="position" value="sidebar_all" data-price="800000">
+        <div class="placement-check"></div>
+        <div class="placement-icon">📐</div>
+        <div class="placement-name">전 페이지 사이드바</div>
+        <div class="placement-desc">모든 페이지 우측 또는 하단에 상시 노출</div>
+        <div class="placement-price">800,000P <span class="placement-unit">/ 월</span></div>
+      </label>
+    </div>
+
+    <div class="price-summary" id="price-summary">
+      <div>
+        <div class="label">선택한 위치 <span class="count" id="selected-count">0개</span></div>
+        <div class="total" id="total-price">0P</div>
       </div>
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.3);text-align:right">월 기준 예상 가격<br>실제 가격은 협의 후 결정</div>
     </div>
 
     <div id="msg" class="msg"></div>
@@ -94,15 +164,58 @@
         <input type="text" name="company" id="inp-company" placeholder="선택 사항">
       </div>
       <div class="form-group">
+        <label>희망 기간</label>
+        <select name="duration" id="inp-duration">
+          <option value="1">1개월</option>
+          <option value="3" selected>3개월 (5% 할인)</option>
+          <option value="6">6개월 (10% 할인)</option>
+          <option value="12">12개월 (20% 할인)</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label>문의 내용 <span class="req">*</span></label>
-        <textarea name="message" id="inp-message" required placeholder="광고 목적, 희망 기간, 예산 범위 등을 자유롭게 작성해주세요."></textarea>
+        <textarea name="message" id="inp-message" required placeholder="광고 목적, 예산 범위, 소재 형태 등을 자유롭게 작성해주세요."></textarea>
       </div>
       <button type="submit" class="btn-submit" id="btn-submit">문의 보내기</button>
     </form>
   </div>
+
   <script>
+    function togglePlacement(card) {
+      setTimeout(function() {
+        var cb = card.querySelector('input[type="checkbox"]');
+        card.classList.toggle('selected', cb.checked);
+        card.querySelector('.placement-check').innerHTML = cb.checked ? '&#10003;' : '';
+        updatePrice();
+      }, 0);
+    }
+
+    function updatePrice() {
+      var checks = document.querySelectorAll('input[name="position"]:checked');
+      var total = 0;
+      checks.forEach(function(c) { total += parseInt(c.dataset.price) || 0; });
+
+      var duration = parseInt(document.getElementById('inp-duration').value) || 1;
+      var discount = { 1: 0, 3: 0.05, 6: 0.10, 12: 0.20 }[duration] || 0;
+      var finalTotal = Math.round(total * duration * (1 - discount));
+
+      document.getElementById('selected-count').textContent = checks.length + '개';
+      document.getElementById('total-price').textContent = finalTotal.toLocaleString() + 'P';
+    }
+
+    document.getElementById('inp-duration').addEventListener('change', updatePrice);
+
     document.getElementById('inquiry-form').addEventListener('submit', function(e) {
       e.preventDefault();
+      var positions = [];
+      document.querySelectorAll('input[name="position"]:checked').forEach(function(c) { positions.push(c.value); });
+      if (positions.length === 0) {
+        var msg = document.getElementById('msg');
+        msg.textContent = '광고 위치를 1개 이상 선택해주세요.';
+        msg.className = 'msg error';
+        return;
+      }
+
       var btn = document.getElementById('btn-submit');
       var msg = document.getElementById('msg');
       btn.disabled = true;
@@ -118,6 +231,9 @@
           email: document.getElementById('inp-email').value.trim(),
           company: document.getElementById('inp-company').value.trim(),
           message: document.getElementById('inp-message').value.trim(),
+          positions: positions,
+          duration: document.getElementById('inp-duration').value,
+          estimated_price: document.getElementById('total-price').textContent,
         })
       }).then(function(r) { return r.json(); }).then(function(data) {
         btn.disabled = false;
