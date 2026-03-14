@@ -175,9 +175,9 @@ router.get('/profile', isLoggedIn, (req, res) => {
           btn.disabled = false;
           btn.textContent = '저장하기';
           if (data.ok) {
-            msg.textContent = '프로필이 저장되었습니다.';
+            msg.textContent = '프로필이 저장되었습니다. 대시보드로 이동합니다.';
             msg.className = 'msg success';
-            setTimeout(function() { window.location.reload(); }, 1000);
+            setTimeout(function() { window.location.href = '/dashboard'; }, 1000);
           } else {
             msg.textContent = data.error || '오류가 발생했습니다.';
             msg.className = 'msg error';

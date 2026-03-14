@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>생각나누기 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+    nav{position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:rgba(15,12,41,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+    .logo{font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none}
+    .nav-links{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+    .nav-item{padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:50px;color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.82rem;font-weight:600;transition:all 0.3s}
+    .nav-item:hover{background:rgba(79,70,229,0.2);border-color:rgba(79,70,229,0.4);color:#fff}
+    .user-area{display:flex;align-items:center;gap:16px}
+    .user-area img{width:36px;height:36px;border-radius:50%;border:2px solid rgba(79,70,229,0.5)}
+    .logout-btn{padding:8px 20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:50px;color:#fff;text-decoration:none;font-size:0.85rem}
+    .container{max-width:800px;margin:0 auto;padding:40px 20px}
+    h1{font-size:1.6rem;font-weight:900;margin-bottom:20px}
+    h1 .highlight{background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .board-tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+    .board-tab{padding:10px 20px;border-radius:50px;text-decoration:none;font-size:0.85rem;font-weight:700;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.08);transition:all 0.2s}
+    .board-tab:hover{background:rgba(255,255,255,0.08);color:#fff}
+    .board-tab.active{background:rgba(79,70,229,0.2);color:#a5b4fc;border-color:rgba(79,70,229,0.4)}
+    .board-tab.locked{opacity:0.6}
+    .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .post-count{font-size:0.85rem;color:rgba(255,255,255,0.3)}
+    .btn-write{padding:10px 24px;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:50px;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;transition:all 0.2s}
+    .btn-write:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(79,70,229,0.4)}
+    .post-row{display:block;padding:16px 20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:8px;text-decoration:none;color:#fff;transition:all 0.2s}
+    .post-row:hover{background:rgba(255,255,255,0.06);border-color:rgba(79,70,229,0.2)}
+    .post-title{font-size:0.95rem;font-weight:700;margin-bottom:4px}
+    .post-meta{font-size:0.78rem;color:rgba(255,255,255,0.3)}
+    .empty-text{color:rgba(255,255,255,0.25);text-align:center;padding:40px;font-size:0.9rem}
+    .pagination{display:flex;gap:6px;justify-content:center;margin-top:24px}
+    .page-btn{padding:8px 14px;border-radius:10px;text-decoration:none;font-size:0.82rem;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.06)}
+    .page-btn.active{background:rgba(79,70,229,0.2);color:#a5b4fc;border-color:rgba(79,70,229,0.3)}
+    .nickname-bar{padding:14px 18px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);border-radius:14px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .nickname-bar label{font-size:0.82rem;color:rgba(255,255,255,0.5)}
+    .nickname-bar input{padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-size:0.85rem;font-family:inherit;width:160px}
+    .nickname-bar input:focus{outline:none;border-color:rgba(79,70,229,0.5)}
+    .nickname-bar button{padding:8px 16px;background:rgba(79,70,229,0.2);border:1px solid rgba(79,70,229,0.3);border-radius:10px;color:#a5b4fc;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit}
+    .nickname-bar .current{font-size:0.88rem;font-weight:700;color:#fbbf24}
+    /* 글쓰기 모달 */
+    .write-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:200;align-items:center;justify-content:center}
+    .write-overlay.show{display:flex}
+    .write-modal{background:#1a1a2e;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:32px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto}
+    .write-modal h3{font-size:1.1rem;font-weight:900;margin-bottom:16px}
+    .write-modal input,.write-modal textarea{width:100%;padding:12px 16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:0.95rem;font-family:inherit;margin-bottom:14px}
+    .write-modal input:focus,.write-modal textarea:focus{outline:none;border-color:rgba(79,70,229,0.5)}
+    .write-modal textarea{min-height:200px;resize:vertical;line-height:1.7}
+    .write-actions{display:flex;gap:12px;margin-top:8px}
+    .write-actions button{flex:1;padding:13px;border-radius:14px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;border:none}
+    .btn-modal-submit{background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff}
+    .btn-modal-cancel{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15)!important;color:#fff}
+    .write-msg{font-size:0.82rem;color:#ef4444;margin-bottom:8px;display:none}
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <h1>{{boardIcon}} <span class="highlight">생각나누기</span></h1>
+
+    <div class="board-tabs">{{boardTabs}}</div>
+
+    <div class="nickname-bar" id="nickname-bar">
+      <label>게시판 닉네임</label>
+      <span class="current" id="cur-nickname" style="display:none">{{boardNickname}}</span>
+      <input type="text" id="inp-nickname" placeholder="익명 닉네임 설정" value="{{boardNickname}}" maxlength="15">
+      <button onclick="saveNickname()">저장</button>
+    </div>
+
+    <div class="top-bar">
+      <span class="post-count">총 {{totalCount}}건</span>
+      <button class="btn-write" onclick="openWrite()">글쓰기</button>
+    </div>
+
+    {{postRows}}
+    {{pagination}}
+  </div>
+
+  <!-- 글쓰기 모달 -->
+  <div class="write-overlay" id="write-overlay">
+    <div class="write-modal">
+      <h3>{{boardIcon}} {{boardName}} 글쓰기</h3>
+      <div class="write-msg" id="write-msg"></div>
+      <input type="text" id="write-title" placeholder="제목" maxlength="100">
+      <textarea id="write-content" placeholder="내용을 입력하세요..."></textarea>
+      <div class="write-actions">
+        <button class="btn-modal-submit" id="write-btn" onclick="submitPost()">작성하기</button>
+        <button class="btn-modal-cancel" onclick="closeWrite()">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var boardKey = '{{boardKey}}';
+    if ('{{hasBoardNickname}}' === 'true') {
+      document.getElementById('cur-nickname').style.display = 'inline';
+      document.getElementById('inp-nickname').style.display = 'none';
+    }
+
+    function saveNickname() {
+      var val = document.getElementById('inp-nickname').value.trim();
+      if (!val) return;
+      fetch('/community/set-nickname', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ nickname: val })
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.ok) window.location.reload();
+        else alert(d.error);
+      });
+    }
+
+    function openWrite() {
+      if ('{{hasBoardNickname}}' !== 'true') { alert('게시판 닉네임을 먼저 설정해주세요.'); return; }
+      document.getElementById('write-overlay').classList.add('show');
+    }
+    function closeWrite() { document.getElementById('write-overlay').classList.remove('show'); }
+    document.getElementById('write-overlay').addEventListener('click', function(e) { if (e.target === this) closeWrite(); });
+
+    function submitPost() {
+      var title = document.getElementById('write-title').value.trim();
+      var content = document.getElementById('write-content').value.trim();
+      var msg = document.getElementById('write-msg');
+      if (!title || !content) { msg.textContent = '제목과 내용을 입력해주세요.'; msg.style.display = 'block'; return; }
+
+      var btn = document.getElementById('write-btn');
+      btn.disabled = true; btn.textContent = '작성 중...';
+      fetch('/community/write', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ board: boardKey, title: title, content: content })
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.ok) window.location.reload();
+        else { msg.textContent = d.error; msg.style.display = 'block'; btn.disabled = false; btn.textContent = '작성하기'; }
+      });
+    }
+  </script>
+</body>
+</html>

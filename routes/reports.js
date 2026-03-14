@@ -191,10 +191,12 @@ router.get('/:id', (req, res) => {
   let actionButton;
   if (!user) {
     actionButton = `<a href="/auth/google" class="btn-primary">로그인하고 구매하기</a>`;
+  } else if (isAuthorOfReport) {
+    actionButton = `<span style="display:inline-block;padding:8px 20px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);border-radius:50px;color:#4ade80;font-size:0.88rem;font-weight:700;margin-right:12px">&#9989; 내가 발행한 리포트</span><a href="/reports/${report.id}/view" class="btn-primary">리포트 열람하기</a>`;
   } else if (hasPurchased) {
-    actionButton = `<a href="/reports/${report.id}/view" class="btn-primary">리포트 열람하기</a>`;
+    actionButton = `<span style="display:inline-block;padding:8px 20px;background:rgba(79,70,229,0.12);border:1px solid rgba(79,70,229,0.3);border-radius:50px;color:#a5b4fc;font-size:0.88rem;font-weight:700;margin-right:12px">&#128179; 보유중</span><a href="/reports/${report.id}/view" class="btn-primary">리포트 열람하기</a>`;
   } else {
-    actionButton = `<form method="POST" action="/reports/${report.id}/purchase" onsubmit="return confirm('정말 구매하시겠습니까?\\n${price}가 차감됩니다.')"><button type="submit" class="btn-primary">리포트 구매하기 (${price})</button></form>`;
+    actionButton = `<button type="button" class="btn-primary" onclick="openPurchaseModal()">리포트 구매하기 (${price})</button>`;
   }
 
   // 팔로우 버튼
@@ -222,6 +224,8 @@ router.get('/:id', (req, res) => {
     followButton,
     reportId: String(report.id),
     isLoggedIn: user ? 'true' : '',
+    salePrice: String(report.sale_price),
+    userPoints: user ? String(user.points || 0) : '0',
     holdingDisclosure: escapeHtml(report.holding_disclosure || ''),
     conflictDisclosure: escapeHtml(report.conflict_disclosure || ''),
     adBanner: adBannerHtml(),
@@ -329,7 +333,7 @@ router.post('/:id/purchase', isLoggedIn, (req, res) => {
     purchaseTransaction();
   }
 
-  res.redirect(`/reports/${report.id}/view`);
+  res.redirect(`/reports/${report.id}?purchased=1`);
 });
 
 // 웹 뷰어

@@ -159,15 +159,68 @@
     .side-ad-link { display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);text-align:center;transition:all 0.2s;min-height:300px;justify-content:center }
     .side-ad-link:hover { border-color:rgba(79,70,229,0.25) }
     .side-ad-link img { width:100%;border-radius:8px }
+
+    /* 리포트 작성 헤더 7:3 레이아웃 */
+    .report-hero {
+      margin-bottom: 28px;
+      padding: 22px 22px 20px;
+      border-radius: 20px;
+      background: radial-gradient(circle at top left, rgba(79,70,229,0.3), transparent 55%), rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.3);
+      display: flex;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .report-hero-main {
+      flex: 7;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .report-hero-main .back-link { margin-bottom: 10px; }
+    .report-hero-main h1 { margin-bottom: 6px; }
+    .report-hero-main .sub-text { margin-bottom: 0; }
+    .report-hero-ad {
+      flex: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15,23,42,0.8);
+      border-radius: 16px;
+      border: 1px solid rgba(148,163,184,0.4);
+      text-decoration: none;
+      overflow: hidden;
+      transition: all 0.2s;
+      color: rgba(255,255,255,0.4);
+    }
+    .report-hero-ad:hover { border-color: rgba(129,140,248,0.9); transform: translateY(-1px); }
+    .report-hero-ad-inner { text-align:center;font-size:0.82rem; }
+    .report-hero-ad-inner span { display:block;color:rgba(255,255,255,0.3); }
+
+    @media (max-width: 960px) {
+      .report-hero { flex-direction: column; }
+    }
   </style>
 </head>
 <body>
   <nav>{{nav}}</nav>
   <div class="page-layout">
   <div class="container">
-    <a href="/author/dashboard" class="back-link">&larr; 대시보드</a>
-    <h1><span class="highlight">리포트</span> 작성</h1>
-    <p class="sub-text">구조화된 양식으로 전문 리서치 리포트를 작성하세요.</p>
+    <div class="report-hero">
+      <div class="report-hero-main">
+        <a href="/author/dashboard" class="back-link">&larr; 대시보드</a>
+        <h1><span class="highlight">리포트</span> 작성</h1>
+        <p class="sub-text">구조화된 양식으로 전문 리서치 리포트를 작성하세요.</p>
+      </div>
+      <a href="/ad-inquiry" class="report-hero-ad" id="ad-box-rpw">
+        <div class="report-hero-ad-inner" id="ad-def-rpw">
+          <div style="font-size:1.5rem;margin-bottom:6px">📢</div>
+          <span>이 자리에 광고를 게재하세요</span>
+          <span style="font-size:0.75rem;color:rgba(148,163,184,0.7);margin-top:4px">클릭하여 광고 문의하기</span>
+        </div>
+        <div id="ad-img-rpw" style="display:none;width:100%;height:100%"></div>
+      </a>
+    </div>
 
     <!-- 파일/URL로 불러오기 -->
     <div class="import-section" id="import-section">
@@ -684,6 +737,23 @@
     </div>
   </div>
   <script>
+    // 헤더 광고 로드
+    (function(){
+      fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){
+        if(!a.length) return;
+        var d=a[0],
+            box=document.getElementById('ad-box-rpw'),
+            def=document.getElementById('ad-def-rpw'),
+            img=document.getElementById('ad-img-rpw');
+        if(d.image_url){
+          img.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:16px">';
+          if(d.link_url) box.href=d.link_url, box.target='_blank';
+          def.style.display='none';
+          img.style.display='block';
+        }
+      }).catch(function(){});
+    })();
+
     document.getElementById('ai-confirm-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
   </script>
   <!-- modal end -->

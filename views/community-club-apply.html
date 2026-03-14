@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{clubName}} 인증 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+    nav{position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:rgba(15,12,41,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+    .logo{font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none}
+    .nav-links{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+    .nav-item{padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:50px;color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.82rem;font-weight:600}
+    .user-area{display:flex;align-items:center;gap:16px}
+    .user-area img{width:36px;height:36px;border-radius:50%;border:2px solid rgba(79,70,229,0.5)}
+    .logout-btn{padding:8px 20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:50px;color:#fff;text-decoration:none;font-size:0.85rem}
+    .container{max-width:600px;margin:0 auto;padding:40px 20px}
+    .back-link{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem;margin-bottom:20px;display:inline-block}
+    .club-card{text-align:center;padding:40px 32px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:24px;margin-bottom:24px}
+    .club-icon{font-size:3.5rem;margin-bottom:12px}
+    .club-name{font-size:1.5rem;font-weight:900;margin-bottom:8px}
+    .club-desc{font-size:0.88rem;color:rgba(255,255,255,0.45);line-height:1.6;margin-bottom:24px}
+    .status-badge{display:inline-block;padding:8px 20px;border-radius:50px;font-size:0.88rem;font-weight:700;margin-bottom:16px}
+    .status-pending{background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3)}
+    .status-approved{background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3)}
+    .status-rejected{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)}
+    .admin-memo{padding:14px 18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;font-size:0.85rem;color:rgba(255,255,255,0.5);margin-bottom:16px}
+    .form-group{margin-bottom:20px;text-align:left}
+    .form-group label{display:block;font-size:0.9rem;font-weight:700;margin-bottom:8px}
+    .form-group .hint{font-size:0.78rem;color:rgba(255,255,255,0.3);margin-bottom:8px}
+    .form-group textarea{width:100%;padding:14px 18px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;color:#fff;font-size:0.95rem;font-family:inherit;min-height:120px;resize:vertical;line-height:1.7}
+    .form-group textarea:focus{outline:none;border-color:rgba(79,70,229,0.5)}
+    .btn-apply{width:100%;padding:16px;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:14px;color:#fff;font-size:1.05rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(79,70,229,0.3)}
+    .btn-apply:disabled{opacity:0.5;cursor:default}
+    .msg{padding:12px;border-radius:10px;font-size:0.85rem;margin-bottom:16px;display:none}
+    .msg.success{display:block;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);color:#4ade80}
+    .msg.error{display:block;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#ef4444}
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/community" class="back-link">&larr; 생각나누기</a>
+    <div class="club-card">
+      <div class="club-icon">{{clubIcon}}</div>
+      <div class="club-name">{{clubName}}</div>
+      <div class="club-desc">이 클럽은 관리자 인증을 받은 회원만 참여할 수 있습니다.<br>계좌 인증 등을 통해 자산 규모를 확인한 후 승인됩니다.</div>
+
+      <div id="status-area"></div>
+      <div id="msg" class="msg"></div>
+      <div id="apply-form" style="display:none">
+        <div class="form-group">
+          <label>인증 자료 설명</label>
+          <div class="hint">계좌 잔고 캡처, 증권사 자산 증명 등 인증 방법을 설명해주세요. 관리자가 개별 연락드립니다.</div>
+          <textarea id="proof-text" placeholder="예: 키움증권 계좌 잔고 캡처 준비 완료. 카카오톡 또는 이메일로 전송 가능합니다."></textarea>
+        </div>
+        <button class="btn-apply" id="btn-apply" onclick="submitApply()">인증 신청하기</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    var clubKey = '{{clubKey}}';
+    var existingStatus = '{{existingStatus}}';
+    var adminMemo = '{{adminMemo}}';
+    var statusArea = document.getElementById('status-area');
+    var applyForm = document.getElementById('apply-form');
+
+    if (existingStatus === 'pending') {
+      statusArea.innerHTML = '<div class="status-badge status-pending">심사 중</div><p style="color:rgba(255,255,255,0.4);font-size:0.88rem">인증 신청이 접수되었습니다. 관리자 심사를 기다려주세요.</p>';
+    } else if (existingStatus === 'approved') {
+      statusArea.innerHTML = '<div class="status-badge status-approved">인증 완료</div>';
+      window.location.href = '/community?board=' + clubKey;
+    } else if (existingStatus === 'rejected') {
+      statusArea.innerHTML = '<div class="status-badge status-rejected">반려됨</div>' + (adminMemo ? '<div class="admin-memo">사유: ' + adminMemo + '</div>' : '');
+      applyForm.style.display = 'block';
+    } else {
+      applyForm.style.display = 'block';
+    }
+
+    function submitApply() {
+      var btn = document.getElementById('btn-apply');
+      btn.disabled = true; btn.textContent = '신청 중...';
+      fetch('/community/club-apply', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ club: clubKey, proof_text: document.getElementById('proof-text').value.trim() })
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.ok) { var msg = document.getElementById('msg'); msg.textContent = '인증 신청이 접수되었습니다.'; msg.className = 'msg success'; applyForm.style.display = 'none'; statusArea.innerHTML = '<div class="status-badge status-pending">심사 중</div>'; }
+        else { alert(d.error); btn.disabled = false; btn.textContent = '인증 신청하기'; }
+      });
+    }
+  </script>
+</body>
+</html>

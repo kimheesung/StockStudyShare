@@ -154,6 +154,8 @@ app.use('/my', require('./routes/user'));
 app.use('/author', require('./routes/author'));
 app.use('/study', require('./routes/study'));
 app.use('/admin', require('./routes/admin'));
+app.use('/visit-notes', require('./routes/visitnotes'));
+app.use('/community', require('./routes/community'));
 
 app.get('/author-profile/:id', (req, res) => {
   const profile = db.prepare(`

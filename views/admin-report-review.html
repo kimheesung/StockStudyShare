@@ -62,15 +62,27 @@
   <nav>{{nav}}</nav>
   <div class="container">
     <a href="/admin/reports" class="back-link">&larr; 리포트 목록</a>
+    <div id="visit-note-badge" style="display:none;margin-bottom:12px"><span style="display:inline-block;padding:5px 16px;border-radius:20px;font-size:0.82rem;font-weight:700;background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3)">탐방노트</span></div>
     <h1>{{title}}</h1>
     <div class="meta">{{authorName}} &middot; {{stockName}} ({{stockCode}}) &middot; {{marketType}} &middot; {{sector}} &middot; {{salePrice}}</div>
 
+    <!-- 탐방노트 전용 섹션 -->
+    <div id="visit-note-sections" style="display:none">
+      <div class="card" style="border-color:rgba(34,197,94,0.2)"><h3 style="color:#4ade80">탐방 일자</h3><p>{{visitDate}}</p></div>
+      <div class="card" style="border-color:rgba(34,197,94,0.2)"><h3 style="color:#4ade80">탐방 장소</h3><p>{{visitLocation}}</p></div>
+      <div class="card" style="border-color:rgba(34,197,94,0.2)"><h3 style="color:#4ade80">탐방 목적</h3><p>{{visitPurpose}}</p></div>
+      <div class="card" style="border-color:rgba(34,197,94,0.2)"><h3 style="color:#4ade80">탐방 내용 / 발견사항</h3><p>{{visitFindings}}</p></div>
+      <div class="card" style="border-color:rgba(34,197,94,0.2)"><h3 style="color:#4ade80">소감 / 투자 판단</h3><p>{{visitImpressions}}</p></div>
+    </div>
+
     <div class="card"><h3>요약</h3><p>{{summary}}</p></div>
-    <div class="card"><h3>투자 논거</h3><p>{{thesis}}</p></div>
-    <div class="card"><h3>투자 포인트</h3><p>{{investmentPoints}}</p></div>
-    <div class="card"><h3>밸류에이션 근거</h3><p>{{valuationBasis}}</p></div>
-    <div class="card"><h3>리스크</h3><p>{{risks}}</p></div>
-    <div class="card"><h3>Bear Case</h3><p>{{bearCase}}</p></div>
+    <div id="report-only-sections">
+      <div class="card"><h3>투자 논거</h3><p>{{thesis}}</p></div>
+      <div class="card"><h3>투자 포인트</h3><p>{{investmentPoints}}</p></div>
+      <div class="card"><h3>밸류에이션 근거</h3><p>{{valuationBasis}}</p></div>
+      <div class="card"><h3>리스크</h3><p>{{risks}}</p></div>
+      <div class="card"><h3>Bear Case</h3><p>{{bearCase}}</p></div>
+    </div>
     <div class="card"><h3>참고 자료</h3><p>{{referencesText}}</p></div>
     <div class="card"><h3>공시 사항</h3><p>보유: {{holdingDisclosure}}<br>이해충돌: {{conflictDisclosure}}</p></div>
 
@@ -111,6 +123,13 @@
       document.getElementById('input-created').value = toLocal(created);
       document.getElementById('input-published').value = toLocal(published);
     })();
+
+    // 탐방노트 구분 표시
+    if ('{{isVisitNote}}' === 'true') {
+      document.getElementById('visit-note-badge').style.display = 'block';
+      document.getElementById('visit-note-sections').style.display = 'block';
+      document.getElementById('report-only-sections').style.display = 'none';
+    }
 
     const canReview = '{{canReview}}';
     const reportId = '{{reportId}}';

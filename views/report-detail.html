@@ -135,7 +135,168 @@
     <a href="/reports/{{reportId}}/flag" class="flag-link">이 리포트 신고하기</a>
   </div>
 
+  <!-- 구매 완료 모달 -->
+  <div class="purchase-overlay" id="purchased-overlay">
+    <div class="purchase-modal" style="text-align:center">
+      <div class="modal-icon">&#127881;</div>
+      <h3 class="modal-title">구매 완료!</h3>
+      <p class="modal-sub" style="margin-bottom:28px">리포트 구매가 완료되었습니다.<br>지금 바로 리포트를 열람하시겠습니까?</p>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn-cancel" onclick="closePurchasedModal()">나중에 보기</button>
+        <a href="/reports/{{reportId}}/view" class="modal-btn-buy" style="text-decoration:none;display:flex;align-items:center;justify-content:center">리포트 열기</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 구매 모달 -->
+  <div class="purchase-overlay" id="purchase-overlay">
+    <div class="purchase-modal">
+      <button class="modal-close" onclick="closePurchaseModal()">&times;</button>
+      <div class="modal-icon">&#128176;</div>
+      <h3 class="modal-title">리포트 구매</h3>
+      <p class="modal-sub">아래 내용을 확인 후 구매를 진행해주세요.</p>
+
+      <div class="modal-info-box">
+        <div class="modal-info-row">
+          <span class="modal-info-label">리포트</span>
+          <span class="modal-info-value" style="font-weight:700">{{title}}</span>
+        </div>
+        <div class="modal-info-row">
+          <span class="modal-info-label">종목</span>
+          <span class="modal-info-value" style="color:#67e8f9">{{stockName}}</span>
+        </div>
+        <div class="modal-info-row">
+          <span class="modal-info-label">작성자</span>
+          <span class="modal-info-value">{{authorName}}</span>
+        </div>
+        <div class="modal-divider"></div>
+        <div class="modal-info-row">
+          <span class="modal-info-label">가격</span>
+          <span class="modal-info-value modal-price">{{price}}</span>
+        </div>
+        <div class="modal-info-row">
+          <span class="modal-info-label">보유 포인트</span>
+          <span class="modal-info-value" id="modal-user-points" style="color:#fbbf24">로딩중...</span>
+        </div>
+        <div class="modal-info-row" id="modal-after-row">
+          <span class="modal-info-label">구매 후 잔액</span>
+          <span class="modal-info-value" id="modal-after-points" style="font-weight:700"></span>
+        </div>
+      </div>
+
+      <div class="modal-warning" id="modal-warning" style="display:none">
+        <span>&#9888;</span> 포인트가 부족합니다. 충전 후 다시 시도해주세요.
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="modal-btn-cancel" onclick="closePurchaseModal()">취소</button>
+        <form method="POST" action="/reports/{{reportId}}/purchase" id="purchase-form" style="flex:1;display:flex">
+          <button type="submit" class="modal-btn-buy" id="modal-btn-buy">구매하기</button>
+        </form>
+      </div>
+
+      <p class="modal-notice">구매 후 환불은 리포트 미열람 시에만 가능합니다.</p>
+    </div>
+  </div>
+
+  <style>
+    .purchase-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+    .purchase-overlay.show { display:flex; }
+    .purchase-modal { background:linear-gradient(135deg,#1a1a2e,#16213e); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:36px 32px 28px; max-width:440px; width:92%; position:relative; animation:modalIn 0.25s ease-out; }
+    @keyframes modalIn { from { opacity:0; transform:scale(0.95) translateY(10px); } to { opacity:1; transform:scale(1) translateY(0); } }
+    .modal-close { position:absolute; top:16px; right:20px; background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; transition:color 0.2s; }
+    .modal-close:hover { color:#fff; }
+    .modal-icon { text-align:center; font-size:2.5rem; margin-bottom:12px; }
+    .modal-title { text-align:center; font-size:1.2rem; font-weight:900; margin-bottom:6px; }
+    .modal-sub { text-align:center; font-size:0.85rem; color:rgba(255,255,255,0.4); margin-bottom:24px; }
+    .modal-info-box { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:20px; margin-bottom:20px; }
+    .modal-info-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; font-size:0.9rem; }
+    .modal-info-label { color:rgba(255,255,255,0.45); font-size:0.85rem; }
+    .modal-info-value { color:#fff; font-size:0.9rem; text-align:right; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .modal-price { font-size:1.15rem; font-weight:900; color:#fbbf24; }
+    .modal-divider { height:1px; background:rgba(255,255,255,0.08); margin:8px 0; }
+    .modal-warning { display:flex; align-items:center; gap:8px; padding:12px 16px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); border-radius:12px; color:#ef4444; font-size:0.85rem; font-weight:600; margin-bottom:16px; }
+    .modal-actions { display:flex; gap:12px; margin-bottom:16px; }
+    .modal-btn-cancel { flex:0.6; padding:14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:50px; color:rgba(255,255,255,0.6); font-size:0.95rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.2s; }
+    .modal-btn-cancel:hover { background:rgba(255,255,255,0.12); color:#fff; }
+    .modal-btn-buy { flex:1; width:100%; padding:14px; background:linear-gradient(135deg,#4f46e5,#6366f1); border:none; border-radius:50px; color:#fff; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:inherit; transition:all 0.3s; box-shadow:0 4px 20px rgba(79,70,229,0.3); }
+    .modal-btn-buy:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(79,70,229,0.5); }
+    .modal-btn-buy:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+    .modal-btn-buy.loading { pointer-events:none; }
+    .modal-notice { text-align:center; font-size:0.75rem; color:rgba(255,255,255,0.25); }
+    .modal-charge-link { display:inline-block; margin-top:8px; padding:10px 24px; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.25); border-radius:50px; color:#fbbf24; font-size:0.88rem; font-weight:700; text-decoration:none; transition:all 0.2s; }
+    .modal-charge-link:hover { background:rgba(251,191,36,0.2); }
+  </style>
+
   <script>
+    // 구매 완료 모달
+    function closePurchasedModal() {
+      document.getElementById('purchased-overlay').classList.remove('show');
+      // URL에서 purchased 파라미터 제거
+      history.replaceState(null, '', window.location.pathname);
+    }
+    if (new URLSearchParams(window.location.search).get('purchased') === '1') {
+      document.getElementById('purchased-overlay').classList.add('show');
+    }
+
+    // 구매 모달
+    function openPurchaseModal() {
+      var overlay = document.getElementById('purchase-overlay');
+      overlay.classList.add('show');
+      var salePrice = parseInt('{{salePrice}}') || 0;
+      // 실시간 포인트 조회
+      fetch('/api/my-points').then(function(r) { return r.json(); }).then(function(data) {
+        var pts = data.points || 0;
+        document.getElementById('modal-user-points').textContent = pts.toLocaleString() + 'P';
+        var after = pts - salePrice;
+        var afterEl = document.getElementById('modal-after-points');
+        afterEl.textContent = after.toLocaleString() + 'P';
+        afterEl.style.color = after >= 0 ? '#4ade80' : '#ef4444';
+        if (after < 0) {
+          document.getElementById('modal-warning').style.display = 'flex';
+          document.getElementById('modal-btn-buy').disabled = true;
+          document.getElementById('modal-btn-buy').textContent = '포인트 부족';
+          // 충전 링크 추가
+          var actions = document.querySelector('.modal-actions');
+          if (!document.getElementById('modal-charge-btn')) {
+            var link = document.createElement('a');
+            link.id = 'modal-charge-btn';
+            link.href = '/my/points?need=' + salePrice;
+            link.className = 'modal-charge-link';
+            link.textContent = '포인트 충전하기';
+            link.style.width = '100%';
+            link.style.textAlign = 'center';
+            actions.parentNode.insertBefore(link, actions.nextSibling);
+          }
+        } else {
+          document.getElementById('modal-warning').style.display = 'none';
+          document.getElementById('modal-btn-buy').disabled = false;
+          document.getElementById('modal-btn-buy').textContent = '구매하기';
+        }
+      }).catch(function() {
+        document.getElementById('modal-user-points').textContent = '{{userPoints}}P';
+      });
+    }
+    function closePurchaseModal() {
+      document.getElementById('purchase-overlay').classList.remove('show');
+    }
+    document.getElementById('purchase-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closePurchaseModal();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closePurchaseModal();
+    });
+    // 구매 버튼 중복 클릭 방지
+    var purchaseForm = document.getElementById('purchase-form');
+    if (purchaseForm) {
+      purchaseForm.addEventListener('submit', function() {
+        var btn = document.getElementById('modal-btn-buy');
+        btn.disabled = true;
+        btn.textContent = '처리 중...';
+        btn.classList.add('loading');
+      });
+    }
+
     // 수익률 동적 로드
     (function() {
       var reportId = '{{reportId}}';

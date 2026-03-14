@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}} - 생각나누기</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+    nav{position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:rgba(15,12,41,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+    .logo{font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none}
+    .nav-links{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+    .nav-item{padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:50px;color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.82rem;font-weight:600;transition:all 0.3s}
+    .nav-item:hover{background:rgba(79,70,229,0.2);border-color:rgba(79,70,229,0.4);color:#fff}
+    .user-area{display:flex;align-items:center;gap:16px}
+    .user-area img{width:36px;height:36px;border-radius:50%;border:2px solid rgba(79,70,229,0.5)}
+    .logout-btn{padding:8px 20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:50px;color:#fff;text-decoration:none;font-size:0.85rem}
+    .container{max-width:800px;margin:0 auto;padding:40px 20px}
+    .back-link{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem;margin-bottom:20px;display:inline-block}
+    .back-link:hover{color:#fff}
+    .post-card{padding:28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;margin-bottom:24px}
+    .post-board{font-size:0.78rem;padding:4px 12px;background:rgba(79,70,229,0.15);color:#a5b4fc;border-radius:10px;display:inline-block;margin-bottom:12px}
+    .post-title{font-size:1.4rem;font-weight:900;margin-bottom:10px;line-height:1.4}
+    .post-meta{font-size:0.82rem;color:rgba(255,255,255,0.35);margin-bottom:20px;display:flex;align-items:center;gap:12px}
+    .post-content{color:rgba(255,255,255,0.7);line-height:1.9;font-size:0.95rem;white-space:pre-wrap}
+    .post-actions{display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)}
+    .btn-action{padding:8px 16px;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;border:none;transition:all 0.2s}
+    .btn-report{background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2)}
+    .btn-report:hover{background:rgba(239,68,68,0.2)}
+    .btn-report:disabled{opacity:0.4;cursor:default}
+    .btn-delete{background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2)}
+
+    .comments-section{margin-top:8px}
+    .comments-title{font-size:1rem;font-weight:700;margin-bottom:16px}
+    .comment{padding:16px 18px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:14px;margin-bottom:8px}
+    .comment-header{display:flex;justify-content:space-between;margin-bottom:6px}
+    .comment-author{font-size:0.85rem;font-weight:700}
+    .comment-time{font-size:0.72rem;color:rgba(255,255,255,0.25)}
+    .comment-content{font-size:0.9rem;color:rgba(255,255,255,0.6);line-height:1.6}
+    .comment-form{display:flex;gap:10px;margin-top:16px}
+    .comment-form textarea{flex:1;padding:12px 16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:0.9rem;font-family:inherit;min-height:60px;resize:none}
+    .comment-form textarea:focus{outline:none;border-color:rgba(79,70,229,0.5)}
+    .btn-comment{padding:12px 20px;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:12px;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;align-self:flex-end}
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/community?board={{boardKey}}" class="back-link">&larr; {{boardIcon}} {{boardName}}</a>
+
+    <div class="post-card">
+      <span class="post-board">{{boardIcon}} {{boardName}}</span>
+      <h1 class="post-title">{{title}}</h1>
+      <div class="post-meta">
+        <span>{{authorNickname}}</span>
+        <span>{{timeAgo}}</span>
+        <span>신고 {{reportCount}}건</span>
+      </div>
+      <div class="post-content">{{content}}</div>
+      <div class="post-actions">
+        <button class="btn-action btn-report" id="btn-report" onclick="reportPost()" disabled>신고하기</button>
+        <button class="btn-action btn-delete" id="btn-delete" style="display:none" onclick="deletePost()">삭제하기</button>
+      </div>
+    </div>
+
+    <div class="comments-section">
+      <h3 class="comments-title">댓글 {{commentCount}}개</h3>
+      {{commentHtml}}
+      <div class="comment-form">
+        <textarea id="comment-input" placeholder="댓글을 입력하세요..."></textarea>
+        <button class="btn-comment" onclick="submitComment()">작성</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var postId = '{{postId}}';
+    if ('{{alreadyReported}}' !== 'true') {
+      var btn = document.getElementById('btn-report');
+      btn.disabled = false;
+      btn.textContent = '신고하기';
+    } else {
+      document.getElementById('btn-report').textContent = '신고완료';
+    }
+    if ('{{isAuthor}}' === 'true') {
+      document.getElementById('btn-delete').style.display = 'inline-block';
+    }
+
+    function reportPost() {
+      if (!confirm('이 글을 신고하시겠습니까? (5건 이상 신고 시 자동 삭제됩니다)')) return;
+      fetch('/community/post/' + postId + '/report', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ reason: '' })
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.ok) {
+          if (d.deleted) { alert('신고가 누적되어 글이 삭제되었습니다.'); window.location.href = '/community'; }
+          else { alert('신고가 접수되었습니다. (현재 ' + d.count + '건)'); window.location.reload(); }
+        } else { alert(d.error); }
+      });
+    }
+
+    function deletePost() {
+      if (!confirm('이 글을 삭제하시겠습니까?')) return;
+      fetch('/community/post/' + postId + '/delete', {
+        method: 'POST', credentials: 'same-origin'
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.ok) window.location.href = '/community';
+        else alert(d.error);
+      });
+    }
+
+    function submitComment() {
+      var input = document.getElementById('comment-input');
+      var content = input.value.trim();
+      if (!content) return;
+      fetch('/community/post/' + postId + '/comment', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ content: content })
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.ok) window.location.reload();
+        else alert(d.error);
+      });
+    }
+  </script>
+</body>
+</html>

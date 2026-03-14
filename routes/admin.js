@@ -35,6 +35,7 @@ router.get('/', isLoggedIn, isAdmin, (req, res) => {
   const totalRevenue = db.prepare('SELECT COALESCE(SUM(amount), 0) as s FROM orders').get().s;
   const pendingFlags = db.prepare("SELECT COUNT(*) as c FROM report_flags WHERE status = 'pending'").get().c;
   const totalReports = db.prepare('SELECT COUNT(*) as c FROM reports').get().c;
+  const pendingVisitNotes = db.prepare("SELECT COUNT(*) as c FROM reports WHERE type = 'visit_note' AND status IN ('submitted', 'pending_admin')").get().c;
 
   const html = render('views/admin-dashboard.html', {
     nav: buildNav(req.user),
@@ -46,6 +47,7 @@ router.get('/', isLoggedIn, isAdmin, (req, res) => {
     totalRevenue: totalRevenue.toLocaleString(),
     pendingFlags: String(pendingFlags),
     totalReports: String(totalReports),
+    pendingVisitNotes: String(pendingVisitNotes),
   });
   res.send(html);
 });
@@ -135,6 +137,7 @@ router.post('/authors/:id/review', isLoggedIn, isAdmin, (req, res) => {
 // 리포트 검수 목록
 router.get('/reports', isLoggedIn, isAdmin, (req, res) => {
   const statusFilter = req.query.status || 'pending_admin';
+  const typeFilter = req.query.type || '';
   let reports;
   if (statusFilter === 'all') {
     reports = db.prepare(`
@@ -142,17 +145,18 @@ router.get('/reports', isLoggedIn, isAdmin, (req, res) => {
              (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as sales_count
       FROM reports r
       JOIN users u ON r.author_id = u.id
+      ${typeFilter ? "WHERE r.type = ?" : ""}
       ORDER BY r.created_at DESC
-    `).all();
+    `).all(...(typeFilter ? [typeFilter] : []));
   } else {
     reports = db.prepare(`
       SELECT r.*, COALESCE(u.nickname, u.name) as author_name, r.visibility,
              (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as sales_count
       FROM reports r
       JOIN users u ON r.author_id = u.id
-      WHERE r.status = ?
+      WHERE r.status = ? ${typeFilter ? "AND r.type = ?" : ""}
       ORDER BY r.created_at DESC
-    `).all(statusFilter);
+    `).all(...(typeFilter ? [statusFilter, typeFilter] : [statusFilter]));
   }
 
   const visLabel = { study_only: '스터디 전용', public: '외부 공개' };
@@ -171,7 +175,7 @@ router.get('/reports', isLoggedIn, isAdmin, (req, res) => {
   };
   const rows = reports.map(r => `
     <tr>
-      <td>${escapeHtml(r.title)}</td>
+      <td>${r.type === 'visit_note' ? '<span style="font-size:0.68rem;padding:2px 8px;border-radius:6px;background:rgba(34,197,94,0.15);color:#4ade80;margin-right:6px">탐방</span>' : ''}${escapeHtml(r.title)}</td>
       <td>${escapeHtml(r.stock_name)}</td>
       <td>${escapeHtml(r.author_name)}</td>
       <td><span style="font-size:0.75rem;padding:2px 8px;border-radius:8px;${r.visibility === 'public' ? 'background:rgba(79,70,229,0.15);color:#a5b4fc' : 'background:rgba(74,222,128,0.15);color:#4ade80'}">${visLabel[r.visibility] || r.visibility}</span></td>
@@ -241,6 +245,12 @@ router.get('/reports/:id', isLoggedIn, isAdmin, (req, res) => {
     canReview: (report.status === 'submitted' || report.status === 'pending_admin' || report.status === 'on_sale' || report.status === 'suspended') ? 'true' : '',
     createdAt: report.created_at || '',
     publishedAt: report.published_at || '',
+    isVisitNote: report.type === 'visit_note' ? 'true' : '',
+    visitDate: escapeHtml(report.visit_date || ''),
+    visitLocation: escapeHtml(report.visit_location || ''),
+    visitPurpose: escapeHtml(report.visit_purpose || ''),
+    visitFindings: escapeHtml(report.visit_findings || ''),
+    visitImpressions: escapeHtml(report.visit_impressions || ''),
   });
   res.send(html);
 });
@@ -671,6 +681,95 @@ router.delete('/ads/:id', isLoggedIn, isAdmin, (req, res) => {
 // 문의 상태 변경
 router.post('/ads/inquiry/:id', isLoggedIn, isAdmin, (req, res) => {
   db.prepare('UPDATE ad_inquiries SET status = ? WHERE id = ?').run(req.body.status, req.params.id);
+  res.json({ ok: true });
+});
+
+// 클럽 인증 심사 목록
+router.get('/club-verifications', isLoggedIn, isAdmin, (req, res) => {
+  const apps = db.prepare(`
+    SELECT cv.*, u.name, u.nickname, u.email, u.photo
+    FROM club_verifications cv
+    JOIN users u ON cv.user_id = u.id
+    ORDER BY cv.status = 'pending' DESC, cv.created_at DESC
+  `).all();
+
+  const clubNames = { '10b': '10억 클럽', '100b': '100억 클럽', '1000b': '1000억 클럽', '1t': '1조 클럽' };
+  const rows = apps.map(a => `
+    <tr>
+      <td>${escapeHtml(a.nickname || a.name)}</td>
+      <td>${escapeHtml(a.email || '')}</td>
+      <td><strong>${clubNames[a.club] || a.club}</strong></td>
+      <td style="font-size:0.82rem;color:rgba(255,255,255,0.5);max-width:200px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(a.proof_text || '')}</td>
+      <td><span style="font-size:0.72rem;padding:2px 8px;border-radius:8px;background:${a.status === 'pending' ? 'rgba(251,191,36,0.15);color:#fbbf24' : a.status === 'approved' ? 'rgba(74,222,128,0.15);color:#4ade80' : 'rgba(239,68,68,0.15);color:#ef4444'}">${a.status === 'pending' ? '대기' : a.status === 'approved' ? '승인' : '반려'}</span></td>
+      <td>${a.status === 'pending' ? `
+        <form style="display:inline" onsubmit="event.preventDefault();reviewClub(${a.id},'approve',this)">
+          <button class="btn-sm" style="background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3)">승인</button>
+        </form>
+        <form style="display:inline" onsubmit="event.preventDefault();reviewClub(${a.id},'reject',this)">
+          <input type="text" name="memo" placeholder="반려 사유" style="width:100px;padding:4px 8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:0.75rem">
+          <button class="btn-sm" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">반려</button>
+        </form>` : new Date(a.reviewed_at || a.created_at).toLocaleDateString('ko-KR')}</td>
+    </tr>
+  `).join('');
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>클럽 인증 심사 - 관리자</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+      nav{position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:rgba(15,12,41,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+      .logo{font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none}
+      .nav-links{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+      .nav-item{padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:50px;color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.82rem;font-weight:600;transition:all 0.3s}
+      .nav-item:hover{background:rgba(79,70,229,0.2);border-color:rgba(79,70,229,0.4);color:#fff}
+      .user-area{display:flex;align-items:center;gap:16px}
+      .user-area img{width:36px;height:36px;border-radius:50%;border:2px solid rgba(79,70,229,0.5)}
+      .logout-btn{padding:8px 20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:50px;color:#fff;text-decoration:none;font-size:0.85rem}
+      .container{max-width:1000px;margin:0 auto;padding:40px 20px}
+      .back-link{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem;margin-bottom:20px;display:inline-block}
+      h1{font-size:1.5rem;font-weight:900;margin-bottom:20px}
+      h1 .highlight{background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+      table{width:100%;border-collapse:collapse}
+      th{text-align:left;padding:12px 16px;font-size:0.8rem;color:rgba(255,255,255,0.4);border-bottom:1px solid rgba(255,255,255,0.08)}
+      td{padding:12px 16px;font-size:0.88rem;border-bottom:1px solid rgba(255,255,255,0.04)}
+      .btn-sm{padding:5px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;border:none}
+    </style></head><body>
+    <nav>${buildNav(req.user)}</nav>
+    <div class="container">
+      <a href="/admin" class="back-link">&larr; 관리자 대시보드</a>
+      <h1><span class="highlight">클럽 인증</span> 심사</h1>
+      <table>
+        <thead><tr><th>닉네임</th><th>이메일</th><th>클럽</th><th>인증 설명</th><th>상태</th><th>액션</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">인증 신청이 없습니다.</td></tr>'}</tbody>
+      </table>
+    </div>
+    <script>
+      function reviewClub(id, action, form) {
+        var memo = form.querySelector('input[name="memo"]');
+        fetch('/admin/club-verifications/' + id + '/review', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+          body: JSON.stringify({ action: action, memo: memo ? memo.value : '' })
+        }).then(function(r) { return r.json(); }).then(function(d) { if (d.ok) window.location.reload(); else alert(d.error); });
+      }
+    </script></body></html>`;
+  res.send(html);
+});
+
+// 클럽 인증 심사 처리
+router.post('/club-verifications/:id/review', isLoggedIn, isAdmin, (req, res) => {
+  const { action, memo } = req.body;
+  const app = db.prepare('SELECT * FROM club_verifications WHERE id = ?').get(req.params.id);
+  if (!app) return res.json({ ok: false, error: '신청을 찾을 수 없습니다.' });
+
+  if (action === 'approve') {
+    db.prepare("UPDATE club_verifications SET status = 'approved', admin_memo = ?, reviewed_at = datetime('now') WHERE id = ?").run(memo || '', app.id);
+    const clubNames = { '10b': '10억 클럽', '100b': '100억 클럽', '1000b': '1000억 클럽', '1t': '1조 클럽' };
+    notify(db, app.user_id, 'study_approved', '클럽 인증 승인', `${clubNames[app.club] || app.club} 인증이 승인되었습니다!`, '/community?board=' + app.club);
+  } else {
+    db.prepare("UPDATE club_verifications SET status = 'rejected', admin_memo = ?, reviewed_at = datetime('now') WHERE id = ?").run(memo || '', app.id);
+    notify(db, app.user_id, 'study_rejected', '클럽 인증 반려', `클럽 인증이 반려되었습니다.${memo ? ' 사유: ' + memo : ''}`, '/community/club-apply?club=' + app.club);
+  }
   res.json({ ok: true });
 });
 
