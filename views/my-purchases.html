@@ -8,44 +8,44 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
-    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
     .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
-    .nav-links { display: flex; align-items: center; gap: 24px; }
-    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
-    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .nav-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #fff; transform: translateY(-1px); }
     .user-area { display: flex; align-items: center; gap: 16px; }
     .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
-    .user-area span { font-size: 0.9rem; }
-    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
-    .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
     h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
     h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .sub-text { color: rgba(255,255,255,0.5); margin-bottom: 30px; }
-    .apply-link { display: inline-block; margin-bottom: 30px; padding: 10px 24px; background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); border-radius: 50px; color: #c084fc; text-decoration: none; font-size: 0.9rem; transition: all 0.3s; }
-    .apply-link:hover { background: rgba(168,85,247,0.25); }
-    table { width: 100%; border-collapse: collapse; }
+    .sub-text { color: rgba(255,255,255,0.5); margin-bottom: 30px; font-size: 0.9rem; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
     th { text-align: left; padding: 12px 16px; font-size: 0.8rem; color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); font-weight: 700; }
-    td { padding: 14px 16px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    td { padding: 14px 16px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
     td a { color: #a5b4fc; text-decoration: none; }
     td a:hover { text-decoration: underline; }
     .btn-sm { padding: 6px 14px; background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 20px; color: #fff; text-decoration: none; font-size: 0.8rem; font-weight: 700; }
     .empty-text { color: rgba(255,255,255,0.3); text-align: center; padding: 40px 0; }
-    .page-wrap { display:grid; grid-template-columns:1fr 200px; gap:24px; max-width:1260px; margin:0 auto; padding:40px 20px; }
-    @media (max-width:960px) { .page-wrap { grid-template-columns:1fr; } .page-wrap .side-ad { display:none; } }
-    .page-wrap .container { max-width:none; padding:0; }
-    .side-ad-sticky { position:sticky; top:100px; }
-    .side-ad-link { display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);text-align:center;transition:all 0.2s;min-height:300px;justify-content:center }
-    .side-ad-link:hover { border-color:rgba(79,70,229,0.25) }
-    .side-ad-link img { width:100%;border-radius:8px }
+    .shop-banner {
+      display: flex; align-items: center; gap: 20px; padding: 24px 28px;
+      background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(239,68,68,0.04));
+      border: 1px solid rgba(245,158,11,0.2); border-radius: 18px;
+      text-decoration: none; color: #fff; transition: all 0.3s;
+    }
+    .shop-banner:hover { transform: translateY(-2px); border-color: rgba(245,158,11,0.4); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .shop-banner-icon { font-size: 2.5rem; flex-shrink: 0; }
+    .shop-banner-info { flex: 1; }
+    .shop-banner-title { font-size: 1.1rem; font-weight: 900; color: #fbbf24; margin-bottom: 4px; }
+    .shop-banner-desc { font-size: 0.82rem; color: rgba(255,255,255,0.4); line-height: 1.5; }
+    .shop-banner-btn { padding: 8px 20px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 50px; font-size: 0.82rem; font-weight: 700; flex-shrink: 0; }
   </style>
 </head>
 <body>
   <nav>{{nav}}</nav>
-  <div class="page-wrap">
   <div class="container">
     <h1><span class="highlight">내 구매</span>내역</h1>
     <p class="sub-text">총 {{totalCount}}건의 리포트를 구매했습니다.</p>
-    <a href="/my/author-apply" class="apply-link">&#9998; 작성자 지원하기</a>
 
     <table>
       <thead>
@@ -62,26 +62,15 @@
         {{purchaseRows}}
       </tbody>
     </table>
-    <a href="/ad-inquiry" class="ad-box-mpc" id="ad-box-mpc" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin:20px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);overflow:hidden;transition:all 0.2s">
-      <div id="ad-def-mpc" style="text-align:center"><span style="font-size:0.82rem;color:rgba(255,255,255,0.25)">광고 문의하기</span></div>
-      <div id="ad-img-mpc" style="display:none;width:100%;height:100%"></div>
+
+    <a href="/my/shop" class="shop-banner">
+      <div class="shop-banner-icon">🛒</div>
+      <div class="shop-banner-info">
+        <div class="shop-banner-title">상점</div>
+        <div class="shop-banner-desc">광고 제거, 리포트 업로드 회피권 등 유용한 아이템을 포인트로 구매하세요.</div>
+      </div>
+      <div class="shop-banner-btn">상점 바로가기</div>
     </a>
-    <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-mpc'),df=document.getElementById('ad-def-mpc'),ld=document.getElementById('ad-img-mpc');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
   </div>
-  <div class="side-ad">
-    <div class="side-ad-sticky">
-      <a href="/my/shop" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 18px;background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(239,68,68,0.06));border:1px solid rgba(245,158,11,0.2);border-radius:16px;text-decoration:none;color:#fff;text-align:center;transition:all 0.2s;margin-bottom:14px">
-        <div style="font-size:2.5rem">🛒</div>
-        <div style="font-size:0.95rem;font-weight:900;color:#fbbf24">상점</div>
-        <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);line-height:1.4">광고 제거, 리포트 회피권<br>등 아이템을 구매하세요</div>
-      </a>
-      <a href="/ad-inquiry" class="side-ad-link" id="ad-side-mpc">
-        <div id="ad-sdef-mpc"><div style="font-size:1.5rem;margin-bottom:6px">📢</div><div style="font-size:0.82rem;font-weight:700;color:rgba(255,255,255,0.4)">광고 문의</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.2);margin-top:2px">여기에 광고를 게재하세요</div></div>
-        <div id="ad-simg-mpc" style="display:none;width:100%"></div>
-      </a>
-    </div>
-  </div>
-  </div>
-  <script>fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-side-mpc'),df=document.getElementById('ad-sdef-mpc'),ld=document.getElementById('ad-simg-mpc');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;border-radius:8px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});</script>
 </body>
 </html>
