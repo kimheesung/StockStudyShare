@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockStudyShare - 리포트 탐색</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.85rem; transition: all 0.3s; }
+    .logout-btn:hover { background: rgba(255,255,255,0.08); }
+    .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .sub-text { color: rgba(255,255,255,0.5); margin-bottom: 30px; }
+    .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 30px; align-items: center; }
+    .filter-bar select, .filter-bar input {
+      padding: 10px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; color: #fff; font-size: 0.9rem; font-family: inherit;
+    }
+    .filter-bar select option { background: rgba(255,255,255,0.03); color: #fff; }
+    .filter-bar input::placeholder { color: rgba(255,255,255,0.3); }
+    .filter-bar button {
+      padding: 10px 20px; background: linear-gradient(135deg, #4f46e5, #6366f1); border: none;
+      border-radius: 12px; color: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.3s;
+    }
+    .filter-bar button:hover { transform: translateY(-2px); }
+    .report-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .report-card-full {
+      display: block; padding: 24px 28px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+      text-decoration: none; color: #fff; transition: all 0.3s;
+    }
+    .report-card-full:hover { background: rgba(255,255,255,0.06); transform: translateY(-3px); border-color: rgba(79,70,229,0.3); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .report-body h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+    .report-card-tags { display: flex; gap: 8px; margin-bottom: 10px; }
+    .tag-market, .tag-sector {
+      display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem;
+    }
+    .tag-market { background: rgba(79,70,229,0.2); color: #a5b4fc; border: 1px solid rgba(79,70,229,0.3); }
+    .tag-sector { background: rgba(6,182,212,0.2); color: #67e8f9; border: 1px solid rgba(6,182,212,0.3); }
+    .report-stock { font-size: 0.85rem; color: #67e8f9; margin-bottom: 8px; }
+    .report-summary { color: rgba(255,255,255,0.4); font-size: 0.88rem; line-height: 1.6; margin-bottom: 12px; }
+    .report-stats { display: flex; gap: 14px; margin-bottom: 8px; font-size: 0.78rem; }
+    .stat-sales { color: #fbbf24; font-weight: 700; }
+    .stat-rating { color: rgba(255,255,255,0.5); font-weight: 700; }
+    .stat-return { color: rgba(255,255,255,0.3); }
+    .stat-return.up { color: #ef4444; font-weight: 700; }
+    .stat-return.down { color: #3b82f6; font-weight: 700; }
+    .report-author-bio { font-size: 0.78rem; color: rgba(255,255,255,0.3); margin-bottom: 10px; line-height: 1.5; font-style: italic; }
+    .report-meta-full { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: rgba(255,255,255,0.4); }
+    .report-author-photo { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+    .author-name { color: rgba(255,255,255,0.7); }
+    .report-price { color: #a5b4fc; font-weight: 700; }
+    .dot { opacity: 0.3; }
+    .empty-text { color: rgba(255,255,255,0.3); font-size: 0.95rem; padding: 60px 0; text-align: center; }
+
+    /* 탭 */
+    .page-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .page-tab {
+      padding: 12px 28px; text-decoration: none; font-size: 1rem; font-weight: 700;
+      color: rgba(255,255,255,0.4); border-bottom: 2px solid transparent; transition: all 0.3s;
+    }
+    .page-tab:hover { color: rgba(255,255,255,0.7); }
+    .page-tab.active { color: #a5b4fc; border-bottom-color: #a5b4fc; }
+
+    /* 리포터 카드 */
+    .author-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .author-card {
+      display: block; padding: 24px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+      text-decoration: none; color: #fff; transition: all 0.3s;
+    }
+    .author-card:hover { background: rgba(255,255,255,0.06); transform: translateY(-3px); border-color: rgba(79,70,229,0.3); }
+    .author-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+    .author-card-header img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(79,70,229,0.3); }
+    .author-card-name { font-size: 1.05rem; font-weight: 900; }
+    .author-card-role { font-size: 0.7rem; padding: 2px 8px; border-radius: 8px; background: rgba(79,70,229,0.15); color: #a5b4fc; }
+    .author-card-bio { font-size: 0.82rem; color: rgba(255,255,255,0.4); line-height: 1.5; margin-bottom: 12px; min-height: 20px; }
+    .author-card-stats { display: flex; gap: 16px; font-size: 0.78rem; color: rgba(255,255,255,0.3); flex-wrap: wrap; }
+    .author-card-stats span { display: flex; align-items: center; gap: 4px; }
+    .author-card-stats .val { color: #fbbf24; font-weight: 700; }
+    .btn-follow {
+      padding: 6px 16px; border-radius: 50px; font-size: 0.78rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all 0.2s; flex-shrink: 0;
+      background: linear-gradient(135deg, #4f46e5, #6366f1); border: none; color: #fff;
+    }
+    .btn-follow:hover { transform: scale(1.05); box-shadow: 0 2px 12px rgba(79,70,229,0.4); }
+    .btn-follow.following {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7);
+    }
+    .btn-follow.following:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <h1><span class="highlight">리포트</span> 검색</h1>
+    <div class="page-tabs">
+      <a href="/reports" class="page-tab active" id="tab-reports">리포트 검색</a>
+      <a href="/reports?view=authors" class="page-tab" id="tab-authors">리포터 보기</a>
+    </div>
+
+    <div id="report-section">
+    <form class="filter-bar" method="GET" action="/reports">
+      <select name="market" id="filter-market">
+        <option value="">시장 전체</option>
+        <option value="KOSPI">KOSPI</option>
+        <option value="KOSDAQ">KOSDAQ</option>
+        <option value="US">미국</option>
+        <option value="기타">기타</option>
+      </select>
+      <select name="sector" id="filter-sector">
+        <option value="">섹터 전체</option>
+        <option value="IT/반도체">IT/반도체</option>
+        <option value="바이오/헬스케어">바이오/헬스케어</option>
+        <option value="금융">금융</option>
+        <option value="소비재">소비재</option>
+        <option value="에너지/소재">에너지/소재</option>
+        <option value="산업재">산업재</option>
+        <option value="기타">기타</option>
+      </select>
+      <select name="sort" id="filter-sort">
+        <option value="">최신순</option>
+        <option value="price_asc">가격 낮은순</option>
+        <option value="price_desc">가격 높은순</option>
+        <option value="sales">판매순</option>
+        <option value="return">수익률순</option>
+      </select>
+      <input type="text" name="q" placeholder="종목명/코드 검색..." value="{{currentQ}}">
+      <button type="submit">검색</button>
+    </form>
+
+    <div class="report-grid">
+      {{reportCards}}
+    </div>
+    </div>
+
+    <div id="author-section" style="display:none">
+      <div class="author-grid">
+        {{authorCards}}
+      </div>
+    </div>
+  </div>
+  <script>
+    // 탭 전환
+    var currentView = new URLSearchParams(window.location.search).get('view');
+    if (currentView === 'authors') {
+      document.getElementById('report-section').style.display = 'none';
+      document.getElementById('author-section').style.display = 'block';
+      document.getElementById('tab-reports').classList.remove('active');
+      document.getElementById('tab-authors').classList.add('active');
+    }
+
+    // 필터 초기값 (서버에서 전달된 값 사용)
+    var cMarket = '{{currentMarket}}';
+    var cSector = '{{currentSector}}';
+    var cSort = '{{currentSort}}';
+    if (cMarket) document.getElementById('filter-market').value = cMarket;
+    if (cSector) document.getElementById('filter-sector').value = cSector;
+    if (cSort) document.getElementById('filter-sort').value = cSort;
+
+    // select 변경 시 자동 검색
+    ['filter-market', 'filter-sector', 'filter-sort'].forEach(function(id) {
+      document.getElementById(id).addEventListener('change', function() {
+        this.closest('form').submit();
+      });
+    });
+
+    // 리포터별 평균 수익률 로드
+    (function() {
+      var els = document.querySelectorAll('.stat-return[data-author-id]');
+      var authorIds = [];
+      els.forEach(function(el) {
+        var id = el.dataset.authorId;
+        if (authorIds.indexOf(id) === -1) authorIds.push(id);
+      });
+
+      authorIds.forEach(function(authorId) {
+        fetch('/api/author-return/' + authorId)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var targets = document.querySelectorAll('.stat-return[data-author-id="' + authorId + '"]');
+            targets.forEach(function(el) {
+              if (data.avgReturn === null) {
+                el.textContent = '수익률 데이터 없음';
+              } else {
+                var isUp = data.avgReturn >= 0;
+                var sign = isUp ? '+' : '';
+                el.textContent = '평균 수익률 ' + sign + data.avgReturn.toFixed(2) + '% (' + data.count + '건)';
+                el.classList.add(isUp ? 'up' : 'down');
+              }
+            });
+          })
+          .catch(function() {
+            document.querySelectorAll('.stat-return[data-author-id="' + authorId + '"]').forEach(function(el) {
+              el.textContent = '';
+            });
+          });
+      });
+    })();
+
+    // 팔로우 토글
+    function toggleAuthorFollow(btn) {
+      if ('{{isLoggedIn}}' !== 'true') { window.location.href = '/auth/google'; return; }
+      var authorId = btn.dataset.authorId;
+      var isFollowing = btn.classList.contains('following');
+      var url = isFollowing ? '/api/unfollow/' + authorId : '/api/follow/' + authorId;
+
+      // 링크 이동 방지
+      event.preventDefault();
+      event.stopPropagation();
+
+      fetch(url, { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) {
+            if (data.followed) {
+              btn.classList.add('following');
+              btn.textContent = '팔로잉';
+            } else {
+              btn.classList.remove('following');
+              btn.textContent = '팔로우';
+            }
+            // 팔로워 수 업데이트
+            var card = btn.closest('.author-card');
+            var valEl = card.querySelector('.author-card-stats .val');
+            if (valEl) {
+              var cur = parseInt(valEl.textContent) || 0;
+              valEl.textContent = data.followed ? cur + 1 : Math.max(0, cur - 1);
+            }
+          }
+        });
+    }
+  </script>
+</body>
+</html>

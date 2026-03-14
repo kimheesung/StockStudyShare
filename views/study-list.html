@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스터디방 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .page-desc { color: rgba(255,255,255,0.3); font-size: 0.88rem; margin-bottom: 32px; }
+
+    .create-section {
+      padding: 24px; background: rgba(79,70,229,0.08); border: 1px dashed rgba(79,70,229,0.3);
+      border-radius: 16px; margin-bottom: 32px;
+    }
+    .create-section h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; color: #a5b4fc; }
+    .create-form { display: flex; gap: 8px; flex-wrap: wrap; }
+    .input-field {
+      padding: 10px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px; color: #fff; font-size: 0.9rem; font-family: inherit; outline: none; flex: 1; min-width: 150px;
+    }
+    .input-field:focus { border-color: rgba(79,70,229,0.4); }
+    .input-field::placeholder { color: rgba(255,255,255,0.3); }
+    .btn-create {
+      padding: 10px 24px; background: linear-gradient(135deg, #4f46e5, #6366f1); border: none;
+      border-radius: 12px; color: #fff; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .btn-create:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(79,70,229,0.4); }
+
+    .study-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 40px; }
+    .study-card {
+      padding: 24px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+      transition: all 0.3s;
+    }
+    .study-card:hover { background: rgba(255,255,255,0.06); border-color: #c7d2fe; }
+    .study-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+    .study-card-header h3 { font-size: 1.05rem; font-weight: 700; }
+    .badge-leader { font-size: 0.62rem; padding: 3px 8px; border-radius: 8px; background: rgba(251,191,36,0.15); color: #fbbf24; font-weight: 700; }
+    .badge-member { font-size: 0.62rem; padding: 3px 8px; border-radius: 8px; background: rgba(79,70,229,0.15); color: #a5b4fc; font-weight: 700; }
+    .badge-recruiting { font-size: 0.62rem; padding: 3px 8px; border-radius: 8px; background: rgba(74,222,128,0.15); color: #4ade80; font-weight: 700; }
+    .study-card-desc { font-size: 0.82rem; color: rgba(255,255,255,0.4); margin-bottom: 12px; line-height: 1.5; }
+    .study-card-meta { display: flex; gap: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.3); margin-bottom: 14px; flex-wrap: wrap; }
+    .study-card-action { display: flex; gap: 8px; }
+    .btn-apply {
+      padding: 8px 20px; background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.3);
+      border-radius: 10px; color: #4ade80; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .btn-apply:hover { background: rgba(74,222,128,0.22); }
+    .btn-enter {
+      padding: 8px 20px; background: rgba(79,70,229,0.15); border: 1px solid rgba(79,70,229,0.3);
+      border-radius: 10px; color: #a5b4fc; font-size: 0.82rem; font-weight: 700; text-decoration: none;
+    }
+    .btn-enter:hover { background: rgba(79,70,229,0.25); }
+    .apply-status { font-size: 0.82rem; padding: 8px 16px; border-radius: 10px; }
+    .apply-status.pending { background: rgba(251,191,36,0.1); color: #fbbf24; }
+
+    .empty-state {
+      text-align: center; padding: 60px 20px;
+      background: rgba(255,255,255,0.03); border: 1px dashed #d1d5db;
+      border-radius: 20px; color: rgba(255,255,255,0.3);
+    }
+    .empty-state p { font-size: 0.95rem; margin-bottom: 6px; }
+    .empty-state small { font-size: 0.82rem; }
+
+    .leader-apply-section {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 20px 24px; background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.15);
+      border-radius: 16px; margin-bottom: 28px;
+    }
+    .btn-leader-apply {
+      padding: 10px 24px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none;
+      border-radius: 12px; color: #fff; font-size: 0.9rem; font-weight: 700; text-decoration: none;
+      transition: all 0.3s; flex-shrink: 0;
+    }
+    .btn-leader-apply:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(34,197,94,0.4); }
+    .leader-apply-desc { font-size: 0.82rem; color: rgba(255,255,255,0.4); }
+    .leader-pending-msg {
+      font-size: 0.82rem; color: #fbbf24; display: none;
+    }
+    .leader-pending-msg a { color: #fbbf24; }
+
+    /* 지원 모달 */
+    .apply-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center;
+    }
+    .apply-overlay.show { display: flex; }
+    .apply-modal {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; padding: 32px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;
+    }
+    .apply-modal h3 { font-size: 1.15rem; font-weight: 900; margin-bottom: 6px; }
+    .apply-modal .modal-sub { font-size: 0.85rem; color: rgba(255,255,255,0.4); margin-bottom: 20px; }
+    .apply-modal label { display: block; font-size: 0.85rem; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 6px; }
+    .apply-modal .hint { font-size: 0.78rem; color: rgba(255,255,255,0.3); margin-bottom: 8px; }
+    .apply-modal textarea, .apply-modal input[type="text"] {
+      width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #fff; font-size: 0.9rem; font-family: inherit; margin-bottom: 16px;
+    }
+    .apply-modal textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+    .apply-modal textarea:focus, .apply-modal input:focus { outline: none; border-color: rgba(79,70,229,0.4); }
+    .apply-modal input[type="file"] {
+      width: 100%; padding: 10px; background: rgba(255,255,255,0.03);
+      border: 1px dashed #d1d5db; border-radius: 10px; color: rgba(255,255,255,0.5);
+      font-size: 0.85rem; font-family: inherit; margin-bottom: 16px;
+    }
+    .apply-modal input[type="file"]::file-selector-button {
+      padding: 4px 12px; margin-right: 10px; background: rgba(79,70,229,0.2);
+      border: 1px solid rgba(79,70,229,0.3); border-radius: 6px; color: #a5b4fc;
+      font-size: 0.8rem; cursor: pointer; font-family: inherit;
+    }
+    .apply-actions { display: flex; gap: 12px; margin-top: 8px; }
+    .apply-actions .btn-cancel {
+      flex: 1; padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 50px; color: rgba(255,255,255,0.7); font-size: 0.9rem; cursor: pointer; font-family: inherit;
+    }
+    .apply-actions .btn-submit-apply {
+      flex: 1; padding: 12px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none;
+      border-radius: 50px; color: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <h1><span class="highlight">스터디방</span></h1>
+    <p class="page-desc">스터디방에 가입하면 스터디원들의 리포트를 무료로 열람할 수 있습니다.</p>
+
+    <div class="leader-apply-section" id="leader-apply-section">
+      <a href="/study/leader-apply" class="btn-leader-apply">스터디장 지원하기</a>
+      <span class="leader-apply-desc">스터디장이 되면 스터디방을 개설하고 스터디원을 모을수 있습니다.</span>
+      <span class="leader-pending-msg" id="leader-pending-msg">이미 지원서를 제출했습니다. <a href="/study/leader-apply-status">상태 확인</a></span>
+    </div>
+
+    <div class="create-section" id="create-section">
+      <h3>새 스터디방 만들기 (스터디장 전용)</h3>
+      <form class="create-form" method="POST" action="/study/create">
+        <input type="text" name="name" class="input-field" placeholder="스터디방 이름" required>
+        <input type="text" name="description" class="input-field" placeholder="스터디방 소개 (선택)">
+        <button type="submit" class="btn-create">만들기</button>
+      </form>
+    </div>
+
+    <div class="study-grid">
+      {{roomCards}}
+    </div>
+
+    <div class="empty-state" id="empty-state">
+      <p>현재 개설된 스터디방이 없습니다.</p>
+      <small>스터디장이 스터디방을 개설하면 여기에 표시됩니다.</small>
+    </div>
+  </div>
+
+  <!-- 지원 모달 -->
+  <div class="apply-overlay" id="apply-overlay">
+    <div class="apply-modal">
+      <h3 id="apply-room-name"></h3>
+      <p class="modal-sub">스터디방에 지원합니다. 아래 내용을 작성해주세요.</p>
+      <div style="padding:10px 14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;margin-bottom:16px;font-size:0.8rem;color:#fbbf24;line-height:1.6">
+        &#9888; 가입 승인 시 <strong>10,000P</strong>가 차감되며, 이후 매달 <strong>10,000P</strong>가 월회비로 차감됩니다.
+      </div>
+      <form method="POST" id="apply-form" enctype="multipart/form-data">
+        <div>
+          <label>자기소개 <span style="color:#ef4444">*</span></label>
+          <div class="hint">투자 경력, 관심 섹터, 스터디 참여 동기 등</div>
+          <textarea name="intro" required placeholder="예: 국내 주식 3년차 개인투자자이며, 바이오 섹터에 관심이 많습니다. 리포트 작성 경험을 쌓고 싶어 지원합니다."></textarea>
+        </div>
+        <div>
+          <label>한마디 메시지</label>
+          <input type="text" name="message" placeholder="스터디장에게 전할 메시지 (선택)">
+        </div>
+        <div>
+          <label>작성했던 리포트 파일 (선택)</label>
+          <div class="hint">PDF 또는 Word 파일 (최대 10MB)</div>
+          <input type="file" name="report_file" accept=".pdf,.doc,.docx">
+        </div>
+        <div class="apply-actions">
+          <button type="button" class="btn-cancel" onclick="closeApplyModal()">취소</button>
+          <button type="submit" class="btn-submit-apply">지원서 제출</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openApplyModal(roomId, roomName) {
+      // 서버에서 실시간 포인트 확인
+      fetch('/api/my-points').then(function(r) { return r.json(); }).then(function(data) {
+        var pts = data.points || 0;
+        if (pts < 10000) {
+          var shortfall = (10000 - pts).toLocaleString();
+          if (confirm('스터디 가입 시 10,000P가 필요합니다.\n현재 보유 포인트: ' + pts.toLocaleString() + 'P (' + shortfall + 'P 부족)\n\n포인트 충전 페이지로 이동하시겠습니까?')) {
+            window.location.href = '/my/points?need=10000&reason=study_join';
+          }
+          return;
+        }
+        document.getElementById('apply-room-name').textContent = roomName + ' 지원';
+        document.getElementById('apply-form').action = '/study/' + roomId + '/apply';
+        document.getElementById('apply-overlay').classList.add('show');
+      }).catch(function() {
+        // API 실패 시 그냥 모달 열기 (서버에서 재검증)
+        document.getElementById('apply-room-name').textContent = roomName + ' 지원';
+        document.getElementById('apply-form').action = '/study/' + roomId + '/apply';
+        document.getElementById('apply-overlay').classList.add('show');
+      });
+    }
+    function closeApplyModal() {
+      document.getElementById('apply-overlay').classList.remove('show');
+    }
+    document.getElementById('apply-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeApplyModal();
+    });
+
+    if ('{{canCreate}}' !== 'true') document.getElementById('create-section').style.display = 'none';
+    if ('{{hasRooms}}' === 'true') document.getElementById('empty-state').style.display = 'none';
+    // 스터디장 지원 섹션
+    if ('{{showLeaderApply}}' !== 'true') {
+      document.getElementById('leader-apply-section').style.display = 'none';
+    }
+    if ('{{leaderApplyStatus}}' === 'pending') {
+      document.getElementById('leader-apply-section').style.display = 'flex';
+      document.querySelector('.btn-leader-apply').style.display = 'none';
+      document.querySelector('.leader-apply-desc').style.display = 'none';
+      document.getElementById('leader-pending-msg').style.display = 'inline';
+    }
+  </script>
+</body>
+</html>

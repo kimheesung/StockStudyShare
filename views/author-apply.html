@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>작성자 지원 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 700px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .sub-text { color: rgba(255,255,255,0.5); margin-bottom: 30px; font-size: 0.9rem; line-height: 1.7; }
+    .info-box { padding: 20px; background: rgba(79,70,229,0.1); border: 1px solid rgba(79,70,229,0.2); border-radius: 16px; margin-bottom: 30px; font-size: 0.9rem; color: rgba(255,255,255,0.7); line-height: 1.7; }
+    .requirements { padding: 28px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; margin-bottom: 30px; }
+    .requirements h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: #a5b4fc; }
+    .req-list { list-style: none; }
+    .req-list li { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); font-size: 0.9rem; line-height: 1.6; display: flex; gap: 10px; }
+    .req-list li:last-child { border-bottom: none; }
+    .req-check { color: #4ade80; font-weight: 700; flex-shrink: 0; }
+    .process-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 30px; }
+    .step { text-align: center; padding: 16px 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+    .step-num { font-size: 1.2rem; font-weight: 900; color: #a5b4fc; margin-bottom: 4px; }
+    .step-label { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+    .form-group { margin-bottom: 24px; }
+    .form-group label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; }
+    .form-group label .required { color: #ef4444; }
+    .form-group .hint { font-size: 0.8rem; color: rgba(255,255,255,0.3); margin-bottom: 8px; }
+    input[type="text"], textarea {
+      width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; font-size: 0.95rem; font-family: inherit;
+    }
+    input:focus, textarea:focus { outline: none; border-color: rgba(79,70,229,0.4); }
+    textarea { min-height: 150px; resize: vertical; line-height: 1.7; }
+    .btn-submit {
+      padding: 14px 32px; background: linear-gradient(135deg, #4f46e5, #6366f1); border: none;
+      border-radius: 50px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: all 0.3s; box-shadow: 0 4px 20px rgba(79,70,229,0.3);
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(79,70,229,0.5); }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <h1><span class="highlight">작성자</span> 지원</h1>
+    <p class="sub-text">StockStudyShare에서 리서치 리포트를 판매하려면 작성자 승인이 필요합니다.<br>아래 조건을 확인하고 양식을 작성해주세요.</p>
+
+    <div class="requirements">
+      <h2>리포터 자격 요건</h2>
+      <ul class="req-list">
+        <li><span class="req-check">&#10003;</span> 주식/금융 관련 분야 1년 이상 경력 또는 관련 자격증 보유</li>
+        <li><span class="req-check">&#10003;</span> 종목 분석 리포트 작성 경험 (블로그, 커뮤니티, 증권사 등)</li>
+        <li><span class="req-check">&#10003;</span> 투자 논거, 밸류에이션, 리스크 분석을 포함한 구조화된 리포트 작성 능력</li>
+        <li><span class="req-check">&#10003;</span> 리포트 내용에 대한 책임 의식 (허위/과장 정보 금지)</li>
+        <li><span class="req-check">&#10003;</span> 보유 종목 및 이해충돌 사항 성실히 공시</li>
+      </ul>
+    </div>
+
+    <div class="process-steps">
+      <div class="step"><div class="step-num">1</div><div class="step-label">지원서 작성</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-label">관리자 심사</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-label">승인 통보</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-label">리포트 작성 시작</div></div>
+    </div>
+
+    <div id="reject-notice"></div>
+
+    <div class="info-box">
+      <strong>지원자 정보</strong><br>
+      이름: {{userName}}<br>
+      이메일: {{userEmail}}
+    </div>
+
+    <form method="POST" action="/my/author-apply">
+      <div class="form-group">
+        <label>자기소개 <span class="required">*</span></label>
+        <div class="hint">투자 분야에서의 경험과 전문성을 소개해주세요.</div>
+        <textarea name="intro" required placeholder="예: 10년 경력의 바이오/헬스케어 섹터 전문 애널리스트입니다...">{{prevIntro}}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>경력/이력 <span class="required">*</span></label>
+        <div class="hint">관련 경력이나 자격증 등을 작성해주세요.</div>
+        <textarea name="career" required placeholder="예: XX증권 리서치센터 5년 근무, CFA Level 3...">{{prevCareer}}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>외부 링크</label>
+        <div class="hint">블로그, 유튜브, 네이버 프리미엄 등 외부 활동 링크</div>
+        <input type="text" name="external_links" value="{{prevLinks}}" placeholder="https://...">
+      </div>
+
+      <div class="form-group">
+        <label>샘플 리포트</label>
+        <div class="hint">기존에 작성한 리서치 리포트 내용을 붙여넣어주세요.</div>
+        <textarea name="sample_report" placeholder="샘플 리포트 내용...">{{prevSample}}</textarea>
+      </div>
+
+      <button type="submit" class="btn-submit">지원서 제출</button>
+    </form>
+
+    <script>
+      var isReapply = '{{isReapply}}';
+      var rejectMemo = '{{rejectMemo}}';
+      if (isReapply === 'true') {
+        var el = document.getElementById('reject-notice');
+        el.innerHTML = '<div style="padding:20px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:16px;margin-bottom:24px;color:#fca5a5;font-size:0.9rem;line-height:1.7">'
+          + '<strong>이전 지원이 반려되었습니다.</strong><br>'
+          + (rejectMemo ? '관리자 메모: ' + rejectMemo + '<br>' : '')
+          + '아래 내용을 수정하여 다시 지원해주세요.</div>';
+      }
+    </script>
+  </div>
+</body>
+</html>

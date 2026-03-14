@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지원 상태 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 700px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 30px; }
+    .status-card {
+      padding: 32px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; margin-bottom: 24px; text-align: center;
+    }
+    .status-label { font-size: 0.9rem; color: rgba(255,255,255,0.4); margin-bottom: 12px; }
+    .status-value { font-size: 1.5rem; font-weight: 900; margin-bottom: 8px; }
+    .status-value.pending { color: #fbbf24; }
+    .status-value.approved { color: #4ade80; }
+    .status-value.rejected { color: #ef4444; }
+    .applied-date { font-size: 0.85rem; color: rgba(255,255,255,0.3); }
+    .detail-card {
+      padding: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; margin-bottom: 16px;
+    }
+    .detail-card h3 { font-size: 0.9rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+    .detail-card p { color: rgba(255,255,255,0.7); line-height: 1.7; font-size: 0.95rem; white-space: pre-wrap; }
+    .memo-card {
+      padding: 24px; background: rgba(79,70,229,0.1); border: 1px solid rgba(79,70,229,0.2);
+      border-radius: 16px; margin-bottom: 24px;
+    }
+    .memo-card h3 { font-size: 0.9rem; color: #a5b4fc; margin-bottom: 8px; }
+    .memo-card p { color: rgba(255,255,255,0.7); line-height: 1.7; }
+    .btn-reapply {
+      display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border-radius: 50px; color: #fff; text-decoration: none; font-size: 1rem; font-weight: 700;
+      transition: all 0.3s;
+    }
+    .btn-reapply:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <h1>작성자 지원 상태</h1>
+
+    <div class="status-card">
+      <div class="status-label">현재 상태</div>
+      <div class="status-value {{statusClass}}">{{status}}</div>
+      <div class="applied-date">지원일: {{appliedAt}}</div>
+    </div>
+
+    <div class="detail-card">
+      <h3>자기소개</h3>
+      <p>{{intro}}</p>
+    </div>
+
+    <div class="detail-card">
+      <h3>경력/이력</h3>
+      <p>{{career}}</p>
+    </div>
+
+    {{memoSection}}
+
+    {{reapplySection}}
+  </div>
+</body>
+</html>

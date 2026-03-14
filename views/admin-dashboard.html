@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 30px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 40px; }
+    .stat-card {
+      padding: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; text-align: center; transition: all 0.3s;
+    }
+    .stat-card:hover { background: rgba(255,255,255,0.06); }
+    .stat-card .label { font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+    .stat-card .value { font-size: 1.8rem; font-weight: 900; }
+    .stat-card .value.gradient { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-card .value.warning { color: #fbbf24; }
+    .stat-card .value.danger { color: #ef4444; }
+    .admin-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+    .admin-link {
+      display: block; padding: 24px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+      text-decoration: none; color: #fff; transition: all 0.3s;
+    }
+    .admin-link:hover { background: rgba(255,255,255,0.06); transform: translateY(-3px); border-color: rgba(79,70,229,0.3); }
+    .admin-link h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .admin-link p { color: rgba(255,255,255,0.4); font-size: 0.85rem; }
+    .admin-link .badge { display: inline-block; padding: 2px 8px; background: rgba(239,68,68,0.2); color: #ef4444; border-radius: 10px; font-size: 0.75rem; font-weight: 700; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <h1><span class="highlight">관리자</span> 대시보드</h1>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">전체 회원</div>
+        <div class="value gradient">{{totalUsers}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">스터디장</div>
+        <div class="value gradient">{{totalAuthors}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">총 거래</div>
+        <div class="value gradient">{{totalOrders}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">총 수익</div>
+        <div class="value gradient">{{totalRevenue}}P</div>
+      </div>
+    </div>
+
+    <div class="admin-links">
+      <a href="/admin/authors" class="admin-link">
+        <h3>스터디장 지원서 <span class="badge">{{pendingApps}}</span></h3>
+        <p>스터디장 지원서를 심사합니다.</p>
+      </a>
+      <a href="/admin/reports" class="admin-link">
+        <h3>리포트 검수 <span class="badge">{{pendingReports}}</span></h3>
+        <p>제출된 리포트를 검수합니다.</p>
+      </a>
+      <a href="/admin/reports?status=all" class="admin-link">
+        <h3>리포트 관리 <span class="badge">{{totalReports}}</span></h3>
+        <p>전체 리포트를 조회하고 관리합니다.</p>
+      </a>
+      <a href="/admin/users" class="admin-link">
+        <h3>회원 관리</h3>
+        <p>전체 회원 목록을 확인합니다.</p>
+      </a>
+      <a href="/admin/flags" class="admin-link">
+        <h3>신고 관리 <span class="badge">{{pendingFlags}}</span></h3>
+        <p>접수된 신고를 처리합니다.</p>
+      </a>
+      <a href="/admin/study-rooms" class="admin-link">
+        <h3>스터디방 포인트 관리</h3>
+        <p>스터디방별 포인트 조회 및 조정합니다.</p>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

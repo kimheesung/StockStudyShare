@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스터디방 포인트 충전 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; } .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+    h1 { font-size: 1.4rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .page-desc { color: rgba(255,255,255,0.3); font-size: 0.85rem; margin-bottom: 28px; }
+    .balance-card {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 24px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15);
+      border-radius: 18px; margin-bottom: 32px;
+    }
+    .balance-label { font-size: 0.82rem; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
+    .balance-value { font-size: 1.6rem; font-weight: 900; color: #fbbf24; }
+    .balance-sub { font-size: 0.75rem; color: rgba(255,255,255,0.3); }
+    .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+    .plan-card {
+      padding: 28px 20px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 18px;
+      text-align: center; transition: all 0.3s; cursor: pointer;
+    }
+    .plan-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(251,191,36,0.3); transform: translateY(-2px); }
+    .plan-points { font-size: 1.5rem; font-weight: 900; color: #fbbf24; margin-bottom: 4px; }
+    .plan-price { font-size: 1rem; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+    .plan-months { font-size: 0.78rem; color: rgba(74,222,128,0.7); margin-bottom: 14px; }
+    .btn-buy {
+      display: inline-block; width: 100%; padding: 10px;
+      background: linear-gradient(135deg, #f59e0b, #d97706); border: none;
+      border-radius: 12px; color: #fff; font-size: 0.9rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-buy:hover { box-shadow: 0 4px 16px rgba(245,158,11,0.4); }
+    .info-box {
+      padding: 16px 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; font-size: 0.82rem; color: rgba(255,255,255,0.4); line-height: 1.7;
+    }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      z-index: 999; align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: linear-gradient(135deg, #1a1a3e, #2a2a5e; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px; padding: 36px; max-width: 380px; width: 90%; text-align: center;
+    }
+    .modal h2 { font-size: 1.1rem; font-weight: 900; margin-bottom: 16px; }
+    .modal .m-pts { font-size: 1.8rem; font-weight: 900; color: #fbbf24; margin-bottom: 4px; }
+    .modal .m-price { font-size: 0.95rem; color: rgba(255,255,255,0.5); margin-bottom: 24px; }
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-confirm { flex:1; padding:12px; background:linear-gradient(135deg,#22c55e,#16a34a); border:none; border-radius:12px; color: #fff; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:inherit; }
+    .btn-cancel { flex:1; padding:12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius:12px; color: #fff; font-size:0.95rem; cursor:pointer; font-family:inherit; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/study/{{roomId}}" class="back-link">&larr; {{roomName}}</a>
+    <h1><span class="highlight">{{roomName}}</span> 포인트 충전</h1>
+    <p class="page-desc">스터디방 운영에 필요한 포인트를 충전하세요.</p>
+
+    <div class="locked-banner" id="locked-banner" style="display:none;padding:18px 24px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:16px;margin-bottom:20px;text-align:center">
+      <div style="font-size:1.1rem;font-weight:900;color:#ef4444;margin-bottom:6px">스터디방이 비활성화되었습니다</div>
+      <div style="font-size:0.85rem;color: rgba(255,255,255,0.5)">포인트가 소진되어 스터디방 접속이 차단되었습니다.<br>100,000P 이상 충전하면 다시 활성화됩니다.</div>
+    </div>
+
+    <div class="balance-card">
+      <div>
+        <div class="balance-label">현재 스터디방 포인트</div>
+        <div class="balance-value">{{roomPoints}}P</div>
+      </div>
+      <div>
+        <div class="balance-sub">매월 100,000P 차감</div>
+        <div class="balance-sub">포인트 소진 시 스터디방 비활성화</div>
+      </div>
+    </div>
+
+    <div class="plans">
+      <div class="plan-card" onclick="openModal(100000, 100000)">
+        <div class="plan-points">100,000P</div>
+        <div class="plan-price">100,000P</div>
+        <div class="plan-months">약 1개월 운영</div>
+        <button class="btn-buy">충전하기</button>
+      </div>
+      <div class="plan-card" onclick="openModal(1000000, 1000000)">
+        <div class="plan-points">1,000,000P</div>
+        <div class="plan-price">1,000,000P</div>
+        <div class="plan-months">약 10개월 운영</div>
+        <button class="btn-buy">충전하기</button>
+      </div>
+    </div>
+
+    <div class="info-box">
+      - 스터디방 생성 시 기본 1,000,000P가 지급됩니다.<br>
+      - 매월 100,000P가 자동으로 차감됩니다.<br>
+      - 포인트가 0이 되면 스터디방이 비활성화됩니다.<br>
+      - 충전된 포인트는 환불되지 않습니다.
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2>스터디방 포인트 충전</h2>
+      <div class="m-pts" id="m-pts"></div>
+      <div class="m-price" id="m-price"></div>
+      <div class="modal-actions">
+        <button class="btn-confirm" id="btn-confirm" onclick="confirmCharge()">결제하기</button>
+        <button class="btn-cancel" onclick="closeModal()">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selPts = 0, selPrice = 0;
+    function openModal(pts, price) {
+      selPts = pts; selPrice = price;
+      document.getElementById('m-pts').textContent = pts.toLocaleString() + 'P';
+      document.getElementById('m-price').textContent = price.toLocaleString() + 'P';
+      document.getElementById('modal').classList.add('show');
+    }
+    function closeModal() { document.getElementById('modal').classList.remove('show'); }
+    async function confirmCharge() {
+      const btn = document.getElementById('btn-confirm');
+      btn.disabled = true; btn.textContent = '처리중...';
+      try {
+        const res = await fetch('/study/{{roomId}}/charge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ points: selPts, price: selPrice }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          window.location.href = data.activated ? '/study/{{roomId}}' : '/study/{{roomId}}/charge';
+        } else {
+          alert(data.error || '충전에 실패했습니다.');
+          btn.disabled = false; btn.textContent = '결제하기';
+        }
+      } catch(e) {
+        alert('오류가 발생했습니다.');
+        btn.disabled = false; btn.textContent = '결제하기';
+      }
+    }
+    document.getElementById('modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+    // 잠금 상태이면 배너 표시
+    if (new URLSearchParams(window.location.search).get('locked') === '1') {
+      document.getElementById('locked-banner').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

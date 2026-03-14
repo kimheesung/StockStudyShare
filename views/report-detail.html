@@ -16,7 +16,7 @@
       position: sticky; top: 0; z-index: 100;
       display: flex; justify-content: space-between; align-items: center;
       padding: 16px 40px;
-      background: rgba(15, 12, 41, 0.9);
+      background: rgba(15, 12, 41, 0.95);
       backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255,255,255,0.05);
     }
@@ -26,7 +26,9 @@
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       text-decoration: none;
     }
-    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #fff; transform: translateY(-1px); }
     .nav-link {
       color: rgba(255,255,255,0.6); text-decoration: none;
       font-size: 0.9rem; font-weight: 500; transition: color 0.3s;
@@ -134,17 +136,7 @@
   </style>
 </head>
 <body>
-  <nav>
-    <a href="/dashboard" class="logo">StockStudyShare</a>
-    <div class="nav-links">
-      <a href="/dashboard" class="nav-link">대시보드</a>
-      <a href="/reports" class="nav-link active">리포트</a>
-    </div>
-    <div class="user-area">
-      <img src="{{photo}}" alt="profile">
-      <span>{{name}}</span>
-    </div>
-  </nav>
+  <nav>{{nav}}</nav>
 
   <div class="container">
     <a href="/reports" class="back-link">← 리포트 목록으로</a>

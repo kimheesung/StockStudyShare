@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지원서 심사 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+    h1 { font-size: 1.4rem; font-weight: 900; margin-bottom: 24px; }
+    .applicant-info { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); }
+    .applicant-info img { width: 48px; height: 48px; border-radius: 50%; }
+    .applicant-info .name { font-weight: 700; }
+    .applicant-info .email { color: rgba(255,255,255,0.4); font-size: 0.85rem; }
+    .applicant-info .date { color: rgba(255,255,255,0.3); font-size: 0.8rem; }
+    .card { padding: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; margin-bottom: 16px; }
+    .card h3 { font-size: 0.9rem; color: rgba(255,255,255,0.4); margin-bottom: 10px; }
+    .card p { color: rgba(255,255,255,0.7); line-height: 1.7; white-space: pre-wrap; }
+    .review-form {
+      padding: 28px; background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(6,182,212,0.05));
+      border: 1px solid rgba(79,70,229,0.2); border-radius: 20px; margin-top: 24px;
+    }
+    .review-form h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+    .review-form textarea {
+      width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; font-size: 0.9rem; font-family: inherit; min-height: 100px; margin-bottom: 16px;
+    }
+    .review-actions { display: flex; gap: 12px; }
+    .btn-approve {
+      padding: 12px 28px; background: #22c55e; border: none; border-radius: 50px;
+      color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-approve:hover { background: #16a34a); }
+    .btn-reject {
+      padding: 12px 28px; background: #ef4444; border: none; border-radius: 50px;
+      color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-reject:hover { background: #dc2626); }
+    .status-info { padding: 16px 24px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-top: 24px; text-align: center; color: rgba(255,255,255,0.5); }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/admin/authors" class="back-link">&larr; 지원서 목록</a>
+    <h1>스터디장 지원서 심사</h1>
+
+    <div class="applicant-info">
+      <img src="{{photo}}" alt="">
+      <div>
+        <div class="name">{{name}}</div>
+        <div class="email">{{email}}</div>
+        <div class="date">지원일: {{appliedAt}}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>스터디방 이름</h3>
+      <p>{{studyName}}</p>
+    </div>
+
+    <div class="card">
+      <h3>운영 계획</h3>
+      <p>{{studyPlan}}</p>
+    </div>
+
+    <div class="card">
+      <h3>동의 내용</h3>
+      <p>{{agreement}}</p>
+    </div>
+
+    <div id="review-section"></div>
+  </div>
+
+  <script>
+    const isPending = '{{isPending}}';
+    const appId = '{{appId}}';
+    const section = document.getElementById('review-section');
+    if (isPending === 'true') {
+      section.innerHTML = `
+        <form class="review-form" method="POST" action="/admin/authors/${appId}/review">
+          <h3>심사 결정</h3>
+          <textarea name="admin_memo" placeholder="관리자 메모 (지원자에게 전달됩니다)"></textarea>
+          <div class="review-actions">
+            <button type="submit" name="action" value="approve" class="btn-approve">승인</button>
+            <button type="submit" name="action" value="reject" class="btn-reject">반려</button>
+          </div>
+        </form>`;
+    } else {
+      const status = '{{status}}';
+      const memo = '{{adminMemo}}';
+      section.innerHTML = `<div class="status-info">이 지원서는 이미 처리되었습니다. (상태: ${status})${memo ? '<br>메모: ' + memo : ''}</div>`;
+    }
+  </script>
+</body>
+</html>

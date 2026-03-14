@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}} - 리포트 열람</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    @media print { body { display: none; } }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    /* Watermark */
+    .watermark {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 50; overflow: hidden;
+    }
+    .watermark-text {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg);
+      font-size: 3rem; font-weight: 900; color: rgba(255,255,255,0.08);
+      white-space: nowrap; user-select: none;
+      width: 300%; text-align: center; line-height: 3;
+    }
+    .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; position: relative; z-index: 10; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+    .report-title { font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
+    .stock-info { font-size: 1.1rem; color: #67e8f9; margin-bottom: 8px; }
+    .report-tags { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
+    .tag-market { background: rgba(79,70,229,0.2); color: #a5b4fc; border: 1px solid rgba(79,70,229,0.3); }
+    .tag-sector { background: rgba(6,182,212,0.2); color: #67e8f9; border: 1px solid rgba(6,182,212,0.3); }
+    .meta-info { color: rgba(255,255,255,0.4); font-size: 0.9rem; margin-bottom: 32px; }
+    .section {
+      padding: 28px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; margin-bottom: 20px;
+    }
+    .section h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; color: #a5b4fc; }
+    .section p, .section .content { color: rgba(255,255,255,0.7); line-height: 1.8; font-size: 0.95rem; white-space: pre-wrap; }
+    .disclosure-section { margin-top: 32px; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+    .disclosure-section h4 { font-size: 0.9rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+    .disclosure-section p { font-size: 0.85rem; color: rgba(255,255,255,0.3); line-height: 1.6; }
+
+    /* 별점 평가 */
+    .rating-section {
+      margin-top: 32px; padding: 28px; text-align: center;
+      background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(79,70,229,0.06));
+      border: 1px solid rgba(251,191,36,0.15); border-radius: 20px;
+    }
+    .rating-section h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .rating-summary { font-size: 0.85rem; color: rgba(255,255,255,0.4); margin-bottom: 16px; }
+    .rating-summary .avg { font-size: 1.4rem; font-weight: 900; color: #fbbf24; }
+    .star-select { display: inline-flex; gap: 6px; margin-bottom: 14px; }
+    .star-btn {
+      font-size: 2rem; background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.15); transition: color 0.15s; line-height: 1;
+    }
+    .star-btn:hover, .star-btn.active { color: #fbbf24; }
+    .star-btn.locked { cursor: default; }
+    .rating-submit {
+      padding: 10px 28px; background: linear-gradient(135deg, #f59e0b, #d97706);
+      border: none; border-radius: 50px; color: #fff; font-size: 0.9rem;
+      font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.3s;
+    }
+    .rating-submit:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(245,158,11,0.4); }
+    .rating-submit:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+    .rating-reward { font-size: 0.82rem; color: #fbbf24; margin-bottom: 12px; padding: 8px 14px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; }
+
+    /* 수익률 */
+    .perf-card { padding: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; margin-bottom: 20px; }
+    .perf-prices { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+    .perf-price-item { flex: 1; min-width: 120px; }
+    .perf-price-label { font-size: 0.78rem; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+    .perf-price-value { font-size: 1.2rem; font-weight: 900; }
+    .perf-total { font-size: 1rem; font-weight: 900; margin-bottom: 16px; padding: 10px 14px; border-radius: 12px; }
+    .perf-total.up { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; }
+    .perf-total.down { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); color: #3b82f6; }
+    .perf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+    .perf-period { padding: 12px 10px; text-align: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+    .perf-period.up { border-color: rgba(239,68,68,0.2); }
+    .perf-period.down { border-color: rgba(59,130,246,0.2); }
+    .perf-period-label { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+    .perf-period-value { font-size: 0.95rem; font-weight: 900; }
+    .perf-period-value.up { color: #ef4444; }
+    .perf-period-value.down { color: #3b82f6; }
+    .perf-period-value.na { color: rgba(255,255,255,0.2); font-size: 0.8rem; }
+    .rating-done { font-size: 0.9rem; color: #4ade80; margin-top: 8px; }
+    .rating-msg { font-size: 0.85rem; color: rgba(255,255,255,0.3); margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="watermark">
+    <div class="watermark-text">
+      {{watermarkText}} {{watermarkText}} {{watermarkText}}<br>
+      {{watermarkText}} {{watermarkText}} {{watermarkText}}<br>
+      {{watermarkText}} {{watermarkText}} {{watermarkText}}<br>
+      {{watermarkText}} {{watermarkText}} {{watermarkText}}<br>
+      {{watermarkText}} {{watermarkText}} {{watermarkText}}
+    </div>
+  </div>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/reports/{{reportId}}" class="back-link">&larr; 리포트 상세</a>
+    <h1 class="report-title">{{title}}</h1>
+    <div class="stock-info">{{stockName}} {{stockCode}}</div>
+    <div class="report-tags">
+      <span class="tag tag-market">{{marketType}}</span>
+      <span class="tag tag-sector">{{sector}}</span>
+    </div>
+    <div class="meta-info">{{authorName}} &middot; {{publishedAt}}</div>
+
+    <!-- 수익률 (최상단) -->
+    <div class="perf-card" id="perf-section" style="margin-top:20px">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;color: #a5b4fc;display:flex;align-items:center;gap:8px">리포트 수익률 <span style="font-size:0.7rem;padding:2px 8px;border-radius:8px;background:rgba(79,70,229,0.15);color: #a5b4fc;font-weight:500">발행 다음날 시초가 기준</span></h3>
+      <div id="perf-loading" style="text-align:center;color: rgba(255,255,255,0.3);padding:16px;font-size:0.85rem">수익률 데이터를 불러오는 중...</div>
+      <div id="perf-content" style="display:none"></div>
+    </div>
+
+    <div class="section">
+      <h3>요약 (Summary)</h3>
+      <p>{{summary}}</p>
+    </div>
+
+    <div class="section">
+      <h3>투자 논거 (Thesis)</h3>
+      <p>{{thesis}}</p>
+    </div>
+
+    <div class="section">
+      <h3>투자 포인트 (Investment Points)</h3>
+      <p>{{investmentPoints}}</p>
+    </div>
+
+    <div class="section">
+      <h3>밸류에이션 근거 (Valuation Basis)</h3>
+      <p>{{valuationBasis}}</p>
+    </div>
+
+    <div class="section">
+      <h3>리스크 요인 (Risks)</h3>
+      <p>{{risks}}</p>
+    </div>
+
+    <div class="section">
+      <h3>Bear Case</h3>
+      <p>{{bearCase}}</p>
+    </div>
+
+    <div class="section">
+      <h3>참고 자료 (References)</h3>
+      <p>{{referencesText}}</p>
+    </div>
+
+    <div class="disclosure-section">
+      <h4>공시 사항</h4>
+      <p>보유 여부: {{holdingDisclosure}}</p>
+      <p>이해충돌: {{conflictDisclosure}}</p>
+    </div>
+
+    <!-- 별점 평가 -->
+    <div class="rating-section">
+      <h3>리포트 평가</h3>
+      <div class="rating-summary">
+        <span class="avg" id="avg-rating">{{avgRating}}</span> / 5.0
+        <span>({{ratingCount}}명 평가)</span>
+      </div>
+      <div id="rating-area"></div>
+    </div>
+  </div>
+
+  <script>
+    // 수익률 로드
+    (function() {
+      var reportId = '{{reportId}}';
+      fetch('/api/report-performance/' + reportId)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var loading = document.getElementById('perf-loading');
+          var content = document.getElementById('perf-content');
+          if (data.error) {
+            loading.textContent = data.message || '수익률 데이터 없음';
+            return;
+          }
+          var isUp = data.totalReturn >= 0;
+          var sign = isUp ? '+' : '';
+          var cls = isUp ? 'up' : 'down';
+          var arrow = isUp ? '&#9650;' : '&#9660;';
+          var html = '<div class="perf-prices">';
+          var entryDate = new Date(data.publishedAt); entryDate.setDate(entryDate.getDate() + 1);
+          var entryDateStr = entryDate.toLocaleDateString('ko-KR');
+          html += '<div class="perf-price-item"><div class="perf-price-label">발행 시초가 <span style="color: rgba(255,255,255,0.3)">(' + entryDateStr + ')</span></div><div class="perf-price-value">' + Math.round(data.entryPrice).toLocaleString() + '원</div></div>';
+          html += '<div class="perf-price-item"><div class="perf-price-label">현재가</div><div class="perf-price-value">' + Math.round(data.currentPrice).toLocaleString() + '원</div></div>';
+          html += '<div class="perf-price-item"><div class="perf-price-label">발행 후 ' + data.daysSincePublish + '일</div><div class="perf-price-value ' + cls + '">' + sign + data.totalReturn.toFixed(2) + '%</div></div>';
+          html += '</div>';
+          html += '<div class="perf-total ' + cls + '"><span>' + arrow + '</span> 총 수익률 ' + sign + data.totalReturn.toFixed(2) + '%</div>';
+          html += '<div class="perf-grid">';
+          data.periods.forEach(function(p) {
+            if (p.available && p.returnRate !== null) {
+              var pUp = p.returnRate >= 0; var pSign = pUp ? '+' : ''; var pCls = pUp ? 'up' : 'down';
+              html += '<div class="perf-period ' + pCls + '"><div class="perf-period-label">' + p.label + '</div><div class="perf-period-value ' + pCls + '">' + pSign + p.returnRate.toFixed(2) + '%</div></div>';
+            } else {
+              html += '<div class="perf-period"><div class="perf-period-label">' + p.label + '</div><div class="perf-period-value na">' + (p.available ? '-' : p.days - data.daysSincePublish + '일 후') + '</div></div>';
+            }
+          });
+          html += '</div>';
+          loading.style.display = 'none';
+          content.innerHTML = html;
+          content.style.display = 'block';
+        })
+        .catch(function() {
+          document.getElementById('perf-loading').textContent = '수익률 데이터를 불러올 수 없습니다.';
+        });
+    })();
+
+    // 별점 평가
+    (function() {
+      var canRate = '{{canRate}}' === 'true';
+      var myRating = parseInt('{{myRating}}') || 0;
+      var reportId = '{{reportId}}';
+      var area = document.getElementById('rating-area');
+
+      if (myRating > 0) {
+        var stars = '';
+        for (var i = 1; i <= 5; i++) {
+          stars += '<span class="star-btn locked ' + (i <= myRating ? 'active' : '') + '">&#9733;</span>';
+        }
+        area.innerHTML = '<div class="star-select">' + stars + '</div>'
+          + '<div class="rating-done">평가 완료! (' + myRating + '점)</div>';
+        return;
+      }
+
+      if (!canRate) {
+        area.innerHTML = '<div class="rating-msg">리포트를 구매한 분만 평가할 수 있습니다.</div>';
+        return;
+      }
+
+      var selected = 0;
+      var stars = '';
+      for (var i = 1; i <= 5; i++) {
+        stars += '<span class="star-btn" data-val="' + i + '">&#9733;</span>';
+      }
+      var salePrice = parseInt('{{reportSalePrice}}') || 0;
+      var rewardMsg = salePrice >= 10000
+        ? '<div class="rating-reward">&#9733; 별점 평가 시 1,000P가 지급됩니다</div>'
+        : '';
+      area.innerHTML = rewardMsg
+        + '<div class="star-select" id="star-select">' + stars + '</div>'
+        + '<div><button class="rating-submit" id="rate-btn" disabled onclick="submitRating()">평가하기</button></div>';
+
+      document.querySelectorAll('#star-select .star-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          selected = parseInt(btn.dataset.val);
+          document.querySelectorAll('#star-select .star-btn').forEach(function(b, idx) {
+            b.classList.toggle('active', idx < selected);
+          });
+          document.getElementById('rate-btn').disabled = false;
+        });
+        btn.addEventListener('mouseenter', function() {
+          var v = parseInt(btn.dataset.val);
+          document.querySelectorAll('#star-select .star-btn').forEach(function(b, idx) {
+            b.style.color = idx < v ? '#fbbf24' : '';
+          });
+        });
+        btn.addEventListener('mouseleave', function() {
+          document.querySelectorAll('#star-select .star-btn').forEach(function(b, idx) {
+            b.style.color = '';
+          });
+        });
+      });
+
+      window.submitRating = function() {
+        if (!selected) return;
+        var btn = document.getElementById('rate-btn');
+        btn.disabled = true;
+        btn.textContent = '처리중...';
+
+        fetch('/reports/' + reportId + '/rate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rating: selected })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) {
+            document.getElementById('avg-rating').textContent = data.avgRating.toFixed(1);
+            area.innerHTML = '<div class="star-select">'
+              + [1,2,3,4,5].map(function(i) {
+                  return '<span class="star-btn locked ' + (i <= selected ? 'active' : '') + '">&#9733;</span>';
+                }).join('')
+              + '</div>'
+              + '<div class="rating-done">평가 완료!' + (data.reward > 0 ? ' +1,000P 지급되었습니다' : '') + '</div>';
+          } else {
+            btn.textContent = data.error || '오류 발생';
+          }
+        })
+        .catch(function() { btn.textContent = '오류 발생'; });
+      };
+    })();
+  </script>
+</body>
+</html>

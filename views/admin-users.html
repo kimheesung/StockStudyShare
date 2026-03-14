@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회원 관리 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    h1 { font-size: 1.4rem; font-weight: 900; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; }
+    .back-link:hover { color: #fff; }
+    .count { color: rgba(255,255,255,0.3); font-size: 0.85rem; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 16px; font-size: 0.8rem; color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    td { padding: 14px 16px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .table-avatar { width: 28px; height: 28px; border-radius: 50%; vertical-align: middle; margin-right: 8px; }
+    .role-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .role-user { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
+    .role-study_member { background: rgba(6,182,212,0.2); color: #67e8f9; }
+    .role-study_leader { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .role-admin { background: rgba(168,85,247,0.2); color: #c084fc; }
+    .role-select { padding: 6px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 0.8rem; font-family: inherit; }
+    .role-select option { background: rgba(255,255,255,0.03); color: #fff; }
+    .role-form { display: inline-flex; align-items: center; gap: 8px; }
+    .btn-sm {
+      padding: 6px 14px; background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 20px;
+      color: #fff; border: none; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-sm:hover { transform: translateY(-1px); }
+    .btn-sm:disabled { opacity: 0.5; cursor: default; transform: none; }
+    .btn-saved {
+      padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700;
+      background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3);
+      display: none; align-items: center; gap: 4px;
+    }
+    .check-icon { font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <div class="header">
+      <h1>회원 관리</h1>
+      <a href="/admin" class="back-link">&larr; 관리자 대시보드</a>
+    </div>
+    <p class="count">총 {{totalCount}}명</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>이름</th>
+          <th>닉네임</th>
+          <th>이메일</th>
+          <th>포인트</th>
+          <th>추천인</th>
+          <th>역할</th>
+          <th>가입일</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{rows}}
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function changeRole(userId, form) {
+      var select = form.querySelector('select');
+      var btn = form.querySelector('.btn-sm');
+      var saved = form.querySelector('.btn-saved');
+      var role = select.value;
+
+      btn.disabled = true;
+      btn.textContent = '저장중...';
+
+      try {
+        var resp = await fetch('/admin/users/' + userId + '/role', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: role })
+        });
+
+        if (resp.ok) {
+          btn.style.display = 'none';
+          saved.style.display = 'inline-flex';
+          setTimeout(function() {
+            saved.style.display = 'none';
+            btn.style.display = '';
+            btn.disabled = false;
+            btn.textContent = '변경';
+          }, 2000);
+        } else {
+          var text = await resp.text();
+          alert(text || '역할 변경에 실패했습니다.');
+          btn.disabled = false;
+          btn.textContent = '변경';
+        }
+      } catch(e) {
+        alert('네트워크 오류가 발생했습니다.');
+        btn.disabled = false;
+        btn.textContent = '변경';
+      }
+    }
+  </script>
+</body>
+</html>

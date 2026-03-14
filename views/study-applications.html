@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지원서 관리 - {{roomName}}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+    h1 { font-size: 1.4rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { color: rgba(255,255,255,0.3); font-size: 0.85rem; margin-bottom: 28px; }
+
+    .app-card {
+      padding: 24px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+      margin-bottom: 16px;
+    }
+    .app-user { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+    .app-user img { width: 40px; height: 40px; border-radius: 50%; }
+    .app-name { font-weight: 700; font-size: 0.95rem; }
+    .app-email { font-size: 0.8rem; color: rgba(255,255,255,0.3); }
+    .app-intro {
+      padding: 14px 16px; background: rgba(79,70,229,0.06); border: 1px solid rgba(79,70,229,0.12);
+      border-radius: 12px; margin-bottom: 12px;
+    }
+    .app-intro strong { font-size: 0.8rem; color: rgba(255,255,255,0.5); display: block; margin-bottom: 6px; }
+    .app-intro p { font-size: 0.88rem; color: rgba(255,255,255,0.7); line-height: 1.6; white-space: pre-wrap; }
+    .app-msg {
+      padding: 10px 16px; background: rgba(255,255,255,0.03);
+      border-radius: 12px; font-size: 0.85rem; color: rgba(255,255,255,0.4);
+      margin-bottom: 12px; line-height: 1.5;
+    }
+    .app-msg strong { font-size: 0.78rem; color: rgba(255,255,255,0.4); margin-right: 6px; }
+    .app-date { font-size: 0.78rem; color: rgba(255,255,255,0.3); margin-bottom: 12px; }
+    .app-actions { display: flex; gap: 8px; }
+    .btn-sm {
+      padding: 8px 20px; border: none; border-radius: 10px; font-size: 0.82rem;
+      font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.3s;
+    }
+    .btn-approve { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+    .btn-approve:hover { background: rgba(74,222,128,0.25); }
+    .btn-reject { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+    .btn-reject:hover { background: rgba(239,68,68,0.2); }
+    .empty-msg {
+      padding: 48px; text-align: center; color: rgba(255,255,255,0.3); font-size: 0.9rem;
+      background: rgba(255,255,255,0.03); border-radius: 16px;
+    }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/study/{{roomId}}" class="back-link">&larr; {{roomName}}으로 돌아가기</a>
+    <h1><span class="highlight">지원서 관리</span></h1>
+    <p class="subtitle">대기중인 지원서 {{totalCount}}건</p>
+
+    {{appCards}}
+  </div>
+</body>
+</html>

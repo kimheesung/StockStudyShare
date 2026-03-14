@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>리포트 검수 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+    h1 { font-size: 1.4rem; font-weight: 900; margin-bottom: 8px; }
+    .meta { color: rgba(255,255,255,0.4); font-size: 0.9rem; margin-bottom: 24px; }
+    .card { padding: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; margin-bottom: 16px; }
+    .card h3 { font-size: 0.9rem; color: rgba(255,255,255,0.4); margin-bottom: 10px; }
+    .card p { color: rgba(255,255,255,0.7); line-height: 1.7; white-space: pre-wrap; font-size: 0.95rem; }
+    .review-form {
+      padding: 28px; background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(6,182,212,0.05));
+      border: 1px solid rgba(79,70,229,0.2); border-radius: 20px; margin-top: 24px;
+    }
+    .review-form h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+    .review-form textarea {
+      width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; font-size: 0.9rem; font-family: inherit; min-height: 80px; margin-bottom: 16px;
+    }
+    .review-actions { display: flex; gap: 12px; }
+    .btn-approve { padding: 12px 28px; background: #22c55e; border: none; border-radius: 50px; color: #fff; font-weight: 700; cursor: pointer; }
+    .btn-reject { padding: 12px 28px; background: #ef4444; border: none; border-radius: 50px; color: #fff; font-weight: 700; cursor: pointer; }
+    .btn-suspend { padding: 12px 28px; background: #f59e0b; border: none; border-radius: 50px; color: #fff; font-weight: 700; cursor: pointer; }
+    .dates-form {
+      padding: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; margin-top: 16px;
+    }
+    .dates-form h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; color: rgba(255,255,255,0.7); }
+    .dates-row { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+    .dates-row label { font-size: 0.8rem; color: rgba(255,255,255,0.4); display: block; margin-bottom: 4px; }
+    .dates-row input {
+      padding: 8px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; color: #fff; font-size: 0.85rem; font-family: inherit; width: 220px;
+    }
+    .dates-row input:focus { outline: none; border-color: rgba(79,70,229,0.4); }
+    .btn-dates {
+      padding: 8px 20px; background: rgba(79,70,229,0.2); border: 1px solid rgba(79,70,229,0.3);
+      border-radius: 10px; color: #a5b4fc; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .btn-dates:hover { background: rgba(79,70,229,0.3); }
+    .dates-note { font-size: 0.72rem; color: rgba(255,255,255,0.3); margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/admin/reports" class="back-link">&larr; 리포트 목록</a>
+    <h1>{{title}}</h1>
+    <div class="meta">{{authorName}} &middot; {{stockName}} ({{stockCode}}) &middot; {{marketType}} &middot; {{sector}} &middot; {{salePrice}}</div>
+
+    <div class="card"><h3>요약</h3><p>{{summary}}</p></div>
+    <div class="card"><h3>투자 논거</h3><p>{{thesis}}</p></div>
+    <div class="card"><h3>투자 포인트</h3><p>{{investmentPoints}}</p></div>
+    <div class="card"><h3>밸류에이션 근거</h3><p>{{valuationBasis}}</p></div>
+    <div class="card"><h3>리스크</h3><p>{{risks}}</p></div>
+    <div class="card"><h3>Bear Case</h3><p>{{bearCase}}</p></div>
+    <div class="card"><h3>참고 자료</h3><p>{{referencesText}}</p></div>
+    <div class="card"><h3>공시 사항</h3><p>보유: {{holdingDisclosure}}<br>이해충돌: {{conflictDisclosure}}</p></div>
+
+    <!-- 날짜 수정 -->
+    <form class="dates-form" method="POST" action="/admin/reports/{{reportId}}/dates">
+      <h3>날짜 수정 (관리자)</h3>
+      <div class="dates-row">
+        <div>
+          <label>작성 시점</label>
+          <input type="datetime-local" name="created_at" id="input-created" step="1">
+        </div>
+        <div>
+          <label>공개 시점</label>
+          <input type="datetime-local" name="published_at" id="input-published" step="1">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button type="submit" class="btn-dates">날짜 저장</button>
+        </div>
+      </div>
+      <div class="dates-note">공개 시점을 변경하면 entry_price(시초가)가 초기화되어 다음 조회 시 다시 가져옵니다.</div>
+    </form>
+
+    <div id="review-section"></div>
+  </div>
+
+  <script>
+    // 날짜 초기값 설정
+    (function() {
+      var created = '{{createdAt}}';
+      var published = '{{publishedAt}}';
+      function toLocal(s) {
+        if (!s) return '';
+        var d = new Date(s);
+        if (isNaN(d)) return '';
+        var pad = function(n) { return n < 10 ? '0' + n : n; };
+        return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+      }
+      document.getElementById('input-created').value = toLocal(created);
+      document.getElementById('input-published').value = toLocal(published);
+    })();
+
+    const canReview = '{{canReview}}';
+    const reportId = '{{reportId}}';
+    const status = '{{status}}';
+    const section = document.getElementById('review-section');
+    if (canReview === 'true') {
+      let buttons = '';
+      if (status === 'submitted' || status === 'pending_admin') {
+        buttons = `
+          <button type="submit" name="action" value="approve" class="btn-approve">승인 (판매 시작)</button>
+          <button type="submit" name="action" value="reject" class="btn-reject">반려</button>`;
+      } else if (status === 'on_sale') {
+        buttons = `<button type="submit" name="action" value="suspend" class="btn-suspend">판매 중지</button>`;
+      } else if (status === 'suspended') {
+        buttons = `
+          <button type="submit" name="action" value="approve" class="btn-approve">판매 재개</button>`;
+      }
+      section.innerHTML = `
+        <form class="review-form" method="POST" action="/admin/reports/${reportId}/review">
+          <h3>검수 결정</h3>
+          <textarea name="reason" placeholder="사유 (선택)"></textarea>
+          <div class="review-actions">${buttons}</div>
+        </form>`;
+    }
+  </script>
+</body>
+</html>

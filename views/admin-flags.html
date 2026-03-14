@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>신고 관리 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    h1 { font-size: 1.4rem; font-weight: 900; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; }
+    .back-link:hover { color: #fff; }
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+    .filter-tab {
+      padding: 8px 20px; border-radius: 50px; text-decoration: none; font-size: 0.85rem;
+      background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.08);
+    }
+    .filter-tab.active { background: rgba(79,70,229,0.2); color: #a5b4fc; border-color: rgba(79,70,229,0.3); }
+    .count { color: rgba(255,255,255,0.3); font-size: 0.85rem; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 16px; font-size: 0.8rem; color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    td { padding: 14px 16px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .btn-sm { padding: 5px 12px; border: none; border-radius: 20px; color: #fff; font-size: 0.78rem; font-weight: 700; cursor: pointer; margin-right: 4px; }
+    .btn-approve { background: #22c55e; }
+    .btn-reject { background: rgba(255,255,255,0.15); }
+    .empty-text { color: rgba(255,255,255,0.3); text-align: center; padding: 40px 0; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <div class="header">
+      <h1>신고 관리</h1>
+      <a href="/admin" class="back-link">&larr; 관리자 대시보드</a>
+    </div>
+
+    <div class="filter-tabs">
+      <a href="/admin/flags?status=pending" class="filter-tab">대기중</a>
+      <a href="/admin/flags?status=resolved" class="filter-tab">처리완료</a>
+      <a href="/admin/flags?status=dismissed" class="filter-tab">무시됨</a>
+    </div>
+    <p class="count">총 {{totalCount}}건</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>리포트</th>
+          <th>신고자</th>
+          <th>사유</th>
+          <th>내용</th>
+          <th>날짜</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{rows}}
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const status = '{{currentStatus}}';
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      if (tab.href.includes('status=' + status)) tab.classList.add('active');
+    });
+  </script>
+</body>
+</html>

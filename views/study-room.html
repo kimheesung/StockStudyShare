@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{roomName}} - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+
+    .room-header { margin-bottom: 32px; }
+    .room-header h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 6px; }
+    .room-header h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .room-desc { color: rgba(255,255,255,0.4); font-size: 0.88rem; margin-bottom: 16px; }
+    .room-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .btn-apps {
+      padding: 8px 18px; background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 12px; color: #fbbf24; text-decoration: none; font-size: 0.82rem; font-weight: 700;
+    }
+    .btn-apps:hover { background: rgba(251,191,36,0.25); }
+    .badge-count {
+      display: inline-block; min-width: 18px; height: 18px; line-height: 18px;
+      text-align: center; border-radius: 50%; background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 700; margin-left: 4px;
+    }
+    .btn-leave {
+      padding: 8px 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 12px; color: #ef4444; font-size: 0.82rem; cursor: pointer; font-family: inherit;
+    }
+    .btn-leave:hover { background: rgba(239,68,68,0.2); }
+
+    .two-col { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
+    @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+    .sidebar-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .sidebar-title .count { font-size: 0.8rem; color: rgba(255,255,255,0.3); font-weight: 500; }
+    .member-list {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 16px;
+    }
+    .member-card {
+      display: flex; align-items: center; gap: 12px; padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .member-card:last-child { border-bottom: none; }
+    .member-card img { width: 32px; height: 32px; border-radius: 50%; }
+    .member-info { flex: 1; display: flex; align-items: center; gap: 8px; }
+    .member-name { font-size: 0.9rem; font-weight: 500; }
+    .owner-badge { font-size: 0.62rem; padding: 2px 7px; border-radius: 8px; background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .member-badge { font-size: 0.62rem; padding: 2px 7px; border-radius: 8px; background: rgba(79,70,229,0.15); color: #a5b4fc; }
+    .btn-kick {
+      padding: 4px 10px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.15);
+      border-radius: 8px; color: rgba(239,68,68,0.6); font-size: 0.7rem; cursor: pointer; font-family: inherit;
+    }
+    .btn-kick:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
+
+    .main-content h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+    .report-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
+    }
+    .report-card {
+      padding: 20px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+      text-decoration: none; color: #fff; transition: all 0.3s; display: block;
+    }
+    .report-card:hover {
+      background: rgba(255,255,255,0.06); transform: translateY(-2px);
+      border-color: rgba(79,70,229,0.3); box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .report-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .report-sector { font-size: 0.7rem; padding: 3px 10px; border-radius: 10px; background: rgba(79,70,229,0.15); color: #a5b4fc; }
+    .report-price { font-size: 0.85rem; font-weight: 700; }
+    .free-tag { color: #4ade80; }
+    .report-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .report-stock { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 10px; }
+    .report-meta { display: flex; justify-content: space-between; font-size: 0.78rem; color: rgba(255,255,255,0.3); }
+    .empty-msg { padding: 40px; text-align: center; color: rgba(255,255,255,0.3); font-size: 0.9rem; background: rgba(255,255,255,0.03); border-radius: 16px; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/study" class="back-link">&larr; 스터디방 목록</a>
+
+    <div class="room-header">
+      <h1><span class="highlight">{{roomName}}</span></h1>
+      <p class="room-desc">{{roomDesc}}</p>
+      <div class="room-points-bar" style="display:flex;align-items:center;gap:14px;margin-bottom:12px;padding:14px 20px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);border-radius:14px;flex-wrap:wrap">
+        <span style="font-size:0.82rem;color: rgba(255,255,255,0.5)">스터디방 포인트</span>
+        <span style="font-size:1.3rem;font-weight:900;color:#fbbf24">{{roomPoints}}P</span>
+        <span style="font-size:0.72rem;color: rgba(255,255,255,0.3)">매월 100,000P 차감 · 다음 차감 {{nextChargeDate}}</span>
+        <a href="/study/{{roomId}}/points" id="btn-points-history"
+           style="margin-left:auto;padding:7px 18px;background: rgba(255,255,255,0.06);border: 1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;text-decoration:none;font-size:0.82rem;font-weight:700">포인트 내역</a>
+        <a href="/study/{{roomId}}/charge" class="btn-charge" id="btn-charge"
+           style="padding:7px 18px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:10px;color:#fff;text-decoration:none;font-size:0.82rem;font-weight:700">충전하기</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:10px 20px;background: rgba(255,255,255,0.03);border: 1px solid rgba(255,255,255,0.08);border-radius:12px;flex-wrap:wrap">
+        <span style="font-size:0.78rem;color: rgba(255,255,255,0.3)">정원 {{memberCount}}/{{maxMembers}}명</span>
+        <span style="font-size:0.78rem;color: rgba(255,255,255,0.3)">리포트 제출 주기: {{reportCycleMonths}}개월</span>
+        <span style="font-size:0.7rem;color:rgba(255,255,255,0.2)">미제출 시 자동 탈퇴</span>
+        <form method="POST" action="/study/{{roomId}}/settings" id="cycle-form" style="margin-left:auto;display:none;align-items:center;gap:6px">
+          <select name="report_cycle_months" style="padding:4px 8px;background: rgba(255,255,255,0.03);border: 1px solid rgba(255,255,255,0.08);border-radius:8px;color: #fff; font-size:0.78rem;font-family:inherit">
+            <option value="1">1개월</option>
+            <option value="2">2개월</option>
+            <option value="3">3개월</option>
+          </select>
+          <button type="submit" style="padding:4px 12px;background:rgba(79,70,229,0.2);border:1px solid rgba(79,70,229,0.3);border-radius:8px;color: #a5b4fc;font-size:0.75rem;cursor:pointer;font-family:inherit">저장</button>
+        </form>
+      </div>
+      <div class="room-actions">
+        <a href="/study/{{roomId}}/applications" class="btn-apps" id="btn-apps">
+          지원서 관리 <span class="badge-count" id="pending-badge">{{pendingCount}}</span>
+        </a>
+        <form method="POST" action="/study/{{roomId}}/leave" style="display:inline" id="leave-form">
+          <button type="submit" class="btn-leave" onclick="return confirm('정말 나가시겠습니까?')">나가기</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="sidebar">
+        <div class="sidebar-title">멤버 <span class="count">{{memberCount}}명</span></div>
+        <div class="member-list">
+          {{memberCards}}
+        </div>
+      </div>
+      <div class="main-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h2 style="margin-bottom:0">스터디원 리포트</h2>
+          <a href="/author/reports/new" style="padding:8px 20px;background:linear-gradient(135deg,#4f46e5,#6366f1);border-radius:50px;color:#fff;text-decoration:none;font-size:0.82rem;font-weight:700;box-shadow:0 2px 12px rgba(79,70,229,0.3)">+ 리포트 작성</a>
+        </div>
+        <div class="report-grid">
+          {{reportCards}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 스터디장만 지원서 관리 버튼 표시
+    if ('{{isOwner}}' !== 'true') {
+      document.getElementById('btn-apps').style.display = 'none';
+    } else {
+      // 스터디장은 나가기 숨김
+      document.getElementById('leave-form').style.display = 'none';
+    }
+    // 스터디장이면 주기 설정 폼 표시
+    if ('{{isOwner}}' === 'true') {
+      var cycleForm = document.getElementById('cycle-form');
+      cycleForm.style.display = 'flex';
+      cycleForm.querySelector('select').value = '{{reportCycleMonths}}';
+    }
+    // 대기 지원서 0이면 뱃지 숨김
+    if ('{{pendingCount}}' === '0') {
+      document.getElementById('pending-badge').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

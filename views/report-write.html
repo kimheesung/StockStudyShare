@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>리포트 작성 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+    h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .sub-text { color: rgba(255,255,255,0.5); margin-bottom: 30px; font-size: 0.9rem; }
+    .form-group { margin-bottom: 24px; }
+    .form-group label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; color: #fff; }
+    .form-group label .required { color: #ef4444; }
+    .form-group .hint { font-size: 0.8rem; color: rgba(255,255,255,0.3); margin-bottom: 8px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .stock-input-wrap { position: relative; }
+    .stock-autocomplete {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px; margin-top: 4px; max-height: 260px; overflow-y: auto;
+      display: none; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .stock-autocomplete.show { display: block; }
+    .stock-item {
+      padding: 10px 16px; cursor: pointer; display: flex; justify-content: space-between;
+      align-items: center; transition: background 0.15s; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .stock-item:last-child { border-bottom: none; }
+    .stock-item:hover, .stock-item.active { background: rgba(79,70,229,0.2); }
+    .stock-item-name { font-size: 0.9rem; font-weight: 700; }
+    .stock-item-info { font-size: 0.75rem; color: rgba(255,255,255,0.4); display: flex; gap: 8px; }
+    .stock-item-info span { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; }
+    .auto-filled { border-color: rgba(79,70,229,0.4) !important; background: rgba(79,70,229,0.06) !important; }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; font-size: 0.95rem; font-family: inherit; transition: border-color 0.3s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(79,70,229,0.4); }
+    select option { background: rgba(255,255,255,0.03); color: #fff; }
+    textarea { min-height: 120px; resize: vertical; line-height: 1.7; }
+    textarea.large { min-height: 200px; }
+    .form-actions { display: flex; gap: 16px; margin-top: 32px; }
+    .btn-draft {
+      padding: 14px 32px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-draft:hover { background: rgba(255,255,255,0.06); }
+    .btn-submit {
+      padding: 14px 32px; background: linear-gradient(135deg, #4f46e5, #6366f1); border: none;
+      border-radius: 50px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: all 0.3s; box-shadow: 0 4px 20px rgba(79,70,229,0.3);
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(79,70,229,0.5); }
+    .section-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 32px 0; }
+
+    /* 파일 업로드 영역 */
+    .import-section {
+      margin-bottom: 28px; padding: 24px;
+      background: linear-gradient(135deg, rgba(79,70,229,0.06), rgba(6,182,212,0.04));
+      border: 2px dashed rgba(79,70,229,0.25); border-radius: 16px;
+      transition: all 0.3s;
+    }
+    .import-section:hover { border-color: rgba(79,70,229,0.4); }
+    .import-section h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: #a5b4fc; }
+    .import-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .import-file-wrap { flex: 1; min-width: 200px; }
+    .import-file-wrap label { font-size: 0.8rem; color: rgba(255,255,255,0.4); display: block; margin-bottom: 6px; }
+    .import-file {
+      width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #fff; font-size: 0.85rem; font-family: inherit;
+    }
+    .import-file::file-selector-button {
+      padding: 4px 12px; margin-right: 10px; background: rgba(79,70,229,0.2);
+      border: 1px solid rgba(79,70,229,0.3); border-radius: 6px; color: #a5b4fc;
+      font-size: 0.8rem; cursor: pointer; font-family: inherit;
+    }
+    .import-or { color: rgba(255,255,255,0.3); font-size: 0.8rem; padding-bottom: 12px; }
+    .import-url-wrap { flex: 1.5; min-width: 250px; }
+    .import-url-wrap label { font-size: 0.8rem; color: rgba(255,255,255,0.4); display: block; margin-bottom: 6px; }
+    .import-url {
+      width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #fff; font-size: 0.85rem; font-family: inherit;
+    }
+    .import-url:focus, .import-file:focus { outline: none; border-color: rgba(79,70,229,0.4); }
+    .btn-import {
+      padding: 10px 22px; background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border: none; border-radius: 10px; color: #fff; font-size: 0.85rem;
+      font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap;
+      transition: all 0.3s;
+    }
+    .btn-import:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(79,70,229,0.4); }
+    .btn-import:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+    .import-status { font-size: 0.8rem; margin-top: 10px; color: rgba(255,255,255,0.4); }
+    .import-status.error { color: #ef4444; }
+    .import-status.success { color: #4ade80; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/author/dashboard" class="back-link">&larr; 대시보드</a>
+    <h1><span class="highlight">리포트</span> 작성</h1>
+    <p class="sub-text">구조화된 양식으로 전문 리서치 리포트를 작성하세요.</p>
+
+    <!-- 파일/URL로 불러오기 -->
+    <div class="import-section" id="import-section">
+      <h3>100point 써서 기존 작성된 나의 리포트 파일 또는 URL 내용 불러와서 적기</h3>
+      <div class="import-row">
+        <div class="import-file-wrap">
+          <label>PDF / Word 파일</label>
+          <input type="file" accept=".pdf,.doc,.docx" class="import-file" id="import-file">
+        </div>
+        <div class="import-or">또는</div>
+        <div class="import-url-wrap">
+          <label>공개 URL (PDF, Word, 웹페이지)</label>
+          <input type="text" class="import-url" id="import-url" placeholder="https://...">
+        </div>
+        <button type="button" class="btn-import" id="btn-import" onclick="importContent()">불러오기</button>
+      </div>
+      <div class="import-status" id="import-status"></div>
+    </div>
+
+    <form method="POST" action="/author/reports/{{reportId}}{{mode}}">
+      <div class="form-row">
+        <div class="form-group">
+          <label>종목명 <span class="required">*</span></label>
+          <div class="stock-input-wrap">
+            <input type="text" name="stock_name" id="stock-name-input" value="{{stockName}}" required placeholder="종목명을 입력하면 자동완성됩니다" autocomplete="off">
+            <div class="stock-autocomplete" id="stock-autocomplete"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>종목코드</label>
+          <input type="text" name="stock_code" id="stock-code-input" value="{{stockCode}}" placeholder="자동 입력">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>리포트 제목 <span class="required">*</span></label>
+        <input type="text" name="title" value="{{title}}" required placeholder="예: 삼성전자 - AI 반도체 수혜의 핵심 수익자">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>시장</label>
+          <select name="market_type" id="market-type-select">
+            <option value="">선택</option>
+            <option value="KOSPI">KOSPI</option>
+            <option value="KOSDAQ">KOSDAQ</option>
+            <option value="US">미국</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>섹터</label>
+          <select name="sector" id="sector-select">
+            <option value="">선택</option>
+            <option value="IT/반도체">IT/반도체</option>
+            <option value="바이오/헬스케어">바이오/헬스케어</option>
+            <option value="금융">금융</option>
+            <option value="소비재">소비재</option>
+            <option value="에너지/소재">에너지/소재</option>
+            <option value="산업재">산업재</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="form-group">
+        <label>요약 (Summary) <span class="required">*</span></label>
+        <div class="hint">리포트의 핵심 내용을 2~3문장으로 요약해주세요.</div>
+        <textarea name="summary" required>{{summary}}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>투자 논거 (Thesis)</label>
+        <div class="hint">이 종목에 투자해야 하는 핵심 이유를 서술해주세요.</div>
+        <textarea name="thesis" class="large">{{thesis}}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>투자 포인트 (Investment Points)</label>
+        <div class="hint">구체적인 투자 포인트를 항목별로 작성해주세요.</div>
+        <textarea name="investment_points" class="large">{{investmentPoints}}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>밸류에이션 근거 (Valuation Basis)</label>
+        <div class="hint">목표가/적정가 산출 근거를 작성해주세요.</div>
+        <textarea name="valuation_basis" class="large">{{valuationBasis}}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>리스크 요인 (Risks)</label>
+        <textarea name="risks">{{risks}}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Bear Case</label>
+        <div class="hint">최악의 시나리오와 하방 리스크를 서술해주세요.</div>
+        <textarea name="bear_case">{{bearCase}}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>참고 자료 (References)</label>
+        <textarea name="references_text">{{referencesText}}</textarea>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="form-group">
+        <label>공개 범위 <span class="required">*</span></label>
+        <div class="visibility-options" style="display:flex;gap:12px;flex-wrap:wrap">
+          <label class="vis-option" style="display:flex;align-items:center;gap:8px;padding:14px 20px;background: rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.1);border-radius:14px;cursor:pointer;flex:1;min-width:200px">
+            <input type="checkbox" id="vis-study" checked style="accent-color:#a5b4fc">
+            <div>
+              <div style="font-weight:700;font-size:0.95rem">스터디방에 공개</div>
+              <div style="font-size:0.78rem;color: rgba(255,255,255,0.4)">스터디방 멤버가 열람</div>
+            </div>
+          </label>
+          <label class="vis-option" style="display:flex;align-items:center;gap:8px;padding:14px 20px;background: rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.1);border-radius:14px;cursor:pointer;flex:1;min-width:200px">
+            <input type="checkbox" id="vis-public" style="accent-color:#a5b4fc">
+            <div>
+              <div style="font-weight:700;font-size:0.95rem">외부 공개 판매</div>
+              <div style="font-size:0.78rem;color: rgba(255,255,255,0.4)">스터디장 승인 → 관리자 승인 후 게시</div>
+            </div>
+          </label>
+        </div>
+        <input type="hidden" name="visibility" id="visibility-value" value="study_only">
+      </div>
+
+      <div class="form-group" id="study-room-select">
+        <label>공개할 스터디방 <span class="required">*</span></label>
+        <select name="study_room_id" id="study_room_id">
+          {{studyRoomOptions}}
+        </select>
+      </div>
+
+      <div id="public-options" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label>판매가 (P) <span class="required">*</span></label>
+            <div class="hint">0 입력 시 무료 리포트</div>
+            <input type="number" name="sale_price" value="{{salePrice}}" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>최대 구매자 수</label>
+            <div class="hint">0 = 무제한</div>
+            <input type="number" name="max_buyers" value="{{maxBuyers}}" placeholder="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>보유 여부 공시</label>
+          <select name="holding_disclosure" id="holding-select">
+            <option value="미보유">미보유</option>
+            <option value="보유">보유</option>
+            <option value="보유 예정">보유 예정</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>이해충돌 공시</label>
+          <input type="text" name="conflict_disclosure" value="{{conflictDisclosure}}" placeholder="예: 이해충돌 없음">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" name="action" value="draft" class="btn-draft">임시저장</button>
+        <button type="submit" name="action" value="submit" class="btn-submit" id="btn-submit">제출하기</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.querySelector('form');
+    const mode = '{{mode}}';
+    const reportId = '{{reportId}}';
+    if (mode === 'edit' && reportId) {
+      form.action = '/author/reports/' + reportId + '/edit';
+    } else {
+      form.action = '/author/reports/new';
+    }
+
+    // 공개 범위 토글 (체크박스)
+    const visStudy = document.getElementById('vis-study');
+    const visPublic = document.getElementById('vis-public');
+    const visValue = document.getElementById('visibility-value');
+    const publicOpts = document.getElementById('public-options');
+    const submitBtn = document.getElementById('btn-submit');
+    const studyRoomSelect = document.getElementById('study-room-select');
+
+    function updateVisibility() {
+      const study = visStudy.checked;
+      const pub = visPublic.checked;
+
+      // hidden input 값 설정
+      if (study && pub) visValue.value = 'both';
+      else if (pub) visValue.value = 'public';
+      else visValue.value = 'study_only';
+
+      // 외부 공개 옵션 표시
+      publicOpts.style.display = pub ? 'block' : 'none';
+
+      // 버튼 텍스트
+      if (study && pub) submitBtn.textContent = '스터디 + 외부 공개 제출';
+      else if (pub) submitBtn.textContent = '외부 공개 제출 (스터디장 → 관리자 승인 필요)';
+      else submitBtn.textContent = '스터디방 공개';
+
+      // 최소 하나는 선택
+      if (!study && !pub) visStudy.checked = true;
+
+      // 스타일링
+      document.querySelectorAll('.vis-option').forEach(function(el) {
+        var cb = el.querySelector('input[type="checkbox"]');
+        el.style.borderColor = cb.checked ? 'rgba(79,70,229,0.6)' : 'rgba(255,255,255,0.1)';
+      });
+    }
+    visStudy.addEventListener('change', updateVisibility);
+    visPublic.addEventListener('change', updateVisibility);
+
+    // 파일/URL 불러오기
+    function importContent() {
+      var fileInput = document.getElementById('import-file');
+      var urlInput = document.getElementById('import-url');
+      var status = document.getElementById('import-status');
+      var btn = document.getElementById('btn-import');
+
+      if (fileInput.files.length === 0 && !urlInput.value.trim()) {
+        status.textContent = '파일을 선택하거나 URL을 입력해주세요.';
+        status.className = 'import-status error';
+        return;
+      }
+
+      if (!confirm('AI 분석 시 100P가 차감됩니다.\n계속 진행하시겠습니까?')) return;
+
+      btn.disabled = true;
+      btn.textContent = 'AI 분석중...';
+      status.textContent = 'Claude AI가 문서를 분석하고 있습니다... (10~20초 소요)';
+      status.className = 'import-status';
+
+      var formData = new FormData();
+
+      if (fileInput.files.length > 0) {
+        formData.append('file', fileInput.files[0]);
+      } else {
+        formData.append('url', urlInput.value.trim());
+      }
+
+      fetch('/author/reports/extract', { method: 'POST', body: formData })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          btn.disabled = false;
+          btn.textContent = '불러오기';
+
+          if (data.error) {
+            status.textContent = data.error;
+            status.className = 'import-status error';
+            return;
+          }
+
+          var p = data.parsed || {};
+          var filled = 0;
+
+          // 종목명, 종목코드, 제목 채우기
+          function fillInput(selector, val) {
+            if (!val) return;
+            var el = document.querySelector(selector);
+            if (el && !el.value.trim()) {
+              el.value = val;
+              el.style.borderColor = 'rgba(79,70,229,0.4)';
+              el.style.background = 'rgba(79,70,229,0.06)';
+              setTimeout(function() { el.style.borderColor = ''; el.style.background = ''; }, 3000);
+              filled++;
+            }
+          }
+          fillInput('input[name="stock_name"]', p.stockName);
+          fillInput('input[name="stock_code"]', p.stockCode);
+          fillInput('input[name="title"]', p.title);
+
+          // 종목명이 채워졌으면 자동완성 트리거 (코드/시장/섹터)
+          if (p.stockName && document.getElementById('stock-name-input').value) {
+            var nameInput = document.getElementById('stock-name-input');
+            fetch('/api/stock-search?q=' + encodeURIComponent(p.stockName))
+              .then(function(r) { return r.json(); })
+              .then(function(stocks) {
+                if (stocks.length > 0) {
+                  var s = stocks[0];
+                  fillInput('#stock-code-input', s.code);
+                  if (!document.getElementById('market-type-select').value) {
+                    document.getElementById('market-type-select').value = s.market;
+                    filled++;
+                  }
+                  if (!document.getElementById('sector-select').value) {
+                    document.getElementById('sector-select').value = s.sector;
+                    filled++;
+                  }
+                }
+              }).catch(function(){});
+          }
+
+          // textarea 필드 채우기
+          var fields = [
+            { name: 'summary', val: p.summary },
+            { name: 'thesis', val: p.thesis },
+            { name: 'investment_points', val: p.investmentPoints },
+            { name: 'valuation_basis', val: p.valuationBasis },
+            { name: 'risks', val: p.risks },
+            { name: 'bear_case', val: p.bearCase },
+            { name: 'references_text', val: p.references },
+          ];
+
+          fields.forEach(function(f) {
+            if (f.val) {
+              var el = document.querySelector('textarea[name="' + f.name + '"]');
+              if (el && !el.value.trim()) {
+                el.value = f.val;
+                el.style.borderColor = 'rgba(79,70,229,0.4)';
+                el.style.background = 'rgba(79,70,229,0.06)';
+                setTimeout(function() { el.style.borderColor = ''; el.style.background = ''; }, 3000);
+                filled++;
+              }
+            }
+          });
+
+          // 섹션 파싱이 안 되었으면 요약에 전체 텍스트 넣기
+          if (filled === 0 && data.text) {
+            var summaryEl = document.querySelector('textarea[name="summary"]');
+            if (summaryEl && !summaryEl.value.trim()) {
+              summaryEl.value = data.text.slice(0, 2000);
+              filled = 1;
+            }
+          }
+
+          status.textContent = filled + '개 항목이 자동으로 채워졌습니다. 내용을 확인하고 수정해주세요.';
+          status.className = 'import-status success';
+        })
+        .catch(function(e) {
+          btn.disabled = false;
+          btn.textContent = '불러오기';
+          status.textContent = '오류가 발생했습니다.';
+          status.className = 'import-status error';
+        });
+    }
+
+
+    // 드래그 앤 드롭
+    (function() {
+      var section = document.getElementById('import-section');
+      section.addEventListener('dragover', function(e) { e.preventDefault(); section.style.borderColor = 'rgba(79,70,229,0.6)'; });
+      section.addEventListener('dragleave', function() { section.style.borderColor = ''; });
+      section.addEventListener('drop', function(e) {
+        e.preventDefault();
+        section.style.borderColor = '';
+        if (e.dataTransfer.files.length > 0) {
+          document.getElementById('import-file').files = e.dataTransfer.files;
+          importContent();
+        }
+      });
+    })();
+
+    // 초기값 설정
+    const initVis = '{{visibility}}';
+    if (initVis === 'public') { visPublic.checked = true; visStudy.checked = false; }
+    else if (initVis === 'both') { visStudy.checked = true; visPublic.checked = true; }
+    updateVisibility();
+
+    // 초기 시장/섹터 선택값 설정
+    const initMarket = '{{marketType}}';
+    const initSector = '{{sector}}';
+    if (initMarket) document.getElementById('market-type-select').value = initMarket;
+    if (initSector) document.getElementById('sector-select').value = initSector;
+    var initHolding = '{{holdingDisclosure}}';
+    if (initHolding) document.getElementById('holding-select').value = initHolding;
+
+    // 종목 자동완성
+    (function() {
+      var nameInput = document.getElementById('stock-name-input');
+      var codeInput = document.getElementById('stock-code-input');
+      var marketSelect = document.getElementById('market-type-select');
+      var sectorSelect = document.getElementById('sector-select');
+      var dropdown = document.getElementById('stock-autocomplete');
+      var debounceTimer = null;
+      var activeIdx = -1;
+      var items = [];
+
+      nameInput.addEventListener('input', function() {
+        var q = nameInput.value.trim();
+        clearTimeout(debounceTimer);
+        if (q.length < 1) { hideDropdown(); return; }
+        debounceTimer = setTimeout(function() { searchStock(q); }, 200);
+      });
+
+      nameInput.addEventListener('keydown', function(e) {
+        if (!dropdown.classList.contains('show')) return;
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          activeIdx = Math.min(activeIdx + 1, items.length - 1);
+          highlightItem();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          activeIdx = Math.max(activeIdx - 1, 0);
+          highlightItem();
+        } else if (e.key === 'Enter' && activeIdx >= 0) {
+          e.preventDefault();
+          selectStock(items[activeIdx]);
+        } else if (e.key === 'Escape') {
+          hideDropdown();
+        }
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.stock-input-wrap')) hideDropdown();
+      });
+
+      function searchStock(q) {
+        fetch('/api/stock-search?q=' + encodeURIComponent(q))
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            items = data;
+            activeIdx = -1;
+            if (data.length === 0) { hideDropdown(); return; }
+            dropdown.innerHTML = data.map(function(s, i) {
+              return '<div class="stock-item" data-idx="' + i + '">'
+                + '<span class="stock-item-name">' + s.name + '</span>'
+                + '<span class="stock-item-info">'
+                + '<span>' + s.code + '</span>'
+                + '<span>' + s.market + '</span>'
+                + '<span>' + s.sector + '</span>'
+                + '</span></div>';
+            }).join('');
+            dropdown.classList.add('show');
+
+            dropdown.querySelectorAll('.stock-item').forEach(function(el) {
+              el.addEventListener('click', function() {
+                selectStock(items[parseInt(el.dataset.idx)]);
+              });
+            });
+          })
+          .catch(function() { hideDropdown(); });
+      }
+
+      function selectStock(stock) {
+        nameInput.value = stock.name;
+        codeInput.value = stock.code;
+        marketSelect.value = stock.market;
+        sectorSelect.value = stock.sector;
+
+        // 자동 채워짐 표시
+        [codeInput, marketSelect, sectorSelect].forEach(function(el) {
+          el.classList.add('auto-filled');
+          setTimeout(function() { el.classList.remove('auto-filled'); }, 2000);
+        });
+
+        hideDropdown();
+      }
+
+      function highlightItem() {
+        dropdown.querySelectorAll('.stock-item').forEach(function(el, i) {
+          el.classList.toggle('active', i === activeIdx);
+        });
+        var active = dropdown.querySelector('.stock-item.active');
+        if (active) active.scrollIntoView({ block: 'nearest' });
+      }
+
+      function hideDropdown() {
+        dropdown.classList.remove('show');
+        dropdown.innerHTML = '';
+        items = [];
+        activeIdx = -1;
+      }
+    })();
+  </script>
+</body>
+</html>

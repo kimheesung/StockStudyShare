@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>작성자 대시보드 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 30px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+    .stat-card {
+      padding: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; text-align: center;
+    }
+    .stat-card .label { font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+    .stat-card .value { font-size: 1.8rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .section-title { font-size: 1.2rem; font-weight: 700; }
+    .btn-create {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px;
+      background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 50px;
+      color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: 700;
+      transition: all 0.3s; box-shadow: 0 4px 20px rgba(79,70,229,0.3);
+    }
+    .btn-create:hover { transform: translateY(-2px); }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+    th { text-align: left; padding: 12px 16px; font-size: 0.8rem; color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    td { padding: 14px 16px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .btn-sm { padding: 6px 14px; background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 20px; color: #fff; text-decoration: none; font-size: 0.8rem; font-weight: 700; }
+    .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .status-draft { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
+    .status-submitted { background: rgba(251,191,36,0.2); color: #fbbf24; }
+    .status-on_sale { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .status-rejected { background: rgba(239,68,68,0.2); color: #ef4444; }
+    .status-suspended { background: rgba(239,68,68,0.15); color: #f87171; }
+    .empty-text { color: rgba(255,255,255,0.3); text-align: center; padding: 40px 0; }
+    .btn-publish { background: linear-gradient(135deg, #f59e0b, #d97706) !important; cursor: pointer; border: none; font-family: inherit; }
+    .btn-publish:hover { opacity: 0.9; }
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; padding: 32px; max-width: 440px; width: 90%;
+    }
+    .modal-box h3 { font-size: 1.15rem; font-weight: 900; margin-bottom: 8px; }
+    .modal-box .modal-desc { font-size: 0.85rem; color: rgba(255,255,255,0.4); margin-bottom: 24px; line-height: 1.6; }
+    .modal-box label { display: block; font-size: 0.85rem; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 6px; }
+    .modal-box .hint { font-size: 0.78rem; color: rgba(255,255,255,0.3); margin-bottom: 8px; }
+    .modal-box input {
+      width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #fff; font-size: 0.95rem; font-family: inherit; margin-bottom: 16px;
+    }
+    .modal-box input:focus { outline: none; border-color: rgba(79,70,229,0.4); }
+    .modal-actions { display: flex; gap: 12px; margin-top: 8px; }
+    .modal-actions .btn-cancel {
+      flex: 1; padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 50px; color: rgba(255,255,255,0.7); font-size: 0.9rem; cursor: pointer; font-family: inherit;
+    }
+    .modal-actions .btn-confirm {
+      flex: 1; padding: 12px; background: linear-gradient(135deg, #f59e0b, #d97706); border: none;
+      border-radius: 50px; color: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .profile-section {
+      padding: 28px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; margin-bottom: 40px;
+    }
+    .profile-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+    .profile-form { display: grid; gap: 16px; }
+    .profile-form label { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; display: block; }
+    .profile-form input, .profile-form textarea {
+      width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #fff; font-size: 0.9rem; font-family: inherit;
+    }
+    .profile-form textarea { min-height: 80px; resize: vertical; }
+    .btn-profile {
+      padding: 10px 24px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50px; color: #fff; font-size: 0.9rem; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-profile:hover { background: rgba(255,255,255,0.08); }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <h1><span class="highlight">작성자</span> 대시보드</h1>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">총 리포트</div>
+        <div class="value">{{totalReports}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">총 판매</div>
+        <div class="value">{{totalSales}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">총 수익</div>
+        <div class="value">{{totalRevenue}}P</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h2 class="section-title">내 리포트</h2>
+      <a href="/author/reports/new" class="btn-create">+ 리포트 작성</a>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>제목</th>
+          <th>종목</th>
+          <th>상태</th>
+          <th>가격</th>
+          <th>판매수</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{reportRows}}
+      </tbody>
+    </table>
+
+    <div class="profile-section">
+      <h2>공개 프로필 설정</h2>
+      <form method="POST" action="/author/profile" class="profile-form">
+        <div>
+          <label>표시 이름</label>
+          <input type="text" name="display_name" value="{{displayName}}" required>
+        </div>
+        <div>
+          <label>소개</label>
+          <textarea name="bio">{{bio}}</textarea>
+        </div>
+        <div>
+          <label>전문 섹터</label>
+          <input type="text" name="sectors" value="{{sectors}}" placeholder="예: IT/반도체, 바이오">
+        </div>
+        <div>
+          <button type="submit" class="btn-profile">프로필 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 외부 판매 전환 모달 -->
+  <div class="modal-overlay" id="publish-modal">
+    <div class="modal-box">
+      <h3>외부 판매 전환</h3>
+      <p class="modal-desc">
+        <strong id="modal-report-title"></strong> 리포트를<br>
+        외부 공개 판매로 전환합니다.<br>
+        스터디장 → 관리자 승인 후 판매가 시작됩니다.
+      </p>
+      <form method="POST" id="publish-form">
+        <div>
+          <label>판매가 (P)</label>
+          <div class="hint">0 입력 시 무료 리포트</div>
+          <input type="number" name="sale_price" value="0" min="0" placeholder="0">
+        </div>
+        <div>
+          <label>최대 구매자 수</label>
+          <div class="hint">0 = 무제한</div>
+          <input type="number" name="max_buyers" value="0" min="0" placeholder="0">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closePublishModal()">취소</button>
+          <button type="submit" class="btn-confirm">외부 판매 신청</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 삭제 확인 모달 -->
+  <div class="modal-overlay" id="delete-modal">
+    <div class="modal-box">
+      <h3 style="color:#ef4444">리포트 삭제</h3>
+      <p class="modal-desc">
+        <strong id="delete-report-title"></strong> 리포트를 삭제합니다.
+      </p>
+      <div id="delete-loading" style="text-align:center;padding:20px;color: rgba(255,255,255,0.4)">환불 정보를 조회하고 있습니다...</div>
+      <div id="delete-info" style="display:none">
+        <div id="delete-refund-info" style="padding:14px 18px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;margin-bottom:16px;line-height:1.7;font-size:0.88rem"></div>
+        <div id="delete-no-refund" style="display:none;padding:14px 18px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:12px;margin-bottom:16px;font-size:0.88rem;color:#4ade80">
+          구매자가 없어 바로 삭제할 수 있습니다.
+        </div>
+        <div id="delete-insufficient" style="display:none;padding:14px 18px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:12px;margin-bottom:16px;font-size:0.88rem;color:#fca5a5"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeDeleteModal()">취소</button>
+          <button type="button" class="btn-confirm" id="btn-delete-confirm" onclick="confirmDelete()" style="background:linear-gradient(135deg,#ef4444,#dc2626">삭제하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openPublishModal(reportId, title) {
+      document.getElementById('modal-report-title').textContent = title;
+      document.getElementById('publish-form').action = '/author/reports/' + reportId + '/request-public';
+      document.getElementById('publish-modal').classList.add('show');
+    }
+    function closePublishModal() {
+      document.getElementById('publish-modal').classList.remove('show');
+    }
+    document.getElementById('publish-modal').addEventListener('click', function(e) {
+      if (e.target === this) closePublishModal();
+    });
+
+    var deleteReportId = null;
+    function openDeleteModal(reportId, title) {
+      deleteReportId = reportId;
+      document.getElementById('delete-report-title').textContent = title;
+      document.getElementById('delete-loading').style.display = 'block';
+      document.getElementById('delete-info').style.display = 'none';
+      document.getElementById('delete-modal').classList.add('show');
+
+      fetch('/author/reports/' + reportId + '/delete-info')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          document.getElementById('delete-loading').style.display = 'none';
+          document.getElementById('delete-info').style.display = 'block';
+
+          var refundInfo = document.getElementById('delete-refund-info');
+          var noRefund = document.getElementById('delete-no-refund');
+          var insufficient = document.getElementById('delete-insufficient');
+          var btnConfirm = document.getElementById('btn-delete-confirm');
+
+          refundInfo.style.display = 'none';
+          noRefund.style.display = 'none';
+          insufficient.style.display = 'none';
+          btnConfirm.disabled = false;
+
+          if (data.buyerCount === 0) {
+            noRefund.style.display = 'block';
+          } else {
+            refundInfo.style.display = 'block';
+            refundInfo.innerHTML = '<div style="margin-bottom:8px"><strong style="color:#fca5a5">환불 안내</strong></div>'
+              + '구매자 수: <strong>' + data.buyerCount + '명</strong><br>'
+              + '총 환불 금액: <strong style="color:#ef4444">' + data.totalRefund.toLocaleString() + 'P</strong><br>'
+              + '내 보유 포인트: <strong style="color:#fbbf24">' + data.myPoints.toLocaleString() + 'P</strong>';
+
+            if (data.myPoints < data.totalRefund) {
+              var shortage = data.totalRefund - data.myPoints;
+              insufficient.style.display = 'block';
+              insufficient.innerHTML = '포인트가 <strong>' + shortage.toLocaleString() + 'P</strong> 부족합니다. 포인트를 충전한 후 다시 시도해주세요.';
+              btnConfirm.disabled = true;
+            }
+          }
+        })
+        .catch(function() {
+          document.getElementById('delete-loading').textContent = '정보를 불러올 수 없습니다.';
+        });
+    }
+    function closeDeleteModal() {
+      document.getElementById('delete-modal').classList.remove('show');
+      deleteReportId = null;
+    }
+    document.getElementById('delete-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeDeleteModal();
+    });
+
+    function confirmDelete() {
+      if (!deleteReportId) return;
+      var btn = document.getElementById('btn-delete-confirm');
+      btn.disabled = true;
+      btn.textContent = '삭제 처리 중...';
+
+      fetch('/author/reports/' + deleteReportId + '/delete', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) {
+            window.location.reload();
+          } else {
+            alert(data.error || '삭제에 실패했습니다.');
+            btn.disabled = false;
+            btn.textContent = '삭제하기';
+          }
+        })
+        .catch(function() {
+          alert('네트워크 오류가 발생했습니다.');
+          btn.disabled = false;
+          btn.textContent = '삭제하기';
+        });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>리포트 신고 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+    h1 { font-size: 1.5rem; font-weight: 900; margin-bottom: 8px; }
+    .sub-text { color: rgba(255,255,255,0.5); margin-bottom: 30px; font-size: 0.9rem; }
+    .form-group { margin-bottom: 24px; }
+    .form-group label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; }
+    select, textarea {
+      width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; font-size: 0.95rem; font-family: inherit;
+    }
+    select option { background: rgba(255,255,255,0.03); color: #fff; }
+    textarea { min-height: 120px; resize: vertical; }
+    .btn-submit {
+      padding: 14px 32px; background: #ef4444; border: none;
+      border-radius: 50px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-submit:hover { background: #dc2626); transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/reports/{{reportId}}" class="back-link">&larr; 리포트로 돌아가기</a>
+    <h1>리포트 신고</h1>
+    <p class="sub-text">{{reportTitle}}</p>
+
+    <form method="POST" action="/reports/{{reportId}}/flag">
+      <div class="form-group">
+        <label>신고 사유</label>
+        <select name="reason" required>
+          <option value="">선택해주세요</option>
+          <option value="허위 정보">허위 정보</option>
+          <option value="저작권 침해">저작권 침해</option>
+          <option value="부적절한 내용">부적절한 내용</option>
+          <option value="스팸/광고">스팸/광고</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>상세 내용</label>
+        <textarea name="detail" placeholder="신고 사유를 자세히 설명해주세요..."></textarea>
+      </div>
+      <button type="submit" class="btn-submit">신고 제출</button>
+    </form>
+  </div>
+</body>
+</html>

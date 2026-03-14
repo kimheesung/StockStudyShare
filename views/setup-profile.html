@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>프로필 설정 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .setup-card {
+      width: 100%; max-width: 480px; padding: 48px 40px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px; backdrop-filter: blur(20px);
+    }
+    .setup-card h1 {
+      font-size: 1.5rem; font-weight: 900; margin-bottom: 8px; text-align: center;
+    }
+    .setup-card h1 .highlight {
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .setup-desc { text-align: center; color: rgba(255,255,255,0.4); font-size: 0.88rem; margin-bottom: 32px; }
+    .user-preview {
+      display: flex; align-items: center; gap: 14px; padding: 16px;
+      background: rgba(255,255,255,0.03); border-radius: 14px; margin-bottom: 28px;
+    }
+    .user-preview img { width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.4); }
+    .user-preview .uname { font-weight: 700; font-size: 0.95rem; }
+    .user-preview .uemail { color: rgba(255,255,255,0.3); font-size: 0.82rem; }
+    .field { margin-bottom: 20px; }
+    .field label { display: block; font-size: 0.82rem; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 6px; }
+    .field input {
+      width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
+      color: #fff; font-size: 0.95rem; font-family: inherit; outline: none;
+    }
+    .field input:focus { border-color: rgba(79,70,229,0.4); }
+    .field input::placeholder { color: rgba(255,255,255,0.2); }
+    .field .hint { font-size: 0.75rem; color: rgba(255,255,255,0.3); margin-top: 6px; }
+    .field .hint.referrer-hint { color: rgba(74,222,128,0.6); }
+    .error-msg { color: #ef4444; font-size: 0.82rem; margin-bottom: 16px; padding: 10px 14px; background: rgba(239,68,68,0.1); border-radius: 10px; display: none; }
+    .btn-submit {
+      width: 100%; padding: 14px; background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border: none; border-radius: 14px; color: #fff; font-size: 1rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all 0.3s;
+    }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(79,70,229,0.5); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  </style>
+</head>
+<body>
+  <div class="setup-card">
+    <h1><span class="highlight">프로필 설정</span></h1>
+    <p class="setup-desc">StockStudyShare에서 사용할 닉네임을 설정해주세요.</p>
+
+    <div class="user-preview">
+      <img src="{{photo}}" alt="">
+      <div>
+        <div class="uname">{{name}}</div>
+        <div class="uemail">{{email}}</div>
+      </div>
+    </div>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <form method="POST" action="/setup" id="setup-form">
+      <div class="field">
+        <label>닉네임 *</label>
+        <input type="text" name="nickname" id="nickname" placeholder="2~20자, 한글/영문/숫자" required minlength="2" maxlength="20" autocomplete="off">
+        <p class="hint">다른 유저에게 표시되는 이름입니다. 설정 후 변경이 어렵습니다.</p>
+      </div>
+      <div class="field">
+        <label>추천인 닉네임 (선택)</label>
+        <input type="text" name="referrer_nickname" id="referrer_nickname" placeholder="추천인의 닉네임을 입력하세요" autocomplete="off">
+        <p class="hint referrer-hint">추천인은 회원님의 활동 포인트 중 5%를 보너스로 받게 됩니다.</p>
+      </div>
+      <button type="submit" class="btn-submit" id="submit-btn">시작하기</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('setup-form');
+    const errorMsg = document.getElementById('error-msg');
+    const submitBtn = document.getElementById('submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMsg.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.textContent = '설정 중...';
+
+      const nickname = document.getElementById('nickname').value.trim();
+      const referrer = document.getElementById('referrer_nickname').value.trim();
+
+      try {
+        const res = await fetch('/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ nickname, referrer_nickname: referrer }),
+        });
+        if (res.redirected) {
+          window.location.href = res.url;
+          return;
+        }
+        const data = await res.json();
+        if (data.ok) {
+          window.location.href = '/dashboard';
+        } else {
+          errorMsg.textContent = data.error;
+          errorMsg.style.display = 'block';
+          submitBtn.disabled = false;
+          submitBtn.textContent = '시작하기';
+        }
+      } catch(err) {
+        errorMsg.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+        errorMsg.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = '시작하기';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내 구매내역 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .sub-text { color: rgba(255,255,255,0.5); margin-bottom: 30px; }
+    .apply-link { display: inline-block; margin-bottom: 30px; padding: 10px 24px; background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); border-radius: 50px; color: #c084fc; text-decoration: none; font-size: 0.9rem; transition: all 0.3s; }
+    .apply-link:hover { background: rgba(168,85,247,0.25); }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 16px; font-size: 0.8rem; color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); font-weight: 700; }
+    td { padding: 14px 16px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    td a { color: #a5b4fc; text-decoration: none; }
+    td a:hover { text-decoration: underline; }
+    .btn-sm { padding: 6px 14px; background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 20px; color: #fff; text-decoration: none; font-size: 0.8rem; font-weight: 700; }
+    .empty-text { color: rgba(255,255,255,0.3); text-align: center; padding: 40px 0; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <h1><span class="highlight">내 구매</span>내역</h1>
+    <p class="sub-text">총 {{totalCount}}건의 리포트를 구매했습니다.</p>
+    <a href="/my/author-apply" class="apply-link">&#9998; 작성자 지원하기</a>
+
+    <table>
+      <thead>
+        <tr>
+          <th>리포트</th>
+          <th>종목</th>
+          <th>작성자</th>
+          <th>가격</th>
+          <th>구매일</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{purchaseRows}}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>포인트 충전 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; } .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #a5b4fc; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .user-area span { font-size: 0.9rem; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 700px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .page-desc { color: rgba(255,255,255,0.3); font-size: 0.88rem; margin-bottom: 32px; }
+
+    .balance-card {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 32px; background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.02));
+      border: 1px solid rgba(251,191,36,0.2); border-radius: 20px; margin-bottom: 36px;
+    }
+    .balance-label { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+    .balance-value { font-size: 2rem; font-weight: 900; color: #fbbf24; }
+    .balance-value span { font-size: 1rem; font-weight: 700; }
+
+    .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+    .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+    .plan-card {
+      padding: 32px 24px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;
+      text-align: center; transition: all 0.3s; cursor: pointer; position: relative;
+    }
+    .plan-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(79,70,229,0.3); transform: translateY(-3px); }
+    .plan-card.popular::before {
+      content: '인기'; position: absolute; top: -10px; right: 16px;
+      padding: 3px 12px; background: linear-gradient(135deg, #f59e0b, #d97706);
+      border-radius: 10px; font-size: 0.7rem; font-weight: 700; color: #fff;
+    }
+    .plan-points { font-size: 1.8rem; font-weight: 900; color: #fbbf24; margin-bottom: 4px; }
+    .plan-points span { font-size: 0.9rem; }
+    .plan-price { font-size: 1.1rem; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 16px; }
+    .plan-bonus { font-size: 0.78rem; color: rgba(74,222,128,0.8); margin-bottom: 18px; }
+    .btn-buy {
+      display: inline-block; width: 100%; padding: 12px;
+      background: linear-gradient(135deg, #4f46e5, #6366f1); border: none;
+      border-radius: 14px; color: #fff; font-size: 0.95rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all 0.3s;
+    }
+    .btn-buy:hover { box-shadow: 0 4px 20px rgba(79,70,229,0.5); }
+
+    .history-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; margin-top: 8px; }
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 18px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+    }
+    .history-item .desc { font-size: 0.88rem; color: rgba(255,255,255,0.7); }
+    .history-item .date { font-size: 0.75rem; color: rgba(255,255,255,0.3); }
+    .history-item .amount { font-weight: 700; font-size: 0.95rem; }
+    .history-item .amount.plus { color: #4ade80; }
+    .history-item .amount.minus { color: #ef4444; }
+    .empty-text { color: rgba(255,255,255,0.3); text-align: center; padding: 30px; font-size: 0.9rem; }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      z-index: 999; align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: linear-gradient(135deg, #1a1a3e, #2a2a5e; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px; padding: 40px; max-width: 400px; width: 90%; text-align: center;
+    }
+    .modal h2 { font-size: 1.2rem; font-weight: 900; margin-bottom: 8px; }
+    .modal .modal-desc { color: rgba(255,255,255,0.5); font-size: 0.88rem; margin-bottom: 24px; }
+    .modal .modal-amount { font-size: 2rem; font-weight: 900; color: #fbbf24; margin-bottom: 4px; }
+    .modal .modal-price { font-size: 1rem; color: rgba(255,255,255,0.7); margin-bottom: 28px; }
+    .modal-actions { display: flex; gap: 12px; }
+    .btn-confirm {
+      flex: 1; padding: 14px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none;
+      border-radius: 14px; color: #fff; font-size: 1rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-cancel {
+      flex: 1; padding: 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 14px; color: #fff; font-size: 1rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <h1><span class="highlight">포인트</span> 충전</h1>
+    <p class="page-desc">포인트를 충전하여 리포트를 구매하세요.</p>
+
+    <div id="need-points-banner" style="display:none;padding:16px 20px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:14px;margin-bottom:20px;line-height:1.6">
+      <div style="font-weight:700;font-size:0.95rem;color:#fca5a5;margin-bottom:4px" id="need-banner-title"></div>
+      <div style="font-size:0.85rem;color: rgba(255,255,255,0.7)" id="need-banner-desc"></div>
+    </div>
+
+    <div class="balance-card">
+      <div>
+        <div class="balance-label">보유 포인트</div>
+        <div class="balance-value">{{currentPoints}} <span>P</span></div>
+      </div>
+      <div>
+        <div class="balance-label">닉네임</div>
+        <div style="font-weight:700">{{nickname}}</div>
+      </div>
+    </div>
+
+    <h3 class="section-title">충전 상품</h3>
+    <div class="plans">
+      <div class="plan-card" onclick="openModal(100000, 100000)">
+        <div class="plan-points">100,000 <span>P</span></div>
+        <div class="plan-price">100,000P</div>
+        <div class="plan-bonus">100,000P 충전</div>
+        <button class="btn-buy">충전하기</button>
+      </div>
+      <div class="plan-card popular" onclick="openModal(1000000, 1000000)">
+        <div class="plan-points">1,000,000 <span>P</span></div>
+        <div class="plan-price">1,000,000P</div>
+        <div class="plan-bonus">1,000,000P 충전</div>
+        <button class="btn-buy">충전하기</button>
+      </div>
+    </div>
+
+    <h3 class="history-title">포인트 내역</h3>
+    <div class="history-list">
+      {{pointHistory}}
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2>포인트 충전</h2>
+      <p class="modal-desc">아래 포인트를 충전하시겠습니까?</p>
+      <div class="modal-amount" id="modal-points"></div>
+      <div class="modal-price" id="modal-price"></div>
+      <div class="modal-actions">
+        <button class="btn-confirm" id="btn-confirm" onclick="confirmPurchase()">결제하기</button>
+        <button class="btn-cancel" onclick="closeModal()">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 포인트 부족 안내 배너
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var need = parseInt(params.get('need'));
+      var reason = params.get('reason');
+      if (need > 0) {
+        var banner = document.getElementById('need-points-banner');
+        var title = document.getElementById('need-banner-title');
+        var desc = document.getElementById('need-banner-desc');
+        var reasons = {
+          study_join: '스터디방 가입비 10,000P가 필요합니다.',
+          purchase: '리포트 구매를 위한 포인트가 부족합니다.'
+        };
+        title.textContent = reasons[reason] || '포인트가 부족합니다.';
+        desc.textContent = '필요 포인트: ' + need.toLocaleString() + 'P | 현재 보유: {{currentPoints}}P — 아래에서 포인트를 충전해주세요.';
+        banner.style.display = 'block';
+        banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    })();
+
+    let selectedPoints = 0;
+    let selectedPrice = 0;
+
+    function openModal(points, price) {
+      selectedPoints = points;
+      selectedPrice = price;
+      document.getElementById('modal-points').textContent = points.toLocaleString() + ' P';
+      document.getElementById('modal-price').textContent = price.toLocaleString() + 'P';
+      document.getElementById('modal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('show');
+    }
+
+    async function confirmPurchase() {
+      const btn = document.getElementById('btn-confirm');
+      btn.disabled = true;
+      btn.textContent = '결제 처리중...';
+
+      try {
+        const res = await fetch('/my/points/purchase', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ points: selectedPoints, price: selectedPrice }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          window.location.reload();
+        } else {
+          alert(data.error || '결제에 실패했습니다.');
+          btn.disabled = false;
+          btn.textContent = '결제하기';
+        }
+      } catch(e) {
+        alert('오류가 발생했습니다.');
+        btn.disabled = false;
+        btn.textContent = '결제하기';
+      }
+    }
+
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+  </script>
+</body>
+</html>
