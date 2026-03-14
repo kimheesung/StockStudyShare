@@ -22,6 +22,54 @@
     h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .page-desc { color: rgba(255,255,255,0.3); font-size: 0.88rem; margin-bottom: 32px; }
 
+    /* 상단 스터디방 + 광고 영역 (세로 70:30) */
+    .study-hero {
+      margin-bottom: 32px;
+      padding: 24px 24px 20px;
+      border-radius: 20px;
+      background: radial-gradient(circle at top left, rgba(79,70,229,0.28), transparent 55%), rgba(15,23,42,0.8);
+      border: 1px solid rgba(148,163,184,0.28);
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 20px;
+      min-height: 140px;
+    }
+    .study-hero-main {
+      flex: 7;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .study-hero-main h1 { margin-bottom: 6px; }
+    .study-hero-main .page-desc { margin-bottom: 0; }
+    .study-hero-ad {
+      flex: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      background: rgba(15,23,42,0.7);
+      border: 1px solid rgba(148,163,184,0.35);
+      border-radius: 14px;
+      text-decoration: none;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    .study-hero-ad:hover { border-color: rgba(129,140,248,0.8); transform: translateY(-1px); }
+    .study-hero-ad-inner {
+      text-align: center;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.35);
+    }
+
+    @media (max-width: 768px) {
+      .study-hero {
+        flex-direction: column;
+        min-height: 0;
+      }
+    }
+
     .search-section { margin-bottom: 28px; }
     .search-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     .input-field {
@@ -124,11 +172,11 @@
     /* 지원 모달 */
     .apply-overlay {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.95); z-index: 200; align-items: center; justify-content: center;
     }
     .apply-overlay.show { display: flex; }
     .apply-modal {
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      background: #1a1a2e; border: 1px solid rgba(255,255,255,0.12);
       border-radius: 20px; padding: 32px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;
     }
     .apply-modal h3 { font-size: 1.15rem; font-weight: 900; margin-bottom: 6px; }
@@ -165,20 +213,24 @@
 <body>
   <nav>{{nav}}</nav>
   <div class="container">
-    <h1><span class="highlight">스터디방</span></h1>
-    <p class="page-desc">스터디방에 가입하면 스터디원들의 리포트를 무료로 열람할 수 있습니다.</p>
+    <div class="study-hero">
+      <div class="study-hero-main">
+        <h1><span class="highlight">스터디방</span></h1>
+        <p class="page-desc">스터디방에 가입하면 스터디원들의 리포트를 무료로 열람할 수 있습니다.</p>
+      </div>
+
+      <!-- 상단 광고 배너 (전체 영역의 약 30%) -->
+      <a href="/ad-inquiry" id="ad-box-top" class="study-hero-ad">
+        <div id="ad-def-top" class="study-hero-ad-inner"><span>광고 문의하기</span></div>
+        <div id="ad-img-top" style="display:none;width:100%;height:100%"></div>
+      </a>
+    </div>
 
     <div class="leader-apply-section" id="leader-apply-section">
       <a href="/study/leader-apply" class="btn-leader-apply">스터디장 지원하기</a>
       <span class="leader-apply-desc">스터디장이 되면 스터디방을 개설하고 스터디원을 모을수 있습니다.</span>
       <span class="leader-pending-msg" id="leader-pending-msg">이미 지원서를 제출했습니다. <a href="/study/leader-apply-status">상태 확인</a></span>
     </div>
-
-    <!-- 상단 광고 배너 -->
-    <a href="/ad-inquiry" id="ad-box-top" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin-bottom:20px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;overflow:hidden;transition:all 0.2s">
-      <div id="ad-def-top" style="text-align:center"><span style="font-size:0.82rem;color:rgba(255,255,255,0.25)">광고 문의하기</span></div>
-      <div id="ad-img-top" style="display:none;width:100%;height:100%"></div>
-    </a>
     <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-top'),df=document.getElementById('ad-def-top'),ld=document.getElementById('ad-img-top');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
 
     <!-- 검색바 -->
