@@ -9,7 +9,9 @@ let marketCache = { data: null, ts: 0 };
 let investorCache = { data: null, ts: 0 };
 let creditCache = { data: null, ts: 0 };
 let topGainersCache = { data: null, ts: 0 };
+let dartCache = { data: null, ts: 0 };
 const CACHE_TTL = 5 * 60 * 1000;
+const DART_CACHE_TTL = 30 * 60 * 1000; // 30분
 
 const SYMBOLS = [
   { symbol: '^KS11', name: 'KOSPI', category: '국내' },
@@ -280,9 +282,84 @@ router.get('/api/ads', (req, res) => {
     if (hasAdRemove) return res.json([]);
   }
   const position = req.query.position || 'loading';
-  const ads = db.prepare('SELECT id, title, image_url, link_url FROM ads WHERE is_active = 1 AND position = ? ORDER BY RANDOM() LIMIT 1').all(position);
+  const ads = db.prepare('SELECT id, title, image_url, link_url, ad_type, adsense_code FROM ads WHERE is_active = 1 AND position = ? ORDER BY RANDOM() LIMIT 1').all(position);
   res.json(ads);
 });
+
+// DART 주요 공시 데이터
+const DART_API_KEY = process.env.DART_API_KEY || '';
+const DART_KEYWORDS = [
+  { keyword: '전환사채권발행결정', label: '전환사채 발행', color: '#f87171', icon: '🔄' },
+  { keyword: '유상증자결정', label: '유상증자', color: '#fb923c', icon: '💹' },
+  { keyword: '제3자배정', label: '3자배정 유증', color: '#fbbf24', icon: '🎯' },
+  { keyword: '매출액또는손익구조', label: '매출액 변동', color: '#4ade80', icon: '📈' },
+  { keyword: '타법인주식및출자증권취득결정', label: '대규모 투자', color: '#60a5fa', icon: '🏗️' },
+  { keyword: '주요사항보고서(대규모', label: '대규모 투자', color: '#60a5fa', icon: '🏗️' },
+];
+
+async function fetchDartDisclosures() {
+  const now = Date.now();
+  if (dartCache.data && (now - dartCache.ts) < DART_CACHE_TTL) return dartCache.data;
+
+  if (!DART_API_KEY) {
+    dartCache = { data: [], ts: now };
+    return [];
+  }
+
+  try {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7);
+    const fmt = d => d.toISOString().slice(0, 10).replace(/-/g, '');
+
+    const results = [];
+
+    // KOSPI + KOSDAQ 주요사항보고 (pblntf_ty=B)
+    for (const corpCls of ['Y', 'K']) {
+      const params = new URLSearchParams({
+        crtfc_key: DART_API_KEY,
+        pblntf_ty: 'B',
+        bgn_de: fmt(startDate),
+        end_de: fmt(endDate),
+        corp_cls: corpCls,
+        page_count: '100',
+        sort: 'date',
+        sort_mth: 'desc',
+      });
+      const url = `https://opendart.fss.or.kr/api/list.json?${params}`;
+      const resp = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      const json = await resp.json();
+
+      if (json.status === '000' && json.list) {
+        for (const item of json.list) {
+          const matched = DART_KEYWORDS.find(k => item.report_nm.includes(k.keyword));
+          if (matched) {
+            results.push({
+              corp_name: item.corp_name,
+              stock_code: item.stock_code || '',
+              report_nm: item.report_nm,
+              rcept_dt: item.rcept_dt,
+              rcept_no: item.rcept_no,
+              corp_cls: item.corp_cls === 'Y' ? 'KOSPI' : 'KOSDAQ',
+              label: matched.label,
+              color: matched.color,
+              icon: matched.icon,
+            });
+          }
+        }
+      }
+    }
+
+    // 최신순 정렬, 최대 20개
+    results.sort((a, b) => b.rcept_dt.localeCompare(a.rcept_dt));
+    const top = results.slice(0, 20);
+    dartCache = { data: top, ts: now };
+    return top;
+  } catch (e) {
+    console.error('DART API error:', e.message);
+    return dartCache.data || [];
+  }
+}
 
 router.get('/', (req, res) => {
   if (req.isAuthenticated()) {
@@ -294,11 +371,12 @@ router.get('/', (req, res) => {
 router.get('/dashboard', async (req, res) => {
   if (!req.isAuthenticated()) return res.redirect('/');
 
-  const [marketData, investorData, creditData, topGainers] = await Promise.all([
+  const [marketData, investorData, creditData, topGainers, dartData] = await Promise.all([
     fetchMarketData(),
     fetchInvestorData(),
     fetchCreditData(),
     fetchTopGainers(),
+    fetchDartDisclosures(),
   ]);
 
   const cards = marketData.map(m => {
@@ -501,6 +579,18 @@ router.get('/dashboard', async (req, res) => {
     topGainersHtml = '<div class="report-empty">표시할 데이터가 없습니다.</div>';
   }
 
+  // 주요 공시 카드
+  const dartCards = dartData.length > 0 ? dartData.map(d => {
+    const dateStr = d.rcept_dt ? `${d.rcept_dt.slice(0,4)}.${d.rcept_dt.slice(4,6)}.${d.rcept_dt.slice(6,8)}` : '';
+    const dartUrl = `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${d.rcept_no}`;
+    return `<a href="${dartUrl}" target="_blank" class="dart-card" style="text-decoration:none;color:#fff">
+      <div class="dart-badge" style="background:${d.color}20;color:${d.color};border:1px solid ${d.color}40">${d.icon} ${escapeHtml(d.label)}</div>
+      <div class="dart-corp">${escapeHtml(d.corp_name)} <span class="dart-market">${d.corp_cls}</span></div>
+      <div class="dart-report">${escapeHtml(d.report_nm)}</div>
+      <div class="dart-date">${dateStr}</div>
+    </a>`;
+  }).join('') : '<div class="report-empty">공시 데이터를 불러올 수 없습니다. DART API 키를 설정해주세요.</div>';
+
   const html = render('views/dashboard.html', {
     nav: buildNav(req.user),
     marketCards: cards,
@@ -511,6 +601,7 @@ router.get('/dashboard', async (req, res) => {
     topReturnCards,
     followCards,
     topGainersHtml,
+    dartCards,
     updatedAt: new Date().toLocaleString('ko-KR'),
     adBanner: adBannerHtml(),
   });
@@ -757,7 +848,7 @@ router.get('/api/report-performance/:id', async (req, res) => {
   }
 });
 
-// 리포터 평균 수익률 API (발행 후 90일 이상 경과한 리포트만 포함)
+// 리포터 평균 수익률 API (최근 3개월 내 발행 리포트 수익률 합산 / 리포트 수)
 router.get('/api/author-return/:authorId', async (req, res) => {
   try {
     const threeMonthsAgo = new Date();
@@ -768,7 +859,7 @@ router.get('/api/author-return/:authorId', async (req, res) => {
       WHERE author_id = ? AND status = 'on_sale'
         AND entry_price IS NOT NULL AND entry_price > 0
         AND stock_code IS NOT NULL AND stock_code != ''
-        AND published_at IS NOT NULL AND published_at <= ?
+        AND published_at IS NOT NULL AND published_at >= ?
     `).all(req.params.authorId, threeMonthsAgo.toISOString());
 
     if (reports.length === 0) return res.json({ avgReturn: null });

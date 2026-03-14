@@ -16,7 +16,7 @@ const PRIZE_DISTRIBUTION = [
   { rank: 5, chickens: 1, label: '치킨 1개' },
 ];
 
-// 리포트 치킨배 목록
+// 모두의 리포트 치킨배 목록
 router.get('/', isLoggedIn, (req, res) => {
   const contests = db.prepare(`
     SELECT c.*,
@@ -123,13 +123,13 @@ router.post('/create', isLoggedIn, (req, res) => {
   const createTx = db.transaction(() => {
     db.prepare('UPDATE users SET points = points - ? WHERE id = ?').run(HOST_FEE, req.user.id);
     db.prepare("INSERT INTO point_logs (user_id, amount, type, description) VALUES (?, ?, 'contest_host', ?)").run(
-      req.user.id, -HOST_FEE, `리포트 치킨배 주최: ${name}`
+      req.user.id, -HOST_FEE, `모두의 리포트 치킨배 주최: ${name}`
     );
     const admin = db.prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1").get();
     if (admin) {
       db.prepare('UPDATE users SET points = points + ? WHERE id = ?').run(HOST_FEE, admin.id);
       db.prepare("INSERT INTO point_logs (user_id, amount, type, description) VALUES (?, ?, 'contest_host_fee', ?)").run(
-        admin.id, HOST_FEE, `리포트 치킨배 주최비 수입: ${name}`
+        admin.id, HOST_FEE, `모두의 리포트 치킨배 주최비 수입: ${name}`
       );
     }
     return db.prepare(`INSERT INTO competitions (creator_id, name, entry_fee, max_participants, min_participants, duration_days)
@@ -361,7 +361,7 @@ router.post('/:id/start', isLoggedIn, async (req, res) => {
   db.prepare("UPDATE competitions SET status = 'active', start_date = ?, end_date = ? WHERE id = ?").run(startDate, endDate, contest.id);
 
   for (const entry of entries) {
-    notify(db, entry.user_id, 'purchase', '리포트 치킨배 시작!', `"${contest.name}" 대회가 시작되었습니다! ${contest.duration_days}일간 수익률을 겨루세요.`, `/contest/${contest.id}`);
+    notify(db, entry.user_id, 'purchase', '모두의 리포트 치킨배 시작!', `"${contest.name}" 대회가 시작되었습니다! ${contest.duration_days}일간 수익률을 겨루세요.`, `/contest/${contest.id}`);
   }
 
   res.redirect(`/contest/${contest.id}`);
@@ -404,7 +404,7 @@ router.post('/:id/settle', isLoggedIn, async (req, res) => {
       if (prizeInfo && rank <= 5) {
         notify(db, entry.user_id, 'points', `🍗 치킨배 ${rank}등!`, `"${contest.name}" ${rank}등! 치킨 기프트콘이 지급됩니다. (수익률: ${(entry.return_rate || 0).toFixed(2)}%)`, `/contest/${contest.id}`);
       } else {
-        notify(db, entry.user_id, 'purchase', '리포트 치킨배 종료', `"${contest.name}" 종료. ${rank}등 (수익률: ${(entry.return_rate || 0).toFixed(2)}%)`, `/contest/${contest.id}`);
+        notify(db, entry.user_id, 'purchase', '모두의 리포트 치킨배 종료', `"${contest.name}" 종료. ${rank}등 (수익률: ${(entry.return_rate || 0).toFixed(2)}%)`, `/contest/${contest.id}`);
       }
     });
 

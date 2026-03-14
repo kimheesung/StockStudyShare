@@ -157,15 +157,33 @@
     </div>
   </div>
   <script>
+    // 광고 유형 탭 전환
+    function switchAdType(type) {
+      document.getElementById('ad-type').value = type;
+      document.getElementById('tab-banner').style.borderBottomColor = type === 'banner' ? '#6366f1' : 'transparent';
+      document.getElementById('tab-banner').style.color = type === 'banner' ? '#fff' : 'rgba(255,255,255,0.4)';
+      document.getElementById('tab-adsense').style.borderBottomColor = type === 'adsense' ? '#4285f4' : 'transparent';
+      document.getElementById('tab-adsense').style.color = type === 'adsense' ? '#fff' : 'rgba(255,255,255,0.4)';
+      document.getElementById('banner-fields').style.display = type === 'banner' ? '' : 'none';
+      document.getElementById('adsense-fields').style.display = type === 'adsense' ? 'block' : 'none';
+    }
+
     // 광고 등록
     document.getElementById('ad-form').addEventListener('submit', function(e) {
       e.preventDefault();
+      var adType = document.getElementById('ad-type').value;
       var formData = new FormData();
       formData.append('title', document.getElementById('ad-title').value.trim());
-      formData.append('link_url', document.getElementById('ad-link').value.trim());
       formData.append('position', document.getElementById('ad-position').value);
-      var fileInput = document.getElementById('ad-image');
-      if (fileInput.files.length > 0) formData.append('image', fileInput.files[0]);
+      formData.append('ad_type', adType);
+
+      if (adType === 'adsense') {
+        formData.append('adsense_code', document.getElementById('ad-adsense-code').value);
+      } else {
+        formData.append('link_url', document.getElementById('ad-link').value.trim());
+        var fileInput = document.getElementById('ad-image');
+        if (fileInput.files.length > 0) formData.append('image', fileInput.files[0]);
+      }
 
       fetch('/admin/ads', { method: 'POST', body: formData, credentials: 'same-origin' })
         .then(function(r) { return r.json(); })
