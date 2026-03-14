@@ -155,6 +155,11 @@
         </div>
       </form>
     </div>
+    <a href="/ad-inquiry" class="ad-box-adh" id="ad-box-adh" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin:20px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);overflow:hidden;transition:all 0.2s">
+      <div id="ad-def-adh" style="text-align:center"><span style="font-size:0.82rem;color:rgba(255,255,255,0.25)">광고 문의하기</span></div>
+      <div id="ad-img-adh" style="display:none;width:100%;height:100%"></div>
+    </a>
+    <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-adh'),df=document.getElementById('ad-def-adh'),ld=document.getElementById('ad-img-adh');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
   </div>
 
   <!-- 외부 판매 전환 모달 -->
@@ -201,7 +206,7 @@
         <div id="delete-insufficient" style="display:none;padding:14px 18px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:12px;margin-bottom:16px;font-size:0.88rem;color:#fca5a5"></div>
         <div class="modal-actions">
           <button type="button" class="btn-cancel" onclick="closeDeleteModal()">취소</button>
-          <button type="button" class="btn-confirm" id="btn-delete-confirm" onclick="confirmDelete()" style="background:linear-gradient(135deg,#ef4444,#dc2626">삭제하기</button>
+          <button type="button" class="btn-confirm" id="btn-delete-confirm" onclick="confirmDelete()" style="background:linear-gradient(135deg,#ef4444,#dc2626)">삭제하기</button>
         </div>
       </div>
     </div>

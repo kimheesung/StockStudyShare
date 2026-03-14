@@ -41,8 +41,27 @@
     }
     .btn-leave:hover { background: rgba(239,68,68,0.2); }
 
-    .two-col { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
+    .two-col { display: grid; grid-template-columns: 280px 1fr 200px; gap: 24px; }
+    @media (max-width: 960px) { .two-col { grid-template-columns: 280px 1fr; } .right-banner { display: none; } }
     @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+    .ad-banner {
+      padding: 20px 16px; background: linear-gradient(180deg, rgba(79,70,229,0.06), rgba(6,182,212,0.04));
+      border: 1px solid rgba(79,70,229,0.15); border-radius: 16px;
+      text-align: center; text-decoration: none; color: #fff; display: flex;
+      flex-direction: column; align-items: center; gap: 10px; transition: all 0.3s;
+      position: sticky; top: 100px;
+    }
+    .ad-banner:hover { border-color: rgba(79,70,229,0.35); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+    .ad-banner-icon { font-size: 1.8rem; }
+    .ad-banner-title { font-size: 0.85rem; font-weight: 700; color: rgba(255,255,255,0.8); line-height: 1.4; }
+    .ad-banner-desc { font-size: 0.72rem; color: rgba(255,255,255,0.35); line-height: 1.5; }
+    .ad-banner-btn {
+      display: inline-block; padding: 8px 16px; background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border-radius: 10px; font-size: 0.75rem; font-weight: 700; color: #fff; margin-top: 4px;
+    }
+    .ad-banner-img { width: 100%; border-radius: 10px; margin-bottom: 4px; }
+    .ad-banner-label { font-size: 0.62rem; color: rgba(255,255,255,0.15); }
 
     .sidebar-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
     .sidebar-title .count { font-size: 0.8rem; color: rgba(255,255,255,0.3); font-weight: 500; }
@@ -145,10 +164,33 @@
           {{reportCards}}
         </div>
       </div>
+      <div class="right-banner">
+        <a href="/ad-inquiry" class="ad-banner" id="right-ad-banner">
+          <div id="right-ad-default">
+            <div class="ad-banner-icon">📢</div>
+            <div class="ad-banner-title">이 자리에<br>광고를 게재하세요</div>
+            <div class="ad-banner-desc">투자 스터디 멤버에게<br>효과적으로 노출됩니다</div>
+            <div class="ad-banner-btn">광고 문의하기</div>
+          </div>
+          <div id="right-ad-content" style="display:none"></div>
+          <div class="ad-banner-label">AD</div>
+        </a>
+      </div>
     </div>
   </div>
-
   <script>
+    // 광고 로드
+    fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(ads){
+      if(ads.length>0){
+        var ad=ads[0],banner=document.getElementById('right-ad-banner'),def=document.getElementById('right-ad-default'),cont=document.getElementById('right-ad-content');
+        if(ad.image_url){
+          cont.innerHTML='<img src="'+ad.image_url+'" class="ad-banner-img" alt="'+ad.title+'">';
+          if(ad.link_url)banner.href=ad.link_url;
+          banner.target='_blank';
+          def.style.display='none';cont.style.display='block';
+        }
+      }
+    }).catch(function(){});
     // 스터디장만 지원서 관리 버튼 표시
     if ('{{isOwner}}' !== 'true') {
       document.getElementById('btn-apps').style.display = 'none';

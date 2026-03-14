@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>광고 문의 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .container { max-width: 640px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+    h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .page-desc { color: rgba(255,255,255,0.5); font-size: 0.92rem; margin-bottom: 32px; line-height: 1.7; }
+    .info-box { padding: 24px 28px; background: linear-gradient(135deg, rgba(79,70,229,0.08), rgba(6,182,212,0.05)); border: 1px solid rgba(79,70,229,0.25); border-radius: 18px; margin-bottom: 32px; font-size: 0.88rem; color: rgba(255,255,255,0.65); line-height: 1.8; }
+    .info-box strong { color: #a5b4fc; font-weight: 700; }
+    .info-items { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .info-item { text-align: center; padding: 16px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; }
+    .info-item-icon { font-size: 1.4rem; margin-bottom: 6px; }
+    .info-item-title { font-size: 0.78rem; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 2px; }
+    .info-item-desc { font-size: 0.72rem; color: rgba(255,255,255,0.35); }
+    .form-group { margin-bottom: 22px; }
+    .form-group label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; color: rgba(255,255,255,0.85); }
+    .form-group label .req { color: #ef4444; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group input, .form-group textarea {
+      width: 100%; padding: 14px 18px; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; color: #fff;
+      font-size: 0.95rem; font-family: inherit; transition: border-color 0.3s;
+    }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(255,255,255,0.25); }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: rgba(79,70,229,0.5); background: rgba(255,255,255,0.08); }
+    .form-group textarea { min-height: 140px; resize: vertical; line-height: 1.7; }
+    .btn-submit {
+      width: 100%; padding: 16px; background: linear-gradient(135deg, #4f46e5, #6366f1); border: none;
+      border-radius: 14px; color: #fff; font-size: 1.05rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all 0.3s; margin-top: 12px;
+      box-shadow: 0 4px 20px rgba(79,70,229,0.3);
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(79,70,229,0.5); }
+    .btn-submit:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
+    .msg { padding: 14px 18px; border-radius: 12px; margin-bottom: 16px; font-size: 0.88rem; display: none; }
+    .msg.success { display: block; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2); color: #4ade80; }
+    .msg.error { display: block; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/dashboard" class="back-link">&larr; 돌아가기</a>
+    <h1><span class="highlight">광고</span> 문의</h1>
+    <p class="page-desc">StockStudyShare에 광고를 게재하고 싶으시다면 아래 양식을 작성해주세요.</p>
+
+    <div class="info-box">
+      StockStudyShare의 투자자 커뮤니티에 광고를 게재하세요.
+      <div class="info-items">
+        <div class="info-item">
+          <div class="info-item-icon">📍</div>
+          <div class="info-item-title">광고 위치</div>
+          <div class="info-item-desc">AI 분석 대기 화면<br>대시보드 등</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-icon">👥</div>
+          <div class="info-item-title">노출 대상</div>
+          <div class="info-item-desc">투자 스터디 참여자<br>리포트 작성자/구매자</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-icon">📋</div>
+          <div class="info-item-title">진행 절차</div>
+          <div class="info-item-desc">문의 접수 → 견적 안내<br>→ 광고 게재</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="msg" class="msg"></div>
+
+    <form id="inquiry-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>이름 / 담당자 <span class="req">*</span></label>
+          <input type="text" name="name" id="inp-name" required value="{{userName}}" placeholder="홍길동">
+        </div>
+        <div class="form-group">
+          <label>이메일 <span class="req">*</span></label>
+          <input type="email" name="email" id="inp-email" required value="{{userEmail}}" placeholder="example@email.com">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>회사 / 브랜드명</label>
+        <input type="text" name="company" id="inp-company" placeholder="선택 사항">
+      </div>
+      <div class="form-group">
+        <label>문의 내용 <span class="req">*</span></label>
+        <textarea name="message" id="inp-message" required placeholder="광고 목적, 희망 기간, 예산 범위 등을 자유롭게 작성해주세요."></textarea>
+      </div>
+      <button type="submit" class="btn-submit" id="btn-submit">문의 보내기</button>
+    </form>
+  </div>
+  <script>
+    document.getElementById('inquiry-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('btn-submit');
+      var msg = document.getElementById('msg');
+      btn.disabled = true;
+      btn.textContent = '전송 중...';
+      msg.className = 'msg';
+
+      fetch('/ad-inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          name: document.getElementById('inp-name').value.trim(),
+          email: document.getElementById('inp-email').value.trim(),
+          company: document.getElementById('inp-company').value.trim(),
+          message: document.getElementById('inp-message').value.trim(),
+        })
+      }).then(function(r) { return r.json(); }).then(function(data) {
+        btn.disabled = false;
+        btn.textContent = '문의 보내기';
+        if (data.ok) {
+          msg.textContent = '광고 문의가 접수되었습니다. 빠른 시일 내에 답변 드리겠습니다.';
+          msg.className = 'msg success';
+          document.getElementById('inp-message').value = '';
+        } else {
+          msg.textContent = data.error || '오류가 발생했습니다.';
+          msg.className = 'msg error';
+        }
+      }).catch(function() {
+        btn.disabled = false;
+        btn.textContent = '문의 보내기';
+        msg.textContent = '네트워크 오류가 발생했습니다.';
+        msg.className = 'msg error';
+      });
+    });
+  </script>
+</body>
+</html>

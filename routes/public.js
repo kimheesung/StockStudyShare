@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const db = require('../lib/db');
-const { render, buildNav, escapeHtml } = require('../lib/helpers');
+const { render, buildNav, escapeHtml, adBannerHtml } = require('../lib/helpers');
 const router = express.Router();
 
 // 시장 데이터 캐시 (5분)
@@ -171,7 +171,7 @@ async function fetchTopGainers() {
     const reports = db.prepare(`
       SELECT r.id, r.title, r.stock_name, r.stock_code, r.market_type, r.base_price, r.sector,
              r.sale_price, r.published_at,
-             COALESCE(ap.display_name, u.name) as author_name
+             COALESCE(u.nickname, ap.display_name, u.name) as author_name
       FROM reports r
       JOIN users u ON r.author_id = u.id
       LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
@@ -188,7 +188,7 @@ async function fetchTopGainers() {
       const fallbackReports = db.prepare(`
         SELECT r.id, r.title, r.stock_name, r.stock_code, r.market_type, r.base_price, r.sector,
                r.sale_price, r.published_at,
-               COALESCE(ap.display_name, u.name) as author_name
+               COALESCE(u.nickname, ap.display_name, u.name) as author_name
         FROM reports r
         JOIN users u ON r.author_id = u.id
         LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
@@ -251,6 +251,38 @@ async function fetchTopGainers() {
     return topGainersCache.data || [];
   }
 }
+
+// 광고 문의 페이지
+router.get('/ad-inquiry', (req, res) => {
+  const user = req.user;
+  const html = render('views/ad-inquiry.html', {
+    nav: user ? buildNav(user) : '<a href="/" class="logo">StockStudyShare</a>',
+    userName: user ? escapeHtml(user.nickname || user.name || '') : '',
+    userEmail: user ? escapeHtml(user.email || '') : '',
+  });
+  res.send(html);
+});
+
+// 광고 문의 제출
+router.post('/ad-inquiry', (req, res) => {
+  const { name, email, company, message } = req.body;
+  if (!name || !email || !message) return res.json({ ok: false, error: '필수 항목을 입력해주세요.' });
+  db.prepare('INSERT INTO ad_inquiries (user_id, name, email, company, message) VALUES (?, ?, ?, ?, ?)').run(
+    req.user?.id || null, name, email, company || null, message
+  );
+  res.json({ ok: true });
+});
+
+// 활성 광고 조회 API (광고 제거 아이템 보유자는 빈 배열)
+router.get('/api/ads', (req, res) => {
+  if (req.user) {
+    const hasAdRemove = db.prepare("SELECT id FROM shop_purchases WHERE user_id = ? AND item_key = 'ad_remove'").get(req.user.id);
+    if (hasAdRemove) return res.json([]);
+  }
+  const position = req.query.position || 'loading';
+  const ads = db.prepare('SELECT id, title, image_url, link_url FROM ads WHERE is_active = 1 AND position = ? ORDER BY RANDOM() LIMIT 1').all(position);
+  res.json(ads);
+});
 
 router.get('/', (req, res) => {
   if (req.isAuthenticated()) {
@@ -336,7 +368,7 @@ router.get('/dashboard', async (req, res) => {
   // 최신 리포트 (on_sale 상태, 최신순 6개)
   const latestReports = db.prepare(`
     SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
-           COALESCE(ap.display_name, u.name) as author_name, r.author_id,
+           COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id,
            (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as purchase_count
     FROM reports r
     JOIN users u ON r.author_id = u.id
@@ -351,7 +383,7 @@ router.get('/dashboard', async (req, res) => {
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
   const hotReports = db.prepare(`
     SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
-           COALESCE(ap.display_name, u.name) as author_name, r.author_id,
+           COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id,
            (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as purchase_count,
            (SELECT COUNT(*) FROM view_logs WHERE report_id = r.id AND created_at >= ?) as view_count
     FROM reports r
@@ -367,7 +399,7 @@ router.get('/dashboard', async (req, res) => {
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
   const topReturnReports = db.prepare(`
     SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
-           COALESCE(ap.display_name, u.name) as author_name, r.author_id,
+           COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id,
            (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as purchase_count,
            r.entry_price, r.stock_code, r.market_type
     FROM reports r
@@ -383,7 +415,7 @@ router.get('/dashboard', async (req, res) => {
   // 팔로우한 작성자의 리포트
   const followReports = db.prepare(`
     SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
-           COALESCE(ap.display_name, u.name) as author_name, r.author_id,
+           COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id,
            (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as purchase_count
     FROM reports r
     JOIN users u ON r.author_id = u.id
@@ -394,6 +426,11 @@ router.get('/dashboard', async (req, res) => {
     LIMIT 6
   `).all(req.user.id);
 
+  // 로그인 유저의 구매 리포트 ID 목록
+  const purchasedSet = new Set();
+  const purchasedRows = db.prepare('SELECT report_id FROM orders WHERE user_id = ?').all(req.user.id);
+  purchasedRows.forEach(o => purchasedSet.add(o.report_id));
+
   function buildReportCards(reports, extraFn) {
     if (reports.length === 0) {
       return '<div class="report-empty">표시할 리포트가 없습니다.</div>';
@@ -402,9 +439,13 @@ router.get('/dashboard', async (req, res) => {
       const price = r.sale_price === 0 ? '무료' : `${r.sale_price.toLocaleString()}P`;
       const date = r.published_at ? new Date(r.published_at).toLocaleDateString('ko-KR') : '';
       const extra = extraFn ? extraFn(r) : `${r.purchase_count}명 구매`;
+      const ownedTag = purchasedSet.has(r.id) ? '<span class="tag-owned">보유중</span>' : '';
       return `<a href="/reports/${r.id}" class="report-card">
         <div class="report-card-top">
-          <span class="report-sector">${escapeHtml(r.sector || '기타')}</span>
+          <div class="report-card-top-left">
+            <span class="report-sector">${escapeHtml(r.sector || '기타')}</span>
+            ${ownedTag}
+          </div>
           <span class="report-price">${price}</span>
         </div>
         <h4 class="report-title">${escapeHtml(r.title)}</h4>
@@ -432,24 +473,28 @@ router.get('/dashboard', async (req, res) => {
   let topGainersHtml = '';
   if (topGainers && topGainers.length > 0) {
     topGainersHtml = topGainers.map((r, i) => {
-      const rank = i + 1;
       const isUp = r.changeRate >= 0;
       const sign = isUp ? '+' : '';
       const cls = isUp ? 'up' : 'down';
       const arrow = isUp ? '&#9650;' : '&#9660;';
       const price = r.sale_price === 0 ? '무료' : `${r.sale_price.toLocaleString()}P`;
-      return `<a href="/reports/${r.id}" class="gainer-row">
-        <div class="gainer-rank rank-${rank}">${rank}</div>
-        <div class="gainer-info">
-          <div class="gainer-title">${escapeHtml(r.title)}</div>
-          <div class="gainer-stock">${escapeHtml(r.stock_name)} (${escapeHtml(r.stock_code)})</div>
-          <div class="gainer-author">${escapeHtml(r.author_name)} · ${price}</div>
+      const ownedTag = purchasedSet.has(r.id) ? '<span class="tag-owned">보유중</span>' : '';
+      const date = r.published_at ? new Date(r.published_at).toLocaleDateString('ko-KR') : '';
+      return `<a href="/reports/${r.id}" class="report-card">
+        <div class="report-card-top">
+          <div class="report-card-top-left">
+            <span class="report-sector">${escapeHtml(r.sector || '기타')}</span>
+            ${ownedTag}
+          </div>
+          <span class="report-price">${price}</span>
         </div>
-        <div class="gainer-price-area">
-          <div class="gainer-current">${r.currentPrice.toLocaleString()}원</div>
-          <div class="gainer-base">기준가 ${r.base_price.toLocaleString()}원</div>
-          <div class="gainer-change ${cls}"><span class="change-arrow">${arrow}</span> ${sign}${r.changeRate.toFixed(2)}%</div>
+        <h4 class="report-title">${escapeHtml(r.title)}</h4>
+        <div class="report-stock">${escapeHtml(r.stock_name)} (${escapeHtml(r.stock_code || '')})</div>
+        <div class="report-meta">
+          <span>${escapeHtml(r.author_name)}</span>
+          <span>${date}</span>
         </div>
+        <div class="report-purchases"><span class="${cls}" style="font-weight:700"><span style="font-size:0.7rem">${arrow}</span> ${sign}${r.changeRate.toFixed(2)}%</span> · 현재 ${r.currentPrice.toLocaleString()}원</div>
       </a>`;
     }).join('');
   } else {
@@ -467,6 +512,7 @@ router.get('/dashboard', async (req, res) => {
     followCards,
     topGainersHtml,
     updatedAt: new Date().toLocaleString('ko-KR'),
+    adBanner: adBannerHtml(),
   });
   res.send(html);
 });
@@ -711,15 +757,19 @@ router.get('/api/report-performance/:id', async (req, res) => {
   }
 });
 
-// 리포터 평균 수익률 API
+// 리포터 평균 수익률 API (발행 후 90일 이상 경과한 리포트만 포함)
 router.get('/api/author-return/:authorId', async (req, res) => {
   try {
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setDate(threeMonthsAgo.getDate() - 90);
+
     const reports = db.prepare(`
-      SELECT entry_price, stock_code, market_type FROM reports
+      SELECT entry_price, stock_code, market_type, published_at FROM reports
       WHERE author_id = ? AND status = 'on_sale'
         AND entry_price IS NOT NULL AND entry_price > 0
         AND stock_code IS NOT NULL AND stock_code != ''
-    `).all(req.params.authorId);
+        AND published_at IS NOT NULL AND published_at <= ?
+    `).all(req.params.authorId, threeMonthsAgo.toISOString());
 
     if (reports.length === 0) return res.json({ avgReturn: null });
 

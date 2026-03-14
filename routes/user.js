@@ -1,7 +1,29 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const db = require('../lib/db');
-const { render, isLoggedIn, buildNav, escapeHtml, addPoints } = require('../lib/helpers');
+const { render, isLoggedIn, buildNav, escapeHtml, addPoints, adBannerHtml } = require('../lib/helpers');
 const router = express.Router();
+
+const profileUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const dir = path.join(__dirname, '..', 'uploads', 'profiles');
+      fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname) || '.jpg';
+      cb(null, `${req.user.id}_${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/^image\/(jpeg|png|gif|webp)$/.test(file.mimetype)) cb(null, true);
+    else cb(new Error('이미지 파일만 업로드 가능합니다.'));
+  },
+});
 
 // 내 프로필
 router.get('/profile', isLoggedIn, (req, res) => {
@@ -24,8 +46,15 @@ router.get('/profile', isLoggedIn, (req, res) => {
       h1{font-size:1.5rem;font-weight:900;margin-bottom:24px}
       h1 .highlight{background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
       .profile-photo-section{text-align:center;margin-bottom:32px}
-      .profile-photo{width:100px;height:100px;border-radius:50%;border:3px solid rgba(79,70,229,0.5);object-fit:cover}
+      .profile-photo{width:100px;height:100px;border-radius:50%;border:3px solid rgba(79,70,229,0.5);object-fit:cover;cursor:pointer;transition:opacity 0.2s}
+      .profile-photo:hover{opacity:0.7}
       .photo-name{font-size:0.85rem;color:rgba(255,255,255,0.4);margin-top:8px}
+      .photo-actions{display:flex;gap:8px;justify-content:center;margin-top:10px}
+      .btn-photo{padding:6px 16px;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;border:none}
+      .btn-photo-upload{background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff}
+      .btn-photo-upload:hover{transform:translateY(-1px);box-shadow:0 2px 12px rgba(79,70,229,0.4)}
+      .btn-photo-reset{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.5)}
+      .btn-photo-reset:hover{color:#ef4444;border-color:rgba(239,68,68,0.3)}
       .form-group{margin-bottom:20px}
       .form-group label{display:block;font-size:0.9rem;font-weight:700;margin-bottom:6px;color:rgba(255,255,255,0.8)}
       .form-group .hint{font-size:0.78rem;color:rgba(255,255,255,0.3);margin-bottom:6px}
@@ -50,8 +79,13 @@ router.get('/profile', isLoggedIn, (req, res) => {
       <div id="msg" class="msg"></div>
 
       <div class="profile-photo-section">
-        <img src="${user.photo || ''}" class="profile-photo" alt="프로필">
-        <div class="photo-name">Google 계정 프로필 사진</div>
+        <img src="${escapeHtml(user.custom_photo || user.photo || '')}" class="profile-photo" id="profile-img" alt="프로필" onclick="document.getElementById('photo-input').click()">
+        <div class="photo-name" id="photo-label">${user.custom_photo ? '커스텀 프로필 사진' : 'Google 계정 프로필 사진'}</div>
+        <input type="file" id="photo-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="uploadPhoto(this)">
+        <div class="photo-actions">
+          <button type="button" class="btn-photo btn-photo-upload" onclick="document.getElementById('photo-input').click()">사진 변경</button>
+          ${user.custom_photo ? '<button type="button" class="btn-photo btn-photo-reset" onclick="resetPhoto()">기본으로 되돌리기</button>' : ''}
+        </div>
       </div>
 
       <form id="profile-form">
@@ -59,6 +93,12 @@ router.get('/profile', isLoggedIn, (req, res) => {
           <label>닉네임</label>
           <div class="hint">2~20자, 한글/영문/숫자/공백/밑줄(_) 사용 가능</div>
           <input type="text" name="nickname" id="nickname" value="${escapeHtml(user.nickname || '')}" required minlength="2" maxlength="20">
+        </div>
+
+        <div class="form-group">
+          <label>자기소개</label>
+          <div class="hint">리포터 보기 등에서 표시됩니다. (최대 200자)</div>
+          <textarea id="bio" name="bio" maxlength="200" rows="3" style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:0.95rem;font-family:inherit;resize:vertical">${escapeHtml(user.bio || '')}</textarea>
         </div>
 
         <div class="form-group">
@@ -90,6 +130,34 @@ router.get('/profile', isLoggedIn, (req, res) => {
       </form>
     </div>
     <script>
+      function uploadPhoto(input) {
+        if (!input.files || !input.files[0]) return;
+        var file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) { alert('파일 크기는 5MB 이하만 가능합니다.'); return; }
+        var formData = new FormData();
+        formData.append('photo', file);
+        var img = document.getElementById('profile-img');
+        img.style.opacity = '0.5';
+        fetch('/my/profile/photo', { method: 'POST', body: formData, credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.ok) {
+              window.location.reload();
+            } else {
+              alert(data.error || '업로드에 실패했습니다.');
+              img.style.opacity = '1';
+            }
+          }).catch(function() { alert('오류가 발생했습니다.'); img.style.opacity = '1'; });
+      }
+      function resetPhoto() {
+        if (!confirm('Google 계정 프로필 사진으로 되돌리시겠습니까?')) return;
+        fetch('/my/profile/photo', { method: 'DELETE', credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.ok) window.location.reload();
+            else alert(data.error || '오류가 발생했습니다.');
+          }).catch(function() { alert('오류가 발생했습니다.'); });
+      }
       document.getElementById('profile-form').addEventListener('submit', function(e) {
         e.preventDefault();
         var btn = document.getElementById('btn-save');
@@ -102,7 +170,7 @@ router.get('/profile', isLoggedIn, (req, res) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ nickname: document.getElementById('nickname').value.trim() })
+          body: JSON.stringify({ nickname: document.getElementById('nickname').value.trim(), bio: document.getElementById('bio').value.trim() })
         }).then(function(r) { return r.json(); }).then(function(data) {
           btn.disabled = false;
           btn.textContent = '저장하기';
@@ -125,6 +193,35 @@ router.get('/profile', isLoggedIn, (req, res) => {
   res.send(html);
 });
 
+// 프로필 사진 업로드
+router.post('/profile/photo', isLoggedIn, profileUpload.single('photo'), (req, res) => {
+  if (!req.file) return res.json({ ok: false, error: '이미지 파일을 선택해주세요.' });
+  const photoUrl = `/uploads/profiles/${req.file.filename}`;
+
+  // 이전 커스텀 사진 삭제
+  const user = db.prepare('SELECT custom_photo FROM users WHERE id = ?').get(req.user.id);
+  if (user?.custom_photo) {
+    const oldPath = path.join(__dirname, '..', user.custom_photo);
+    try { fs.unlinkSync(oldPath); } catch {}
+  }
+
+  db.prepare('UPDATE users SET custom_photo = ? WHERE id = ?').run(photoUrl, req.user.id);
+  req.user.custom_photo = photoUrl;
+  res.json({ ok: true, photoUrl });
+});
+
+// 프로필 사진 초기화 (Google 사진으로 되돌리기)
+router.delete('/profile/photo', isLoggedIn, (req, res) => {
+  const user = db.prepare('SELECT custom_photo FROM users WHERE id = ?').get(req.user.id);
+  if (user?.custom_photo) {
+    const oldPath = path.join(__dirname, '..', user.custom_photo);
+    try { fs.unlinkSync(oldPath); } catch {}
+  }
+  db.prepare('UPDATE users SET custom_photo = NULL WHERE id = ?').run(req.user.id);
+  req.user.custom_photo = null;
+  res.json({ ok: true });
+});
+
 // 프로필 저장
 router.post('/profile', isLoggedIn, (req, res) => {
   const nickname = (req.body.nickname || '').trim();
@@ -141,8 +238,11 @@ router.post('/profile', isLoggedIn, (req, res) => {
     return res.json({ ok: false, error: '이미 사용 중인 닉네임입니다.' });
   }
 
-  db.prepare('UPDATE users SET nickname = ? WHERE id = ?').run(nickname, req.user.id);
+  const bio = (req.body.bio || '').trim().slice(0, 200);
+
+  db.prepare('UPDATE users SET nickname = ?, bio = ? WHERE id = ?').run(nickname, bio || null, req.user.id);
   req.user.nickname = nickname;
+  req.user.bio = bio || null;
 
   res.json({ ok: true });
 });
@@ -178,6 +278,7 @@ router.get('/purchases', isLoggedIn, (req, res) => {
     nav: buildNav(req.user),
     purchaseRows: rows || '<tr><td colspan="6" class="empty-text">구매 내역이 없습니다.</td></tr>',
     totalCount: String(orders.length),
+    adBanner: adBannerHtml(),
   });
   res.send(html);
 });
@@ -203,8 +304,113 @@ router.get('/points', isLoggedIn, (req, res) => {
     currentPoints: (req.user.points || 0).toLocaleString(),
     nickname: escapeHtml(req.user.nickname || req.user.name),
     pointHistory,
+    adBanner: adBannerHtml(),
   });
   res.send(html);
+});
+
+// 상점
+router.get('/shop', isLoggedIn, (req, res) => {
+  const user = db.prepare('SELECT points FROM users WHERE id = ?').get(req.user.id);
+
+  // 광고 제거 보유 확인
+  const hasAdRemove = !!db.prepare("SELECT id FROM shop_purchases WHERE user_id = ? AND item_key = 'ad_remove'").get(req.user.id);
+
+  // 내 보유 아이템
+  const myPurchases = db.prepare("SELECT * FROM shop_purchases WHERE user_id = ? ORDER BY created_at DESC").all(req.user.id);
+  const itemNames = { ad_remove: '광고 제거', skip_monthly: '리포트 회피권 (월간)', skip_annual: '리포트 회피권 (연간)' };
+  const itemIcons = { ad_remove: '🚫', skip_monthly: '🛡️', skip_annual: '🛡️' };
+
+  const myItems = myPurchases.length > 0 ? myPurchases.map(p => {
+    const expired = p.expires_at && new Date(p.expires_at) < new Date();
+    const expStr = p.expires_at ? (expired ? '만료됨 (' + new Date(p.expires_at).toLocaleDateString('ko-KR') + ')' : new Date(p.expires_at).toLocaleDateString('ko-KR') + '까지') : '영구';
+    return `<div class="my-item">
+      <span class="my-item-icon">${itemIcons[p.item_key] || '📦'}</span>
+      <div class="my-item-info">
+        <div class="my-item-name">${escapeHtml(itemNames[p.item_key] || p.item_key)}</div>
+        <div class="my-item-exp">${expStr} · ${new Date(p.created_at).toLocaleDateString('ko-KR')} 구매</div>
+      </div>
+      ${!expired ? '<span class="my-item-active">사용중</span>' : ''}
+    </div>`;
+  }).join('') : '<div class="empty-text">구매한 아이템이 없습니다.</div>';
+
+  // 가입 스터디방 목록
+  const rooms = db.prepare('SELECT sr.id, sr.name FROM study_rooms sr JOIN study_members sm ON sr.id = sm.room_id WHERE sm.user_id = ?').all(req.user.id);
+  const studyRoomOptions = rooms.length > 0
+    ? rooms.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('')
+    : '<option value="">가입된 스터디방 없음</option>';
+
+  const html = render('views/shop.html', {
+    nav: buildNav(req.user),
+    myPoints: (user?.points || 0).toLocaleString(),
+    adRemoveOwned: hasAdRemove ? 'owned' : '',
+    adRemoveDisabled: hasAdRemove ? 'disabled' : '',
+    adRemoveText: hasAdRemove ? '보유중' : '구매하기',
+    myItems,
+    studyRoomOptions,
+  });
+  res.send(html);
+});
+
+// 상점 구매
+router.post('/shop/purchase', isLoggedIn, (req, res) => {
+  const { item_key, price, study_room_id } = req.body;
+
+  const validItems = {
+    ad_remove: { price: 50000, needRoom: false, duration: null },
+    skip_monthly: { price: 10000, needRoom: true, duration: 30 },
+    skip_annual: { price: 100000, needRoom: true, duration: 365 },
+  };
+
+  const item = validItems[item_key];
+  if (!item || item.price !== price) return res.json({ ok: false, error: '유효하지 않은 상품입니다.' });
+
+  // 중복 구매 체크 (광고 제거)
+  if (item_key === 'ad_remove') {
+    const existing = db.prepare("SELECT id FROM shop_purchases WHERE user_id = ? AND item_key = 'ad_remove'").get(req.user.id);
+    if (existing) return res.json({ ok: false, error: '이미 보유 중입니다.' });
+  }
+
+  // 포인트 확인
+  const user = db.prepare('SELECT points FROM users WHERE id = ?').get(req.user.id);
+  if (!user || user.points < item.price) {
+    return res.json({ ok: false, error: `포인트가 부족합니다. (보유: ${(user?.points || 0).toLocaleString()}P)` });
+  }
+
+  // 스터디방 확인
+  let roomId = null;
+  if (item.needRoom) {
+    roomId = parseInt(study_room_id);
+    if (!roomId) return res.json({ ok: false, error: '스터디방을 선택해주세요.' });
+    const isMember = db.prepare('SELECT id FROM study_members WHERE room_id = ? AND user_id = ?').get(roomId, req.user.id);
+    if (!isMember) return res.json({ ok: false, error: '해당 스터디방의 멤버가 아닙니다.' });
+  }
+
+  const expiresAt = item.duration ? new Date(Date.now() + item.duration * 86400000).toISOString() : null;
+
+  const purchaseTx = db.transaction(() => {
+    // 포인트 차감
+    db.prepare('UPDATE users SET points = points - ? WHERE id = ?').run(item.price, req.user.id);
+    db.prepare('INSERT INTO point_logs (user_id, amount, type, description) VALUES (?, ?, ?, ?)').run(
+      req.user.id, -item.price, 'shop', `상점 구매: ${item_key}`
+    );
+
+    // 구매 기록
+    db.prepare('INSERT INTO shop_purchases (user_id, item_key, price, study_room_id, expires_at) VALUES (?, ?, ?, ?, ?)').run(
+      req.user.id, item_key, item.price, roomId, expiresAt
+    );
+
+    // 스터디방 포인트 합산 (회피권)
+    if (roomId) {
+      db.prepare('UPDATE study_rooms SET points = points + ? WHERE id = ?').run(item.price, roomId);
+      db.prepare('INSERT INTO study_point_logs (room_id, amount, type, description) VALUES (?, ?, ?, ?)').run(
+        roomId, item.price, 'shop_item', `리포트 회피권 구매 (${req.user.nickname || req.user.name})`
+      );
+    }
+  });
+  purchaseTx();
+
+  res.json({ ok: true });
 });
 
 // 포인트 충전 처리

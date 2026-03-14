@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../lib/db');
-const { render, isLoggedIn, buildNav, escapeHtml, addPoints } = require('../lib/helpers');
+const { render, isLoggedIn, buildNav, escapeHtml, addPoints, adBannerHtml } = require('../lib/helpers');
 const router = express.Router();
 
 // 리포트 목록
@@ -31,6 +31,13 @@ router.get('/', (req, res) => {
 
   const reports = db.prepare(sql).all(...params);
 
+  // 로그인 유저의 구매 리포트 ID 목록
+  const purchasedSet = new Set();
+  if (user) {
+    const purchased = db.prepare('SELECT report_id FROM orders WHERE user_id = ?').all(user.id);
+    purchased.forEach(o => purchasedSet.add(o.report_id));
+  }
+
   // 리포터별 평균 수익률 캐시
   const authorReturnCache = {};
   function getAuthorAvgReturn(authorId) {
@@ -48,15 +55,17 @@ router.get('/', (req, res) => {
   }
 
   const reportCards = reports.length > 0 ? reports.map(r => {
-    const displayName = escapeHtml(r.display_name || r.author_name);
+    const displayName = escapeHtml(r.author_name || r.display_name);
     const price = r.sale_price === 0 ? '무료' : `${r.sale_price.toLocaleString()}P`;
     const bio = r.author_bio ? escapeHtml(r.author_bio.slice(0, 50)) + (r.author_bio.length > 50 ? '...' : '') : '';
+    const isPurchased = purchasedSet.has(r.id);
     return `
       <a href="/reports/${r.id}" class="report-card-full">
         <div class="report-body">
           <div class="report-card-tags">
             <span class="tag-market">${escapeHtml(r.market_type || '')}</span>
             <span class="tag-sector">${escapeHtml(r.sector || '')}</span>
+            ${isPurchased ? '<span class="tag-purchased">구매함</span>' : ''}
           </div>
           <h3>${escapeHtml(r.title)}</h3>
           <p class="report-stock">${escapeHtml(r.stock_name)} ${r.stock_code ? '(' + escapeHtml(r.stock_code) + ')' : ''}</p>
@@ -64,7 +73,7 @@ router.get('/', (req, res) => {
           <div class="report-stats">
             <span class="stat-sales">${r.sales_count}명 구매</span>
             <span class="stat-rating">${r.avg_rating ? `<span style="color:#fbbf24">&#9733;</span> ${Number(r.avg_rating).toFixed(1)} (${r.rating_count}명)` : '<span style="color:rgba(255,255,255,0.2)">평가 없음</span>'}</span>
-            <span class="stat-return" data-author-id="${r.author_id}">평균 수익률 로딩중...</span>
+            <span class="stat-return" data-report-id="${r.id}">수익률 로딩중...</span>
           </div>
           ${bio ? `<div class="report-author-bio">${bio}</div>` : ''}
           <div class="report-meta-full">
@@ -81,9 +90,9 @@ router.get('/', (req, res) => {
 
   // 리포터 목록 (최신 리포트 작성 순)
   const authors = db.prepare(`
-    SELECT u.id, u.name, u.photo, u.role, u.nickname,
-           COALESCE(ap.display_name, u.nickname, u.name) as display_name,
-           ap.bio, ap.sectors,
+    SELECT u.id, u.name, u.photo, u.custom_photo, u.role, u.nickname,
+           COALESCE(u.nickname, ap.display_name, u.name) as display_name,
+           COALESCE(ap.bio, u.bio) as bio, ap.sectors,
            (SELECT COUNT(*) FROM reports WHERE author_id = u.id AND status = 'on_sale') as report_count,
            (SELECT COUNT(*) FROM orders o JOIN reports r2 ON o.report_id = r2.id WHERE r2.author_id = u.id) as total_sales,
            (SELECT MAX(published_at) FROM reports WHERE author_id = u.id AND status = 'on_sale') as latest_published,
@@ -114,7 +123,7 @@ router.get('/', (req, res) => {
       : '');
     return `<a href="/author-profile/${a.id}" class="author-card">
       <div class="author-card-header">
-        <img src="${a.photo || ''}" alt="">
+        <img src="${a.custom_photo || a.photo || ''}" alt="">
         <div style="flex:1">
           <div class="author-card-name">${escapeHtml(a.display_name)}</div>
           ${a.sectors ? `<span class="author-card-role">${escapeHtml(a.sectors)}</span>` : ''}
@@ -127,6 +136,7 @@ router.get('/', (req, res) => {
         <span>리포트 <span class="val">${a.report_count}</span>건</span>
         <span>판매 <span class="val">${a.total_sales}</span>건</span>
         <span>${ratingStr}</span>
+        <span class="author-avg-return" data-author-id="${a.id}">수익률 로딩중...</span>
         <span>최근 ${latestDate}</span>
       </div>
     </a>`;
@@ -141,6 +151,7 @@ router.get('/', (req, res) => {
     currentSort: sort || '',
     currentQ: q || '',
     isLoggedIn: user ? 'true' : '',
+    adBanner: adBannerHtml(),
   });
   res.send(html);
 });
@@ -174,7 +185,7 @@ router.get('/:id', (req, res) => {
     }
   }
 
-  const displayName = report.display_name || report.author_name;
+  const displayName = report.author_name || report.display_name;
   const price = report.sale_price === 0 ? '무료' : `${report.sale_price.toLocaleString()}P`;
 
   let actionButton;
@@ -183,7 +194,7 @@ router.get('/:id', (req, res) => {
   } else if (hasPurchased) {
     actionButton = `<a href="/reports/${report.id}/view" class="btn-primary">리포트 열람하기</a>`;
   } else {
-    actionButton = `<form method="POST" action="/reports/${report.id}/purchase"><button type="submit" class="btn-primary">구매하기 (${price})</button></form>`;
+    actionButton = `<form method="POST" action="/reports/${report.id}/purchase" onsubmit="return confirm('정말 구매하시겠습니까?\\n${price}가 차감됩니다.')"><button type="submit" class="btn-primary">리포트 구매하기 (${price})</button></form>`;
   }
 
   // 팔로우 버튼
@@ -213,6 +224,7 @@ router.get('/:id', (req, res) => {
     isLoggedIn: user ? 'true' : '',
     holdingDisclosure: escapeHtml(report.holding_disclosure || ''),
     conflictDisclosure: escapeHtml(report.conflict_disclosure || ''),
+    adBanner: adBannerHtml(),
   });
   res.send(html);
 });
@@ -356,7 +368,7 @@ router.get('/:id/view', isLoggedIn, (req, res) => {
     req.user.id, report.id, req.ip, req.get('User-Agent') || ''
   );
 
-  const displayName = report.display_name || report.author_name;
+  const displayName = report.author_name || report.display_name;
 
   // 평가 데이터
   const ratingStats = db.prepare('SELECT AVG(rating) as avg, COUNT(*) as cnt FROM report_ratings WHERE report_id = ?').get(report.id);
@@ -388,6 +400,7 @@ router.get('/:id/view', isLoggedIn, (req, res) => {
     myRating: myRating ? String(myRating.rating) : '0',
     canRate: canRate ? 'true' : '',
     reportSalePrice: String(report.sale_price || 0),
+    adBanner: adBannerHtml(),
   });
   res.send(html);
 });

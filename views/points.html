@@ -75,7 +75,7 @@
     }
     .modal-overlay.show { display: flex; }
     .modal {
-      background: linear-gradient(135deg, #1a1a3e, #2a2a5e; border: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(135deg, #1a1a3e, #2a2a5e); border: 1px solid rgba(255,255,255,0.08);
       border-radius: 24px; padding: 40px; max-width: 400px; width: 90%; text-align: center;
     }
     .modal h2 { font-size: 1.2rem; font-weight: 900; margin-bottom: 8px; }
@@ -132,6 +132,12 @@
         <button class="btn-buy">충전하기</button>
       </div>
     </div>
+
+    <a href="/ad-inquiry" class="ad-box-pts" id="ad-box-pts" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin:20px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);overflow:hidden;transition:all 0.2s">
+      <div id="ad-def-pts" style="text-align:center"><span style="font-size:0.82rem;color:rgba(255,255,255,0.25)">광고 문의하기</span></div>
+      <div id="ad-img-pts" style="display:none;width:100%;height:100%"></div>
+    </a>
+    <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-pts'),df=document.getElementById('ad-def-pts'),ld=document.getElementById('ad-img-pts');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
 
     <h3 class="history-title">포인트 내역</h3>
     <div class="history-list">

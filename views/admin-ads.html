@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>광고 관리 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+    h1 { font-size: 1.5rem; font-weight: 900; margin-bottom: 28px; }
+    h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: #a5b4fc; }
+
+    .section { margin-bottom: 40px; }
+    .card { padding: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; margin-bottom: 12px; }
+
+    /* 광고 등록 폼 */
+    .ad-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
+    .ad-form .full { grid-column: 1 / -1; }
+    .ad-form label { display: block; font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+    .ad-form input, .ad-form select {
+      width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff;
+      font-size: 0.88rem; font-family: inherit;
+    }
+    .ad-form input:focus, .ad-form select:focus { outline: none; border-color: rgba(79,70,229,0.5); }
+    .ad-form select option { background: #1a1a2e; }
+    .btn-add {
+      padding: 10px 24px; background: linear-gradient(135deg, #4f46e5, #6366f1); border: none;
+      border-radius: 10px; color: #fff; font-size: 0.88rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+
+    /* 광고 목록 */
+    .ad-item { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .ad-thumb { width: 120px; height: 70px; border-radius: 10px; object-fit: cover; background: rgba(255,255,255,0.05); flex-shrink: 0; }
+    .ad-info { flex: 1; min-width: 150px; }
+    .ad-title { font-weight: 700; font-size: 0.92rem; margin-bottom: 2px; }
+    .ad-link { font-size: 0.75rem; color: rgba(255,255,255,0.3); word-break: break-all; }
+    .ad-status { font-size: 0.75rem; padding: 3px 10px; border-radius: 8px; font-weight: 700; }
+    .ad-status.active { background: rgba(74,222,128,0.15); color: #4ade80; }
+    .ad-status.inactive { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.3); }
+    .ad-actions { display: flex; gap: 6px; }
+    .btn-sm {
+      padding: 6px 14px; border-radius: 8px; font-size: 0.75rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; border: none; transition: all 0.2s;
+    }
+    .btn-toggle { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.1); }
+    .btn-delete { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+
+    /* 문의 목록 */
+    .inq-item { margin-bottom: 4px; }
+    .inq-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px; }
+    .inq-name { font-weight: 700; font-size: 0.92rem; }
+    .inq-meta { font-size: 0.75rem; color: rgba(255,255,255,0.3); }
+    .inq-message { font-size: 0.85rem; color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 8px; white-space: pre-wrap; }
+    .inq-status { font-size: 0.72rem; padding: 2px 8px; border-radius: 6px; font-weight: 700; }
+    .inq-status.pending { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .inq-status.replied { background: rgba(74,222,128,0.15); color: #4ade80; }
+    .inq-status.closed { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.3); }
+    .empty-text { color: rgba(255,255,255,0.3); text-align: center; padding: 24px; font-size: 0.88rem; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/admin" class="back-link">&larr; 관리자 대시보드</a>
+    <h1><span class="highlight">광고</span> 관리</h1>
+
+    <div class="section">
+      <h2>광고 등록</h2>
+      <div class="card">
+        <form class="ad-form" id="ad-form" enctype="multipart/form-data">
+          <div>
+            <label>광고 제목</label>
+            <input type="text" name="title" id="ad-title" required placeholder="광고주 / 캠페인명">
+          </div>
+          <div>
+            <label>클릭 시 이동 URL</label>
+            <input type="text" name="link_url" id="ad-link" placeholder="https://...">
+          </div>
+          <div>
+            <label>이미지 업로드</label>
+            <input type="file" name="image" id="ad-image" accept="image/*">
+          </div>
+          <div>
+            <label>위치</label>
+            <select name="position" id="ad-position">
+              <option value="loading">AI 분석 대기</option>
+              <option value="dashboard">대시보드</option>
+            </select>
+          </div>
+          <div>
+            <button type="submit" class="btn-add">광고 등록</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>등록된 광고</h2>
+      {{adList}}
+    </div>
+
+    <div class="section">
+      <h2>광고 문의 ({{inquiryCount}}건)</h2>
+      {{inquiryList}}
+    </div>
+  </div>
+  <script>
+    // 광고 등록
+    document.getElementById('ad-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var formData = new FormData();
+      formData.append('title', document.getElementById('ad-title').value.trim());
+      formData.append('link_url', document.getElementById('ad-link').value.trim());
+      formData.append('position', document.getElementById('ad-position').value);
+      var fileInput = document.getElementById('ad-image');
+      if (fileInput.files.length > 0) formData.append('image', fileInput.files[0]);
+
+      fetch('/admin/ads', { method: 'POST', body: formData, credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) window.location.reload();
+          else alert(data.error || '등록 실패');
+        });
+    });
+
+    function toggleAd(id) {
+      fetch('/admin/ads/' + id + '/toggle', { method: 'POST', credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { if (data.ok) window.location.reload(); });
+    }
+    function deleteAd(id) {
+      if (!confirm('이 광고를 삭제하시겠습니까?')) return;
+      fetch('/admin/ads/' + id, { method: 'DELETE', credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { if (data.ok) window.location.reload(); });
+    }
+    function updateInquiry(id, status) {
+      fetch('/admin/ads/inquiry/' + id, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status })
+      }).then(function(r) { return r.json(); })
+        .then(function(data) { if (data.ok) window.location.reload(); });
+    }
+  </script>
+</body>
+</html>

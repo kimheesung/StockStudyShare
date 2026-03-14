@@ -57,14 +57,29 @@
     }
     .modal-overlay.show { display: flex; }
     .modal {
-      background: linear-gradient(135deg, #1a1a3e, #2a2a5e; border: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(135deg, #1a1a3e, #2a2a5e); border: 1px solid rgba(255,255,255,0.08);
       border-radius: 24px; padding: 36px; max-width: 380px; width: 90%; text-align: center;
     }
     .modal h2 { font-size: 1.1rem; font-weight: 900; margin-bottom: 16px; }
     .modal .m-pts { font-size: 1.8rem; font-weight: 900; color: #fbbf24; margin-bottom: 4px; }
-    .modal .m-price { font-size: 0.95rem; color: rgba(255,255,255,0.5); margin-bottom: 24px; }
+    .modal .m-price { font-size: 0.95rem; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+    .modal .m-balance { font-size: 0.82rem; color: rgba(255,255,255,0.4); margin-bottom: 20px; }
+    .modal .m-balance strong { color: #fbbf24; }
+    .method-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .method-option {
+      display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+      background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 14px; cursor: pointer; transition: all 0.2s; text-align: left;
+    }
+    .method-option:hover { border-color: rgba(79,70,229,0.4); }
+    .method-option.selected { border-color: rgba(79,70,229,0.6); background: rgba(79,70,229,0.08); }
+    .method-option input[type="radio"] { accent-color: #6366f1; flex-shrink: 0; }
+    .method-option .method-title { font-size: 0.92rem; font-weight: 700; }
+    .method-option .method-desc { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
+    .method-option .method-desc.insufficient { color: #ef4444; }
     .modal-actions { display: flex; gap: 10px; }
     .btn-confirm { flex:1; padding:12px; background:linear-gradient(135deg,#22c55e,#16a34a); border:none; border-radius:12px; color: #fff; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:inherit; }
+    .btn-confirm:disabled { opacity: 0.4; cursor: default; }
     .btn-cancel { flex:1; padding:12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius:12px; color: #fff; font-size:0.95rem; cursor:pointer; font-family:inherit; }
   </style>
 </head>
@@ -119,46 +134,99 @@
       <h2>스터디방 포인트 충전</h2>
       <div class="m-pts" id="m-pts"></div>
       <div class="m-price" id="m-price"></div>
+      <div class="m-balance">내 보유 포인트: <strong>{{myPoints}}P</strong></div>
+      <div class="method-options">
+        <label class="method-option selected" id="opt-transfer" onclick="selectMethod('transfer')">
+          <input type="radio" name="charge-method" value="transfer" checked>
+          <div>
+            <div class="method-title">내 포인트로 보내기</div>
+            <div class="method-desc" id="transfer-desc">내 보유 포인트에서 차감하여 스터디방에 충전합니다.</div>
+          </div>
+        </label>
+        <label class="method-option" id="opt-purchase" onclick="selectMethod('purchase')">
+          <input type="radio" name="charge-method" value="purchase">
+          <div>
+            <div class="method-title">실제 구매 (결제)</div>
+            <div class="method-desc">별도 결제하여 스터디방에 충전합니다. (내 포인트 차감 없음)</div>
+          </div>
+        </label>
+      </div>
       <div class="modal-actions">
-        <button class="btn-confirm" id="btn-confirm" onclick="confirmCharge()">결제하기</button>
+        <button class="btn-confirm" id="btn-confirm" onclick="confirmCharge()">충전하기</button>
         <button class="btn-cancel" onclick="closeModal()">취소</button>
       </div>
     </div>
   </div>
 
   <script>
-    let selPts = 0, selPrice = 0;
+    var selPts = 0, selPrice = 0;
+    var myPoints = parseInt('{{myPoints}}') || 0;
+    var chargeMethod = 'transfer';
+
+    function selectMethod(method) {
+      chargeMethod = method;
+      document.getElementById('opt-transfer').classList.toggle('selected', method === 'transfer');
+      document.getElementById('opt-purchase').classList.toggle('selected', method === 'purchase');
+      document.querySelector('input[value="' + method + '"]').checked = true;
+      updateConfirmBtn();
+    }
+
+    function updateConfirmBtn() {
+      var btn = document.getElementById('btn-confirm');
+      var desc = document.getElementById('transfer-desc');
+      if (chargeMethod === 'transfer') {
+        if (myPoints < selPts) {
+          btn.disabled = true;
+          desc.textContent = '포인트가 부족합니다. (보유: ' + myPoints.toLocaleString() + 'P / 필요: ' + selPts.toLocaleString() + 'P)';
+          desc.className = 'method-desc insufficient';
+        } else {
+          btn.disabled = false;
+          desc.textContent = '내 보유 포인트에서 차감하여 스터디방에 충전합니다.';
+          desc.className = 'method-desc';
+        }
+        btn.textContent = '내 포인트로 충전하기';
+      } else {
+        btn.disabled = false;
+        desc.textContent = '내 보유 포인트에서 차감하여 스터디방에 충전합니다.';
+        desc.className = 'method-desc';
+        btn.textContent = '결제하기';
+      }
+    }
+
     function openModal(pts, price) {
       selPts = pts; selPrice = price;
       document.getElementById('m-pts').textContent = pts.toLocaleString() + 'P';
       document.getElementById('m-price').textContent = price.toLocaleString() + 'P';
+      selectMethod('transfer');
       document.getElementById('modal').classList.add('show');
     }
     function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
     async function confirmCharge() {
-      const btn = document.getElementById('btn-confirm');
+      var btn = document.getElementById('btn-confirm');
       btn.disabled = true; btn.textContent = '처리중...';
       try {
-        const res = await fetch('/study/{{roomId}}/charge', {
+        var res = await fetch('/study/{{roomId}}/charge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ points: selPts, price: selPrice }),
+          body: JSON.stringify({ points: selPts, price: selPrice, method: chargeMethod }),
         });
-        const data = await res.json();
+        var data = await res.json();
         if (data.ok) {
           window.location.href = data.activated ? '/study/{{roomId}}' : '/study/{{roomId}}/charge';
         } else {
           alert(data.error || '충전에 실패했습니다.');
-          btn.disabled = false; btn.textContent = '결제하기';
+          btn.disabled = false;
+          updateConfirmBtn();
         }
       } catch(e) {
         alert('오류가 발생했습니다.');
-        btn.disabled = false; btn.textContent = '결제하기';
+        btn.disabled = false;
+        updateConfirmBtn();
       }
     }
     document.getElementById('modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
-    // 잠금 상태이면 배너 표시
     if (new URLSearchParams(window.location.search).get('locked') === '1') {
       document.getElementById('locked-banner').style.display = 'block';
     }

@@ -108,10 +108,62 @@
     .import-status { font-size: 0.8rem; margin-top: 10px; color: rgba(255,255,255,0.4); }
     .import-status.error { color: #ef4444; }
     .import-status.success { color: #4ade80; }
+
+    .confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:999; align-items:center; justify-content:center; }
+    .confirm-overlay.show { display:flex; }
+    .confirm-modal {
+      background: linear-gradient(135deg, #1a1a3e, #2a2a5e); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px; padding: 36px; max-width: 380px; width: 90%; text-align: center;
+    }
+    .confirm-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .confirm-title { font-size: 1.1rem; font-weight: 900; margin-bottom: 8px; }
+    .confirm-desc { font-size: 0.88rem; color: rgba(255,255,255,0.5); line-height: 1.6; margin-bottom: 8px; }
+    .confirm-cost {
+      display: inline-block; padding: 8px 20px; background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.25); border-radius: 12px;
+      font-size: 1.2rem; font-weight: 900; color: #fbbf24; margin: 12px 0 20px;
+    }
+    .confirm-actions { display: flex; gap: 10px; }
+    .confirm-ok {
+      flex:1; padding:13px; background:linear-gradient(135deg,#4f46e5,#6366f1); border:none;
+      border-radius:14px; color:#fff; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:inherit;
+      transition: all 0.2s;
+    }
+    .confirm-ok:hover { transform:translateY(-1px); box-shadow:0 4px 20px rgba(79,70,229,0.5); }
+    .confirm-cancel {
+      flex:1; padding:13px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
+      border-radius:14px; color:#fff; font-size:0.95rem; cursor:pointer; font-family:inherit;
+    }
+
+    /* 분석 중 오버레이 */
+    .loading-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center; }
+    .loading-overlay.show { display:flex; }
+    .loading-content { text-align:center; max-width:480px; width:90%; }
+    .spinner {
+      width:56px; height:56px; border:4px solid rgba(255,255,255,0.1);
+      border-top-color:#6366f1; border-radius:50%;
+      animation:spin 0.8s linear infinite; margin:0 auto 20px;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-title { font-size:1.1rem; font-weight:900; margin-bottom:6px; }
+    .loading-desc { font-size:0.85rem; color:rgba(255,255,255,0.4); margin-bottom:24px; }
+    .loading-ad {
+      padding:16px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
+      border-radius:16px; min-height:250px; display:flex; align-items:center; justify-content:center;
+    }
+    .loading-ad-label { font-size:0.7rem; color:rgba(255,255,255,0.2); margin-bottom:8px; }
+    .page-layout { display:grid; grid-template-columns:1fr 200px; gap:24px; max-width:1060px; margin:0 auto; padding:40px 20px; }
+    @media (max-width:960px) { .page-layout { grid-template-columns:1fr; } .side-ad { display:none; } }
+    .page-layout .container { max-width:none; padding:0; }
+    .side-ad-banner { position:sticky; top:100px; }
+    .side-ad-link { display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);text-align:center;transition:all 0.2s;min-height:300px;justify-content:center }
+    .side-ad-link:hover { border-color:rgba(79,70,229,0.25) }
+    .side-ad-link img { width:100%;border-radius:8px }
   </style>
 </head>
 <body>
   <nav>{{nav}}</nav>
+  <div class="page-layout">
   <div class="container">
     <a href="/author/dashboard" class="back-link">&larr; 대시보드</a>
     <h1><span class="highlight">리포트</span> 작성</h1>
@@ -289,8 +341,19 @@
       </div>
     </form>
   </div>
+  <div class="side-ad">
+    <div class="side-ad-banner">
+      <a href="/ad-inquiry" class="side-ad-link" id="ad-box-rw">
+        <div id="ad-def-rw"><div style="font-size:1.5rem;margin-bottom:6px">📢</div><div style="font-size:0.82rem;font-weight:700;color:rgba(255,255,255,0.4)">광고 문의</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.2);margin-top:2px">여기에 광고를 게재하세요</div></div>
+        <div id="ad-img-rw" style="display:none;width:100%"></div>
+      </a>
+    </div>
+  </div>
+  </div><!-- /page-layout -->
 
   <script>
+    // 사이드 광고 로드
+    fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-rw'),df=document.getElementById('ad-def-rw'),ld=document.getElementById('ad-img-rw');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;border-radius:8px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});
     const form = document.querySelector('form');
     const mode = '{{mode}}';
     const reportId = '{{reportId}}';
@@ -350,12 +413,27 @@
         return;
       }
 
-      if (!confirm('AI 분석 시 100P가 차감됩니다.\n계속 진행하시겠습니까?')) return;
+      // 모달로 확인
+      var modal = document.getElementById('ai-confirm-modal');
+      modal.classList.add('show');
+      document.getElementById('ai-confirm-ok').onclick = function() {
+        modal.classList.remove('show');
+        doImport();
+      };
+      return;
+    }
+
+    function doImport() {
+      var fileInput = document.getElementById('import-file');
+      var urlInput = document.getElementById('import-url');
+      var status = document.getElementById('import-status');
+      var btn = document.getElementById('btn-import');
 
       btn.disabled = true;
       btn.textContent = 'AI 분석중...';
-      status.textContent = 'Claude AI가 문서를 분석하고 있습니다... (10~20초 소요)';
+      status.textContent = '';
       status.className = 'import-status';
+      document.getElementById('loading-overlay').classList.add('show');
 
       var formData = new FormData();
 
@@ -368,6 +446,7 @@
       fetch('/author/reports/extract', { method: 'POST', body: formData })
         .then(function(r) { return r.json(); })
         .then(function(data) {
+          document.getElementById('loading-overlay').classList.remove('show');
           btn.disabled = false;
           btn.textContent = '불러오기';
 
@@ -454,6 +533,7 @@
           status.className = 'import-status success';
         })
         .catch(function(e) {
+          document.getElementById('loading-overlay').classList.remove('show');
           btn.disabled = false;
           btn.textContent = '불러오기';
           status.textContent = '오류가 발생했습니다.';
@@ -587,6 +667,61 @@
         items = [];
         activeIdx = -1;
       }
+    })();
+  </script>
+
+  <div class="confirm-overlay" id="ai-confirm-modal">
+    <div class="confirm-modal">
+      <div class="confirm-icon">🤖</div>
+      <div class="confirm-title">AI 리포트 분석</div>
+      <div class="confirm-desc">AI가 문서를 분석하여<br>리포트 양식에 맞게 자동으로 채워줍니다.</div>
+      <div class="confirm-cost">100P</div>
+      <div class="confirm-desc">포인트가 차감됩니다. 진행하시겠습니까?</div>
+      <div class="confirm-actions">
+        <button class="confirm-ok" id="ai-confirm-ok">분석 시작</button>
+        <button class="confirm-cancel" onclick="document.getElementById('ai-confirm-modal').classList.remove('show')">취소</button>
+    </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('ai-confirm-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+  </script>
+  <!-- modal end -->
+
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <div class="loading-title">AI가 문서를 분석하고 있습니다</div>
+      <div class="loading-desc">리포트를 구조화하는 중입니다... (10~20초 소요)</div>
+      <div class="loading-ad-label" style="font-size:0.7rem;color:rgba(255,255,255,0.2);margin:20px 0 6px;text-align:center">광고</div>
+      <a href="/ad-inquiry" target="_blank" id="loading-ad-link" class="loading-ad" style="display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;min-height:200px;text-decoration:none;color:rgba(255,255,255,0.3);cursor:pointer;transition:all 0.2s;flex-direction:column;gap:8px">
+        <div id="ad-placeholder" style="text-align:center">
+          <div style="font-size:1.5rem;margin-bottom:8px">📢</div>
+          <div style="font-size:0.88rem;font-weight:700;color:rgba(255,255,255,0.5)">이 자리에 광고를 게재하세요</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.25);margin-top:4px">클릭하여 광고 문의하기</div>
+        </div>
+        <div id="ad-content" style="display:none;width:100%"></div>
+      </a>
+    </div>
+  </div>
+  <script>
+    // 광고 로드
+    (function() {
+      fetch('/api/ads?position=loading').then(function(r){return r.json()}).then(function(ads) {
+        if (ads.length > 0) {
+          var ad = ads[0];
+          var content = document.getElementById('ad-content');
+          var placeholder = document.getElementById('ad-placeholder');
+          var link = document.getElementById('loading-ad-link');
+          if (ad.image_url) {
+            content.innerHTML = '<img src="' + ad.image_url + '" style="width:100%;max-height:200px;object-fit:contain;border-radius:10px" alt="' + (ad.title || '') + '">';
+            if (ad.link_url) link.href = ad.link_url;
+            link.target = '_blank';
+            placeholder.style.display = 'none';
+            content.style.display = 'block';
+          }
+        }
+      }).catch(function(){});
     })();
   </script>
 </body>

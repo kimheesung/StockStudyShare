@@ -4,7 +4,7 @@ const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const path = require('path');
 const db = require('../lib/db');
-const { render, isLoggedIn, isAuthor, buildNav, escapeHtml, notify } = require('../lib/helpers');
+const { render, isLoggedIn, isAuthor, buildNav, escapeHtml, notify, adBannerHtml } = require('../lib/helpers');
 const router = express.Router();
 
 // 파일 업로드 설정 (메모리 저장, 10MB 제한)
@@ -66,6 +66,7 @@ router.get('/dashboard', isLoggedIn, isAuthor, (req, res) => {
     displayName: escapeHtml(profile?.display_name || req.user.name),
     bio: escapeHtml(profile?.bio || ''),
     sectors: escapeHtml(profile?.sectors || ''),
+    adBanner: adBannerHtml(),
   });
   res.send(html);
 });

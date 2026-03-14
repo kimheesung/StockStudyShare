@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const db = require('../lib/db');
-const { render, isLoggedIn, isStudyLeader, buildNav, escapeHtml, notify } = require('../lib/helpers');
+const { render, isLoggedIn, isStudyLeader, buildNav, escapeHtml, notify, adBannerHtml } = require('../lib/helpers');
 const router = express.Router();
 
 // 지원서 파일 업로드 설정
@@ -24,8 +24,10 @@ const applyUpload = multer({
 
 // 스터디방 목록 - 모집중 우선, 최근 리포트 올라온 순
 router.get('/', isLoggedIn, (req, res) => {
+  const searchQ = (req.query.q || '').trim();
+
   // 전체 스터디방: 모집중(pending 지원 받는 방) 우선, 최근 리포트 순
-  const allRooms = db.prepare(`
+  let sql = `
     SELECT sr.*, sr.points, u.name as owner_name, u.photo as owner_photo,
            (SELECT COUNT(*) FROM study_members WHERE room_id = sr.id) as member_count,
            (SELECT COUNT(*) FROM study_applications WHERE room_id = sr.id AND status = 'pending') as pending_apps,
@@ -35,12 +37,17 @@ router.get('/', isLoggedIn, (req, res) => {
            (SELECT COUNT(*) FROM study_members WHERE room_id = sr.id AND user_id = ?) as is_member,
            (SELECT COUNT(*) FROM study_applications WHERE room_id = sr.id AND user_id = ? AND status = 'pending') as my_pending
     FROM study_rooms sr
-    JOIN users u ON sr.owner_id = u.id
-    ORDER BY
-      (pending_apps > 0) DESC,
+    JOIN users u ON sr.owner_id = u.id`;
+  const params = [req.user.id, req.user.id];
+  if (searchQ) {
+    sql += ` WHERE sr.name LIKE ? OR sr.description LIKE ?`;
+    params.push(`%${searchQ}%`, `%${searchQ}%`);
+  }
+  sql += ` ORDER BY
+      sr.points DESC,
       latest_report_at DESC NULLS LAST,
-      sr.created_at DESC
-  `).all(req.user.id, req.user.id);
+      sr.created_at DESC`;
+  const allRooms = db.prepare(sql).all(...params);
 
   const roomCards = allRooms.map(r => {
     const isMember = r.is_member > 0;
@@ -109,7 +116,9 @@ router.get('/', isLoggedIn, (req, res) => {
     canCreate: canCreate ? 'true' : '',
     showLeaderApply: showLeaderApply ? 'true' : '',
     leaderApplyStatus,
+    currentQ: escapeHtml(searchQ),
     userPoints: String((db.prepare('SELECT points FROM users WHERE id = ?').get(req.user.id) || {}).points || 0),
+    adBanner: adBannerHtml(),
   });
   res.send(html);
 });
@@ -191,16 +200,26 @@ router.get('/leader-apply-status', isLoggedIn, (req, res) => {
 // 스터디방 생성 (스터디장/관리자만)
 router.post('/create', isLoggedIn, isStudyLeader, (req, res) => {
   const { name, description } = req.body;
+  const reportCycleMonths = parseInt(req.body.report_cycle_months) || 3;
   if (!name || !name.trim()) return res.status(400).send('스터디방 이름을 입력해주세요.');
+  if (![1, 2, 3].includes(reportCycleMonths)) return res.status(400).send('유효하지 않은 주기입니다.');
 
-  const result = db.prepare('INSERT INTO study_rooms (name, description, owner_id) VALUES (?, ?, ?)').run(
-    name.trim(), description || '', req.user.id
+  const result = db.prepare('INSERT INTO study_rooms (name, description, owner_id, report_cycle_months) VALUES (?, ?, ?, ?)').run(
+    name.trim(), description || '', req.user.id, reportCycleMonths
+  );
+
+  const roomId = result.lastInsertRowid;
+
+  // 기본 100만 포인트 지급
+  db.prepare('UPDATE study_rooms SET points = 1000000 WHERE id = ?').run(roomId);
+  db.prepare('INSERT INTO study_point_logs (room_id, amount, type, description) VALUES (?, ?, ?, ?)').run(
+    roomId, 1000000, 'initial', '스터디방 개설 기본 포인트 지급'
   );
 
   // 스터디장도 멤버로 추가
-  db.prepare('INSERT INTO study_members (room_id, user_id) VALUES (?, ?)').run(result.lastInsertRowid, req.user.id);
+  db.prepare('INSERT INTO study_members (room_id, user_id) VALUES (?, ?)').run(roomId, req.user.id);
 
-  res.redirect(`/study/${result.lastInsertRowid}`);
+  res.redirect(`/study/${roomId}`);
 });
 
 // 스터디방 포인트 내역 (멤버 열람 가능)
@@ -278,11 +297,13 @@ router.get('/:id/charge', isLoggedIn, (req, res) => {
   const isMember = db.prepare('SELECT id FROM study_members WHERE room_id = ? AND user_id = ?').get(room.id, req.user.id);
   if (!isMember) return res.status(403).send('스터디방 멤버만 충전할 수 있습니다.');
 
+  const currentUser = db.prepare('SELECT points FROM users WHERE id = ?').get(req.user.id);
   const html = render('views/study-charge.html', {
     nav: buildNav(req.user),
     roomId: String(room.id),
     roomName: escapeHtml(room.name),
     roomPoints: (room.points || 0).toLocaleString(),
+    myPoints: String(currentUser?.points || 0),
   });
   res.send(html);
 });
@@ -296,6 +317,7 @@ router.post('/:id/charge', isLoggedIn, (req, res) => {
 
   const points = parseInt(req.body.points);
   const price = parseInt(req.body.price);
+  const method = req.body.method || 'purchase';
   const validPlans = [
     { points: 100000, price: 100000 },
     { points: 1000000, price: 1000000 },
@@ -303,8 +325,33 @@ router.post('/:id/charge', isLoggedIn, (req, res) => {
   const plan = validPlans.find(p => p.points === points && p.price === price);
   if (!plan) return res.json({ ok: false, error: '유효하지 않은 상품입니다.' });
 
-  // mock 결제: 바로 스터디방 포인트 충전
-  db.prepare('UPDATE study_rooms SET points = points + ? WHERE id = ?').run(plan.points, room.id);
+  if (method === 'transfer') {
+    // 내 포인트에서 차감하여 스터디방 충전
+    const currentUser = db.prepare('SELECT points FROM users WHERE id = ?').get(req.user.id);
+    if (!currentUser || currentUser.points < plan.points) {
+      return res.json({ ok: false, error: `포인트가 부족합니다. (보유: ${(currentUser?.points || 0).toLocaleString()}P / 필요: ${plan.points.toLocaleString()}P)` });
+    }
+
+    const transferTx = db.transaction(() => {
+      // 개인 포인트 차감
+      db.prepare('UPDATE users SET points = points - ? WHERE id = ?').run(plan.points, req.user.id);
+      db.prepare('INSERT INTO point_logs (user_id, amount, type, description) VALUES (?, ?, ?, ?)').run(
+        req.user.id, -plan.points, 'study_charge', `스터디방 포인트 충전: ${room.name}`
+      );
+      // 스터디방 포인트 충전
+      db.prepare('UPDATE study_rooms SET points = points + ? WHERE id = ?').run(plan.points, room.id);
+      db.prepare('INSERT INTO study_point_logs (room_id, amount, type, description) VALUES (?, ?, ?, ?)').run(
+        room.id, plan.points, 'member_transfer', `${req.user.name || '멤버'} 포인트 이전 충전`
+      );
+    });
+    transferTx();
+  } else {
+    // 실제 구매(결제): 기존 mock 결제 방식
+    db.prepare('UPDATE study_rooms SET points = points + ? WHERE id = ?').run(plan.points, room.id);
+    db.prepare('INSERT INTO study_point_logs (room_id, amount, type, description) VALUES (?, ?, ?, ?)').run(
+      room.id, plan.points, 'purchase', `${req.user.name || '멤버'} 결제 충전`
+    );
+  }
 
   const updated = db.prepare('SELECT points FROM study_rooms WHERE id = ?').get(room.id);
   res.json({ ok: true, activated: updated.points >= 100000 });
@@ -431,7 +478,7 @@ router.get('/:id', isLoggedIn, (req, res) => {
   const placeholders = memberIds.map(() => '?').join(',');
   const reports = db.prepare(`
     SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at, r.created_at,
-           r.status, r.visibility, COALESCE(ap.display_name, u.nickname, u.name) as author_name, r.author_id
+           r.status, r.visibility, COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id
     FROM reports r
     JOIN users u ON r.author_id = u.id
     LEFT JOIN author_profiles ap ON r.author_id = ap.user_id

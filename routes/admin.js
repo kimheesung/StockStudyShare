@@ -1,7 +1,29 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const db = require('../lib/db');
 const { render, isLoggedIn, isAdmin, buildNav, escapeHtml, addPoints, notify } = require('../lib/helpers');
 const router = express.Router();
+
+const adUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const dir = path.join(__dirname, '..', 'uploads', 'ads');
+      fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname) || '.jpg';
+      cb(null, `ad_${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/^image\//.test(file.mimetype)) cb(null, true);
+    else cb(new Error('이미지 파일만 업로드 가능합니다.'));
+  },
+});
 
 // 관리자 대시보드
 router.get('/', isLoggedIn, isAdmin, (req, res) => {
@@ -567,6 +589,89 @@ router.post('/study-rooms/:id/adjust-points', isLoggedIn, isAdmin, (req, res) =>
   // 이전 페이지로 돌아가기
   const referer = req.headers.referer || `/admin/study-rooms/${room.id}`;
   res.redirect(referer);
+});
+
+// === 광고 관리 ===
+router.get('/ads', isLoggedIn, isAdmin, (req, res) => {
+  const ads = db.prepare('SELECT * FROM ads ORDER BY created_at DESC').all();
+  const inquiries = db.prepare('SELECT * FROM ad_inquiries ORDER BY created_at DESC').all();
+
+  const adList = ads.length > 0 ? ads.map(a => `
+    <div class="card">
+      <div class="ad-item">
+        ${a.image_url ? `<img src="${escapeHtml(a.image_url)}" class="ad-thumb">` : '<div class="ad-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:rgba(255,255,255,0.2)">이미지 없음</div>'}
+        <div class="ad-info">
+          <div class="ad-title">${escapeHtml(a.title)}</div>
+          <div class="ad-link">${escapeHtml(a.link_url || '링크 없음')} · ${a.position}</div>
+        </div>
+        <span class="ad-status ${a.is_active ? 'active' : 'inactive'}">${a.is_active ? '활성' : '비활성'}</span>
+        <div class="ad-actions">
+          <button class="btn-sm btn-toggle" onclick="toggleAd(${a.id})">${a.is_active ? '비활성화' : '활성화'}</button>
+          <button class="btn-sm btn-delete" onclick="deleteAd(${a.id})">삭제</button>
+        </div>
+      </div>
+    </div>
+  `).join('') : '<div class="empty-text">등록된 광고가 없습니다.</div>';
+
+  const inquiryList = inquiries.length > 0 ? inquiries.map(i => `
+    <div class="card inq-item">
+      <div class="inq-header">
+        <span class="inq-name">${escapeHtml(i.name)} ${i.company ? '(' + escapeHtml(i.company) + ')' : ''}</span>
+        <span>
+          <span class="inq-status ${i.status}">${{pending:'대기',replied:'답변완료',closed:'종료'}[i.status] || i.status}</span>
+          <span class="inq-meta">${escapeHtml(i.email)} · ${new Date(i.created_at).toLocaleDateString('ko-KR')}</span>
+        </span>
+      </div>
+      <div class="inq-message">${escapeHtml(i.message)}</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-sm btn-toggle" onclick="updateInquiry(${i.id},'replied')">답변완료</button>
+        <button class="btn-sm btn-toggle" onclick="updateInquiry(${i.id},'closed')">종료</button>
+      </div>
+    </div>
+  `).join('') : '<div class="empty-text">접수된 문의가 없습니다.</div>';
+
+  const html = render('views/admin-ads.html', {
+    nav: buildNav(req.user),
+    adList,
+    inquiryList,
+    inquiryCount: String(inquiries.length),
+  });
+  res.send(html);
+});
+
+// 광고 등록
+router.post('/ads', isLoggedIn, isAdmin, adUpload.single('image'), (req, res) => {
+  const { title, link_url, position } = req.body;
+  if (!title) return res.json({ ok: false, error: '제목을 입력해주세요.' });
+  const imageUrl = req.file ? `/uploads/ads/${req.file.filename}` : null;
+  db.prepare('INSERT INTO ads (title, image_url, link_url, position) VALUES (?, ?, ?, ?)').run(
+    title, imageUrl, link_url || null, position || 'loading'
+  );
+  res.json({ ok: true });
+});
+
+// 광고 활성/비활성 토글
+router.post('/ads/:id/toggle', isLoggedIn, isAdmin, (req, res) => {
+  const ad = db.prepare('SELECT * FROM ads WHERE id = ?').get(req.params.id);
+  if (!ad) return res.json({ ok: false });
+  db.prepare('UPDATE ads SET is_active = ? WHERE id = ?').run(ad.is_active ? 0 : 1, ad.id);
+  res.json({ ok: true });
+});
+
+// 광고 삭제
+router.delete('/ads/:id', isLoggedIn, isAdmin, (req, res) => {
+  const ad = db.prepare('SELECT * FROM ads WHERE id = ?').get(req.params.id);
+  if (ad?.image_url) {
+    try { fs.unlinkSync(path.join(__dirname, '..', ad.image_url)); } catch {}
+  }
+  db.prepare('DELETE FROM ads WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// 문의 상태 변경
+router.post('/ads/inquiry/:id', isLoggedIn, isAdmin, (req, res) => {
+  db.prepare('UPDATE ad_inquiries SET status = ? WHERE id = ?').run(req.body.status, req.params.id);
+  res.json({ ok: true });
 });
 
 module.exports = router;

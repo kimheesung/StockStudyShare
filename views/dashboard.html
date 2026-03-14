@@ -46,7 +46,8 @@
     .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 36px; }
     .report-card { display: block; padding: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; text-decoration: none; color: #fff; transition: all 0.3s; }
     .report-card:hover { background: rgba(255,255,255,0.07); transform: translateY(-3px); border-color: rgba(79,70,229,0.3); }
-    .report-card-top { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .report-card-top { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; gap: 6px; }
+    .report-card-top-left { display: flex; align-items: center; gap: 6px; }
     .report-sector { font-size: 0.7rem; padding: 2px 8px; background: rgba(6,182,212,0.15); color: #67e8f9; border-radius: 10px; }
     .report-price { font-size: 0.8rem; font-weight: 700; color: #fbbf24; }
     .report-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -76,7 +77,8 @@
     .report-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .report-tab { padding: 12px 24px; background: none; border: none; border-bottom: 2px solid transparent; color: rgba(255,255,255,0.4); font-size: 0.95rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; }
     .report-tab:hover { color: rgba(255,255,255,0.7); }
-    .report-tab.active { color: #fff; border-bottom-color: #6366f1); }
+    .report-tab.active { color: #fff; border-bottom-color: #6366f1; }
+    .tag-owned { display: inline-block; padding: 2px 8px; background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); border-radius: 10px; font-size: 0.68rem; font-weight: 700; margin-left: 6px; }
     .report-tab-content { margin-bottom: 8px; }
     .see-all { display: inline-block; color: #a5b4fc; text-decoration: none; font-size: 0.85rem; margin-bottom: 36px; }
     .see-all:hover { color: #fff; }
@@ -88,28 +90,35 @@
 
     <!-- 리포트 탭 -->
     <div class="report-tabs">
-      <button class="report-tab active" onclick="switchTab('gainers')">🚀 상승률</button>
-      <button class="report-tab" onclick="switchTab('topReturn')">💰 수익률 TOP</button>
-      <button class="report-tab" onclick="switchTab('follow')">⭐ 팔로우</button>
-      <button class="report-tab" onclick="switchTab('latest')">📝 최신</button>
+      <button class="report-tab active" onclick="switchTab('latest')">📝 최신</button>
       <button class="report-tab" onclick="switchTab('hot')">🔥 핫한</button>
+      <button class="report-tab" onclick="switchTab('gainers')">🚀 상승률</button>
+      <button class="report-tab" onclick="switchTab('follow')">⭐ 팔로우</button>
+      <button class="report-tab" onclick="switchTab('topReturn')">💰 수익률 TOP</button>
     </div>
-    <div class="report-tab-content" id="tab-gainers">
-      <div class="gainer-list">{{topGainersHtml}}</div>
-    </div>
-    <div class="report-tab-content" id="tab-topReturn" style="display:none">
-      <div class="report-grid">{{topReturnCards}}</div>
-    </div>
-    <div class="report-tab-content" id="tab-follow" style="display:none">
-      <div class="report-grid">{{followCards}}</div>
-    </div>
-    <div class="report-tab-content" id="tab-latest" style="display:none">
+    <div class="report-tab-content" id="tab-latest">
       <div class="report-grid">{{latestCards}}</div>
     </div>
     <div class="report-tab-content" id="tab-hot" style="display:none">
       <div class="report-grid">{{hotCards}}</div>
     </div>
+    <div class="report-tab-content" id="tab-gainers" style="display:none">
+      <div class="report-grid">{{topGainersHtml}}</div>
+    </div>
+    <div class="report-tab-content" id="tab-follow" style="display:none">
+      <div class="report-grid">{{followCards}}</div>
+    </div>
+    <div class="report-tab-content" id="tab-topReturn" style="display:none">
+      <div class="report-grid">{{topReturnCards}}</div>
+    </div>
     <a href="/reports" class="see-all">전체 리포트 보기 →</a>
+
+    <!-- 광고 배너 -->
+    <a href="/ad-inquiry" class="ad-box" id="ad-box" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin:20px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);overflow:hidden;transition:all 0.2s">
+      <div id="ad-default" style="text-align:center"><span style="font-size:0.82rem;color:rgba(255,255,255,0.25)">광고 문의하기</span></div>
+      <div id="ad-loaded" style="display:none;width:100%;height:100%"></div>
+    </a>
+    <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box'),df=document.getElementById('ad-default'),ld=document.getElementById('ad-loaded');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
 
     <!-- 시장 주요 지표 -->
     <h2 class="section-title"><span class="icon">📊</span> 시장 주요 지표</h2>

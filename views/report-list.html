@@ -19,6 +19,13 @@
     .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.85rem; transition: all 0.3s; }
     .logout-btn:hover { background: rgba(255,255,255,0.08); }
     .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+    .page-wrap { display:grid; grid-template-columns:1fr 200px; gap:24px; max-width:1260px; margin:0 auto; padding:40px 20px; }
+    @media (max-width:960px) { .page-wrap { grid-template-columns:1fr; } .page-wrap .side-ad { display:none; } }
+    .page-wrap .container { max-width:none; padding:0; }
+    .side-ad-sticky { position:sticky; top:100px; }
+    .side-ad-link { display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);text-align:center;transition:all 0.2s;min-height:300px;justify-content:center }
+    .side-ad-link:hover { border-color:rgba(79,70,229,0.25) }
+    .side-ad-link img { width:100%;border-radius:8px }
     h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
     h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .sub-text { color: rgba(255,255,255,0.5); margin-bottom: 30px; }
@@ -48,6 +55,7 @@
     }
     .tag-market { background: rgba(79,70,229,0.2); color: #a5b4fc; border: 1px solid rgba(79,70,229,0.3); }
     .tag-sector { background: rgba(6,182,212,0.2); color: #67e8f9; border: 1px solid rgba(6,182,212,0.3); }
+    .tag-purchased { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); font-weight: 700; }
     .report-stock { font-size: 0.85rem; color: #67e8f9; margin-bottom: 8px; }
     .report-summary { color: rgba(255,255,255,0.4); font-size: 0.88rem; line-height: 1.6; margin-bottom: 12px; }
     .report-stats { display: flex; gap: 14px; margin-bottom: 8px; font-size: 0.78rem; }
@@ -103,6 +111,7 @@
 </head>
 <body>
   <nav>{{nav}}</nav>
+  <div class="page-wrap">
   <div class="container">
     <h1><span class="highlight">리포트</span> 검색</h1>
     <div class="page-tabs">
@@ -143,6 +152,11 @@
     <div class="report-grid">
       {{reportCards}}
     </div>
+    <a href="/ad-inquiry" class="ad-box-rpl" id="ad-box-rpl" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin:20px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);overflow:hidden;transition:all 0.2s">
+      <div id="ad-def-rpl" style="text-align:center"><span style="font-size:0.82rem;color:rgba(255,255,255,0.25)">광고 문의하기</span></div>
+      <div id="ad-img-rpl" style="display:none;width:100%;height:100%"></div>
+    </a>
+    <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-rpl'),df=document.getElementById('ad-def-rpl'),ld=document.getElementById('ad-img-rpl');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
     </div>
 
     <div id="author-section" style="display:none">
@@ -151,7 +165,17 @@
       </div>
     </div>
   </div>
+  <div class="side-ad">
+    <div class="side-ad-sticky">
+      <a href="/ad-inquiry" class="side-ad-link" id="ad-box-rls">
+        <div id="ad-def-rls"><div style="font-size:1.5rem;margin-bottom:6px">📢</div><div style="font-size:0.82rem;font-weight:700;color:rgba(255,255,255,0.4)">광고 문의</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.2);margin-top:2px">여기에 광고를 게재하세요</div></div>
+        <div id="ad-img-rls" style="display:none;width:100%"></div>
+      </a>
+    </div>
+  </div>
+  </div><!-- /page-wrap -->
   <script>
+    fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-rls'),df=document.getElementById('ad-def-rls'),ld=document.getElementById('ad-img-rls');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;border-radius:8px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});
     // 탭 전환
     var currentView = new URLSearchParams(window.location.search).get('view');
     if (currentView === 'authors') {
@@ -176,33 +200,58 @@
       });
     });
 
-    // 리포터별 평균 수익률 로드
+    // 리포트별 수익률 로드
     (function() {
-      var els = document.querySelectorAll('.stat-return[data-author-id]');
+      var els = document.querySelectorAll('.stat-return[data-report-id]');
+      els.forEach(function(el) {
+        var reportId = el.dataset.reportId;
+        fetch('/api/report-performance/' + reportId)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (!data || data.error || data.totalReturn === null || data.totalReturn === undefined) {
+              el.textContent = '수익률 데이터 없음';
+              el.style.color = 'rgba(255,255,255,0.2)';
+              return;
+            }
+            var isUp = data.totalReturn >= 0;
+            var sign = isUp ? '+' : '';
+            el.textContent = '수익률 ' + sign + data.totalReturn.toFixed(2) + '%';
+            el.classList.add(isUp ? 'up' : 'down');
+          })
+          .catch(function() {
+            el.textContent = '';
+          });
+      });
+    })();
+
+    // 리포터 평균 수익률 로드
+    (function() {
+      var els = document.querySelectorAll('.author-avg-return[data-author-id]');
       var authorIds = [];
       els.forEach(function(el) {
         var id = el.dataset.authorId;
         if (authorIds.indexOf(id) === -1) authorIds.push(id);
       });
-
       authorIds.forEach(function(authorId) {
         fetch('/api/author-return/' + authorId)
           .then(function(r) { return r.json(); })
           .then(function(data) {
-            var targets = document.querySelectorAll('.stat-return[data-author-id="' + authorId + '"]');
+            var targets = document.querySelectorAll('.author-avg-return[data-author-id="' + authorId + '"]');
             targets.forEach(function(el) {
               if (data.avgReturn === null) {
                 el.textContent = '수익률 데이터 없음';
+                el.style.color = 'rgba(255,255,255,0.2)';
               } else {
                 var isUp = data.avgReturn >= 0;
                 var sign = isUp ? '+' : '';
-                el.textContent = '평균 수익률 ' + sign + data.avgReturn.toFixed(2) + '% (' + data.count + '건)';
-                el.classList.add(isUp ? 'up' : 'down');
+                el.textContent = '평균수익률 ' + sign + data.avgReturn.toFixed(2) + '% (' + data.count + '건)';
+                el.style.color = isUp ? '#ef4444' : '#3b82f6';
+                el.style.fontWeight = '700';
               }
             });
           })
           .catch(function() {
-            document.querySelectorAll('.stat-return[data-author-id="' + authorId + '"]').forEach(function(el) {
+            document.querySelectorAll('.author-avg-return[data-author-id="' + authorId + '"]').forEach(function(el) {
               el.textContent = '';
             });
           });
