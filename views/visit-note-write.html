@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>탐방노트 작성 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(15,12,41,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    .back-link:hover { color: #fff; }
+    h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #f59e0b, #22c55e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .sub-text { color: rgba(255,255,255,0.5); margin-bottom: 30px; font-size: 0.9rem; }
+    .form-group { margin-bottom: 24px; }
+    .form-group label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; color: rgba(255,255,255,0.8); }
+    .form-group label .required { color: #ef4444; }
+    .form-group .hint { font-size: 0.8rem; color: rgba(255,255,255,0.3); margin-bottom: 8px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    input[type="text"], input[type="number"], input[type="date"], select, textarea {
+      width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff;
+      font-size: 0.95rem; font-family: inherit; transition: border-color 0.3s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(79,70,229,0.5); }
+    select option { background: #1a1a2e; color: #fff; }
+    textarea { min-height: 120px; resize: vertical; line-height: 1.7; }
+    textarea.large { min-height: 200px; }
+    .section-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 32px 0; }
+    .form-actions { display: flex; gap: 16px; margin-top: 32px; }
+    .btn-draft {
+      padding: 14px 32px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-draft:hover { background: rgba(255,255,255,0.1); }
+    .btn-submit {
+      padding: 14px 32px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none;
+      border-radius: 50px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: all 0.3s; box-shadow: 0 4px 20px rgba(34,197,94,0.3);
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(34,197,94,0.5); }
+    .note-badge {
+      display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700;
+      background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); margin-bottom: 16px;
+    }
+    .stock-input-wrap { position: relative; }
+    .stock-autocomplete {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+      background: #1a1a2e; border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px; margin-top: 4px; max-height: 260px; overflow-y: auto;
+      display: none; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .stock-autocomplete.show { display: block; }
+    .stock-item {
+      padding: 10px 16px; cursor: pointer; display: flex; justify-content: space-between;
+      align-items: center; transition: background 0.15s; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .stock-item:last-child { border-bottom: none; }
+    .stock-item:hover, .stock-item.active { background: rgba(79,70,229,0.2); }
+    .stock-item-name { font-size: 0.9rem; font-weight: 700; }
+    .stock-item-info { font-size: 0.75rem; color: rgba(255,255,255,0.4); display: flex; gap: 8px; }
+    .stock-item-info span { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/visit-notes" class="back-link">&larr; 탐방노트 목록</a>
+    <span class="note-badge">탐방노트</span>
+    <h1><span class="highlight">탐방노트</span> 작성</h1>
+    <p class="sub-text">기업 탐방, 현장 방문 등의 인사이트를 기록하고 공유하세요.</p>
+
+    <form method="POST" action="/visit-notes/new">
+      <div class="form-row">
+        <div class="form-group">
+          <label>종목명 <span class="required">*</span></label>
+          <div class="stock-input-wrap">
+            <input type="text" name="stock_name" id="stock-name-input" required placeholder="종목명을 입력하면 자동완성됩니다" autocomplete="off">
+            <div class="stock-autocomplete" id="stock-autocomplete"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>종목코드</label>
+          <input type="text" name="stock_code" id="stock-code-input" placeholder="자동 입력">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>탐방노트 제목 <span class="required">*</span></label>
+        <input type="text" name="title" required placeholder="예: 삼성전자 평택캠퍼스 방문기 - 반도체 라인 증설 현황">
+      </div>
+
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>탐방 일자 <span class="required">*</span></label>
+          <input type="date" name="visit_date" required>
+        </div>
+        <div class="form-group">
+          <label>시장</label>
+          <select name="market_type" id="market-type-select">
+            <option value="">선택</option>
+            <option value="KOSPI">KOSPI</option>
+            <option value="KOSDAQ">KOSDAQ</option>
+            <option value="US">미국</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>섹터</label>
+          <select name="sector" id="sector-select">
+            <option value="">선택</option>
+            <option value="IT/반도체">IT/반도체</option>
+            <option value="바이오/헬스케어">바이오/헬스케어</option>
+            <option value="금융">금융</option>
+            <option value="소비재">소비재</option>
+            <option value="에너지/소재">에너지/소재</option>
+            <option value="산업재">산업재</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>탐방 장소 <span class="required">*</span></label>
+        <input type="text" name="visit_location" required placeholder="예: 삼성전자 평택캠퍼스, IR 미팅룸">
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="form-group">
+        <label>탐방 목적 <span class="required">*</span></label>
+        <div class="hint">이 기업을 방문한 이유와 확인하고자 한 사항을 작성해주세요.</div>
+        <textarea name="visit_purpose" required placeholder="예: 신규 반도체 라인 증설 일정과 가동률 확인, 2분기 실적 가이던스 파악"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>탐방 내용 / 발견사항 <span class="required">*</span></label>
+        <div class="hint">실제 방문에서 보고 들은 핵심 내용을 기록해주세요.</div>
+        <textarea name="visit_findings" class="large" required placeholder="예:
+1. 평택 P4 라인 가동률 90% 이상 확인
+2. HBM 수율 70% 돌파, 하반기 80% 목표
+3. 신규 고객사(N사) 퀄 테스트 진행 중"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>투자 시사점 / 소감</label>
+        <div class="hint">탐방을 통해 느낀 점과 투자 판단에 미치는 영향을 서술해주세요.</div>
+        <textarea name="visit_impressions" class="large" placeholder="예: HBM 수율 개선 속도가 예상보다 빠르며, 하반기 실적 서프라이즈 가능성 높음. 현 주가 대비 저평가 판단."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>요약 (Summary) <span class="required">*</span></label>
+        <div class="hint">탐방노트의 핵심을 2~3문장으로 요약해주세요.</div>
+        <textarea name="summary" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>참고 자료 (References)</label>
+        <textarea name="references_text" placeholder="관련 기사, IR 자료 링크 등"></textarea>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>판매가 (P) <span class="required">*</span></label>
+          <div class="hint">0 입력 시 무료 노트</div>
+          <input type="number" name="sale_price" value="0" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>최대 구매자 수</label>
+          <div class="hint">0 = 무제한</div>
+          <input type="number" name="max_buyers" value="0" placeholder="0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>보유 여부 공시</label>
+          <select name="holding_disclosure">
+            <option value="미보유">미보유</option>
+            <option value="보유">보유</option>
+            <option value="보유 예정">보유 예정</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>이해충돌 공시</label>
+          <input type="text" name="conflict_disclosure" placeholder="예: 이해충돌 없음">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" name="action" value="draft" class="btn-draft">임시저장</button>
+        <button type="submit" name="action" value="submit" class="btn-submit">제출하기 (관리자 승인 필요)</button>
+      </div>
+    </form>
+  </div>
+  <script>
+    // 종목 자동완성
+    (function() {
+      var nameInput = document.getElementById('stock-name-input');
+      var codeInput = document.getElementById('stock-code-input');
+      var marketSelect = document.getElementById('market-type-select');
+      var sectorSelect = document.getElementById('sector-select');
+      var dropdown = document.getElementById('stock-autocomplete');
+      var debounceTimer = null;
+      var activeIdx = -1;
+      var items = [];
+
+      nameInput.addEventListener('input', function() {
+        var q = nameInput.value.trim();
+        clearTimeout(debounceTimer);
+        if (q.length < 1) { hideDropdown(); return; }
+        debounceTimer = setTimeout(function() { searchStock(q); }, 200);
+      });
+
+      nameInput.addEventListener('keydown', function(e) {
+        if (!dropdown.classList.contains('show')) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); highlightItem(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); highlightItem(); }
+        else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); selectStock(items[activeIdx]); }
+        else if (e.key === 'Escape') { hideDropdown(); }
+      });
+
+      document.addEventListener('click', function(e) { if (!e.target.closest('.stock-input-wrap')) hideDropdown(); });
+
+      function searchStock(q) {
+        fetch('/api/stock-search?q=' + encodeURIComponent(q))
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            items = data; activeIdx = -1;
+            if (data.length === 0) { hideDropdown(); return; }
+            dropdown.innerHTML = data.map(function(s, i) {
+              return '<div class="stock-item" data-idx="' + i + '">'
+                + '<span class="stock-item-name">' + s.name + '</span>'
+                + '<span class="stock-item-info"><span>' + s.code + '</span><span>' + s.market + '</span><span>' + s.sector + '</span></span></div>';
+            }).join('');
+            dropdown.classList.add('show');
+            dropdown.querySelectorAll('.stock-item').forEach(function(el) {
+              el.addEventListener('click', function() { selectStock(items[parseInt(el.dataset.idx)]); });
+            });
+          }).catch(function() { hideDropdown(); });
+      }
+
+      function selectStock(stock) {
+        nameInput.value = stock.name;
+        codeInput.value = stock.code;
+        if (marketSelect && stock.market) marketSelect.value = stock.market;
+        if (sectorSelect && stock.sector) sectorSelect.value = stock.sector;
+        hideDropdown();
+      }
+
+      function highlightItem() {
+        dropdown.querySelectorAll('.stock-item').forEach(function(el, i) { el.classList.toggle('active', i === activeIdx); });
+        var active = dropdown.querySelector('.stock-item.active');
+        if (active) active.scrollIntoView({ block: 'nearest' });
+      }
+
+      function hideDropdown() { dropdown.classList.remove('show'); dropdown.innerHTML = ''; items = []; activeIdx = -1; }
+    })();
+  </script>
+</body>
+</html>
