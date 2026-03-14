@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{name}} - 리포트 치킨배</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #fff; }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+    .back-link { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+    h1 { font-size: 1.5rem; font-weight: 900; margin-bottom: 8px; }
+    .meta-row { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.4); font-size: 0.88rem; margin-bottom: 24px; flex-wrap: wrap; }
+    .meta-row img { width: 28px; height: 28px; border-radius: 50%; }
+    .status-badge { font-size: 0.78rem; padding: 4px 14px; border-radius: 20px; font-weight: 700; }
+    .status-recruiting { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+    .status-active { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .status-ended { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.1); }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 28px; }
+    .stat-card { padding: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; text-align: center; }
+    .stat-card .label { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+    .stat-card .value { font-size: 1.3rem; font-weight: 900; }
+
+    .join-section { padding: 24px; background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(249,115,22,0.06)); border: 1px solid rgba(239,68,68,0.2); border-radius: 18px; margin-bottom: 28px; }
+    .join-section h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; color: #f87171; }
+    .join-form { display: flex; flex-direction: column; gap: 12px; }
+    .join-form select { padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; color: #fff; font-size: 0.9rem; font-family: inherit; }
+    .join-form select option { background: #1a1a2e; }
+    .join-form .fee-notice { font-size: 0.85rem; color: #fbbf24; padding: 10px 14px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; }
+    .btn-join { padding: 14px; background: linear-gradient(135deg, #ef4444, #f97316); border: none; border-radius: 50px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.3s; }
+    .btn-join:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(239,68,68,0.4); }
+
+    .start-section { padding: 20px 24px; background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.15); border-radius: 16px; margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .btn-start { padding: 12px 28px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; border-radius: 50px; color: #fff; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.95rem; }
+    .btn-settle { padding: 12px 28px; background: linear-gradient(135deg, #f59e0b, #d97706); border: none; border-radius: 50px; color: #fff; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.95rem; }
+
+    .table-section { margin-top: 8px; }
+    .table-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 14px; font-size: 0.78rem; color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    td { padding: 12px 14px; font-size: 0.88rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    @media (max-width: 700px) { table { font-size: 0.8rem; } th, td { padding: 8px 6px; } }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <a href="/contest" class="back-link">&larr; 대회 목록</a>
+    <h1>&#127942; {{name}}</h1>
+    <div class="meta-row">
+      <img src="{{creatorPhoto}}" alt="">
+      <span>{{creatorName}} 주최</span>
+      <span class="status-badge status-{{status}}">
+        <script>document.write({'recruiting':'모집중','active':'진행중','ended':'종료','cancelled':'취소됨'}['{{status}}'] || '{{status}}')</script>
+      </span>
+      <span id="date-info"></span>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">참가비</div>
+        <div class="value" style="color:#4ade80">무료</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">참가 인원</div>
+        <div class="value">{{participantCount}}/{{maxParticipants}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">총 상금</div>
+        <div class="value" style="color:#f87171">{{totalPrize}}P</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">대회 기간</div>
+        <div class="value">{{durationDays}}일</div>
+      </div>
+    </div>
+
+    <!-- 참가 폼 -->
+    <div id="join-section" style="display:none">
+      <div class="join-section">
+        <h3>&#128293; 대회 지원하기</h3>
+        <form class="join-form" method="POST" action="/contest/{{contestId}}/join">
+          <div>
+            <label style="font-size:0.85rem;font-weight:700;margin-bottom:6px;display:block">출전 리포트 선택</label>
+            <select name="report_id" required>
+              <option value="">리포트를 선택하세요</option>
+              {{myReportOptions}}
+            </select>
+          </div>
+          <div class="fee-notice" style="color:#4ade80;background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.2)">&#10003; 참가비 무료! 리포트 종목으로 수익률을 겨루세요. (같은 종목 중복 불가)</div>
+          <button type="submit" class="btn-join">지원하기</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 대회 시작 버튼 (주최자) -->
+    <div id="start-section" style="display:none">
+      <div class="start-section">
+        <div>
+          <strong style="color:#4ade80">대회 시작 가능!</strong>
+          <span style="font-size:0.85rem;color:rgba(255,255,255,0.4);margin-left:8px">{{participantCount}}명 참가 (최소 {{minParticipants}}명)</span>
+        </div>
+        <form method="POST" action="/contest/{{contestId}}/start">
+          <button type="submit" class="btn-start" onclick="return confirm('대회를 시작하시겠습니까?\n선정하지 않은 지원자는 선착순 자동 선정됩니다.\n시작 후 참가자 변경 불가!')">대회 시작</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 정산 버튼 -->
+    <div id="settle-section" style="display:none">
+      <div class="start-section" style="background:rgba(245,158,11,0.06);border-color:rgba(245,158,11,0.15)">
+        <div>
+          <strong style="color:#fbbf24">대회 기간 종료</strong>
+          <span style="font-size:0.85rem;color:rgba(255,255,255,0.4);margin-left:8px">결과를 정산해주세요</span>
+        </div>
+        <form method="POST" action="/contest/{{contestId}}/settle">
+          <button type="submit" class="btn-settle" onclick="return confirm('최종 정산을 실행하시겠습니까?')">결과 정산</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 지원자 목록 (주최자에게 선정/거절 표시) -->
+    <div id="pending-section" style="display:none">
+      <div class="table-section" style="margin-bottom:28px">
+        <h2 style="color:#fbbf24">&#128221; 지원자 목록 <span style="font-size:0.85rem;font-weight:400;color:rgba(255,255,255,0.4)">({{applicantCount}}명 대기중)</span></h2>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>지원자</th><th>종목</th><th>리포트</th><th>액션</th></tr></thead>
+          <tbody>{{pendingRows}}</tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 참가자 / 순위 테이블 -->
+    <div class="table-section">
+      <h2>&#127941; 선정 참가자 <span style="font-size:0.85rem;font-weight:400;color:rgba(255,255,255,0.4)">({{participantCount}}/{{maxParticipants}}명)</span></h2>
+      <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr><th>순위</th><th>참가자</th><th>종목</th><th>시작가</th><th>현재가</th><th>수익률</th><th>상금</th></tr>
+        </thead>
+        <tbody>
+          {{entryRows}}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if ('{{canJoin}}' === 'true') document.getElementById('join-section').style.display = 'block';
+    if ('{{canStart}}' === 'true') document.getElementById('start-section').style.display = 'block';
+    if ('{{hasPending}}' === 'true') document.getElementById('pending-section').style.display = 'block';
+
+    // 정산 가능 여부
+    var status = '{{status}}';
+    var endDate = '{{endDate}}';
+    var isCreator = '{{isCreator}}' === 'true';
+    if (status === 'active' && endDate && new Date(endDate) <= new Date() && isCreator) {
+      document.getElementById('settle-section').style.display = 'block';
+    }
+
+    // 날짜 표시
+    var dateEl = document.getElementById('date-info');
+    if (status === 'active' || status === 'ended') {
+      dateEl.textContent = '{{startDate}} ~ {{endDate}}';
+    } else if (status === 'recruiting') {
+      dateEl.textContent = '기간: {{durationDays}}일 (시작 후 카운트)';
+    }
+  </script>
+</body>
+</html>

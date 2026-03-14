@@ -19,13 +19,8 @@
     .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.85rem; transition: all 0.3s; }
     .logout-btn:hover { background: rgba(255,255,255,0.08); }
     .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
-    .page-wrap { display:grid; grid-template-columns:1fr 200px; gap:24px; max-width:1260px; margin:0 auto; padding:40px 20px; }
-    @media (max-width:960px) { .page-wrap { grid-template-columns:1fr; } .page-wrap .side-ad { display:none; } }
+    .page-wrap { max-width:1000px; margin:0 auto; padding:40px 20px; }
     .page-wrap .container { max-width:none; padding:0; }
-    .side-ad-sticky { position:sticky; top:100px; }
-    .side-ad-link { display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);text-align:center;transition:all 0.2s;min-height:300px;justify-content:center }
-    .side-ad-link:hover { border-color:rgba(79,70,229,0.25) }
-    .side-ad-link img { width:100%;border-radius:8px }
     h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
     h1 .highlight { background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .sub-text { color: rgba(255,255,255,0.5); margin-bottom: 30px; }
@@ -165,17 +160,8 @@
       </div>
     </div>
   </div>
-  <div class="side-ad">
-    <div class="side-ad-sticky">
-      <a href="/ad-inquiry" class="side-ad-link" id="ad-box-rls">
-        <div id="ad-def-rls"><div style="font-size:1.5rem;margin-bottom:6px">📢</div><div style="font-size:0.82rem;font-weight:700;color:rgba(255,255,255,0.4)">광고 문의</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.2);margin-top:2px">여기에 광고를 게재하세요</div></div>
-        <div id="ad-img-rls" style="display:none;width:100%"></div>
-      </a>
-    </div>
-  </div>
   </div><!-- /page-wrap -->
   <script>
-    fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-rls'),df=document.getElementById('ad-def-rls'),ld=document.getElementById('ad-img-rls');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;border-radius:8px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});
     // 탭 전환
     var currentView = new URLSearchParams(window.location.search).get('view');
     if (currentView === 'authors') {

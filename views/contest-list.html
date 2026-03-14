@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>리포트 리포트 치킨배 - StockStudyShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .logo { font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #4f46e5, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .nav-item { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.82rem; font-weight: 600; transition: all 0.3s; }
+    .nav-item:hover { background: rgba(79,70,229,0.2); border-color: rgba(79,70,229,0.4); color: #fff; transform: translateY(-1px); }
+    .user-area { display: flex; align-items: center; gap: 16px; }
+    .user-area img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(79,70,229,0.5); }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; color: #fff; text-decoration: none; font-size: 0.85rem; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
+    h1 .highlight { background: linear-gradient(135deg, #ef4444, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .page-desc { color: rgba(255,255,255,0.4); font-size: 0.88rem; margin-bottom: 28px; }
+
+    .create-section { padding: 24px; background: rgba(239,68,68,0.06); border: 1px dashed rgba(239,68,68,0.25); border-radius: 16px; margin-bottom: 32px; }
+    .create-section h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; color: #f87171; }
+    .create-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+    .create-form .field { display: flex; flex-direction: column; gap: 4px; }
+    .create-form label { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+    .input-field { padding: 10px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; color: #fff; font-size: 0.9rem; font-family: inherit; outline: none; }
+    .input-field:focus { border-color: rgba(239,68,68,0.4); }
+    .input-field::placeholder { color: rgba(255,255,255,0.25); }
+    .btn-create { padding: 10px 24px; background: linear-gradient(135deg, #ef4444, #f97316); border: none; border-radius: 12px; color: #fff; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+    .contest-grid { display: grid; gap: 16px; }
+    .contest-card { padding: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; transition: all 0.3s; }
+    .contest-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(239,68,68,0.2); }
+    .contest-header { margin-bottom: 16px; }
+    .contest-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .contest-title-row h3 { font-size: 1.1rem; font-weight: 900; }
+    .contest-status { font-size: 0.72rem; padding: 3px 10px; border-radius: 10px; font-weight: 700; }
+    .contest-creator { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: rgba(255,255,255,0.4); }
+    .contest-creator img { width: 22px; height: 22px; border-radius: 50%; }
+    .contest-info { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 14px; }
+    .contest-stat { display: flex; flex-direction: column; gap: 2px; }
+    .stat-label { font-size: 0.72rem; color: rgba(255,255,255,0.35); }
+    .stat-value { font-size: 0.9rem; font-weight: 700; }
+    .contest-prize-bar { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.72rem; color: rgba(255,255,255,0.35); margin-bottom: 14px; padding: 10px 14px; background: rgba(255,255,255,0.02); border-radius: 10px; }
+    .contest-action { display: flex; justify-content: flex-end; }
+    .empty-state { text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.25); }
+
+    .rules-box { padding: 20px 24px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; margin-bottom: 28px; font-size: 0.82rem; color: rgba(255,255,255,0.4); line-height: 1.8; }
+    .rules-box strong { color: rgba(255,255,255,0.7); }
+  </style>
+</head>
+<body>
+  <nav>{{nav}}</nav>
+  <div class="container">
+    <h1>&#127942; <span class="highlight">리포트 리포트 치킨배</span></h1>
+    <p class="page-desc">내 리포트의 종목으로 수익률을 겨루세요. 참가비 2만P, 치킨 한 마리 값으로 도전!</p>
+
+    <div class="rules-box">
+      <strong>&#127831; 대회 규칙</strong><br>
+      &#8226; 자신이 <strong>발행한 리포트</strong> 중 1개를 선택하여 참가합니다.<br>
+      &#8226; 선택한 리포트의 종목이 대회 기간 동안 자신의 종목이 됩니다.<br>
+      &#8226; <strong>같은 종목 중복 참가 불가</strong> - 먼저 등록한 사람이 우선입니다.<br>
+      &#8226; 참가비: <strong>무료</strong> | 주최비: <strong>100,000P</strong> | 최소 5명 ~ 최대 10명<br>
+      &#8226; <strong>1~5등에게 치킨 기프트콘 1개씩</strong> 균일 지급 (총 5개)<br>
+      &#8226; 누구나 대회를 개설할 수 있습니다.
+    </div>
+
+    <div class="create-section">
+      <h3>&#128293; 새 대회 개설</h3>
+      <form class="create-form" method="POST" action="/contest/create" onsubmit="return confirm('주최비 100,000P가 결제됩니다. 개설하시겠습니까?')">
+        <div class="field" style="flex:1;min-width:200px">
+          <label>대회 기간</label>
+          <select name="duration_days" class="input-field">
+            <option value="7">1주</option>
+            <option value="14">2주</option>
+            <option value="30" selected>1개월</option>
+            <option value="60">2개월</option>
+            <option value="90">3개월</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-create">&#127831; 대회 개설 (100,000P)</button>
+      </form>
+      <div style="margin-top:10px;font-size:0.78rem;color:rgba(255,255,255,0.35)">
+        대회명은 자동으로 "닉네임 리포트 치킨배"로 생성됩니다. 주최비 10만P는 상금(치킨 기프트콘 5개)으로 사용됩니다.
+      </div>
+    </div>
+
+    <div class="contest-grid">
+      {{contestCards}}
+    </div>
+  </div>
+</body>
+</html>

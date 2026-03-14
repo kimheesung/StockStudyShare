@@ -152,8 +152,7 @@
       border-radius:16px; min-height:250px; display:flex; align-items:center; justify-content:center;
     }
     .loading-ad-label { font-size:0.7rem; color:rgba(255,255,255,0.2); margin-bottom:8px; }
-    .page-layout { display:grid; grid-template-columns:1fr 200px; gap:24px; max-width:1060px; margin:0 auto; padding:40px 20px; }
-    @media (max-width:960px) { .page-layout { grid-template-columns:1fr; } .side-ad { display:none; } }
+    .page-layout { max-width:860px; margin:0 auto; padding:40px 20px; }
     .page-layout .container { max-width:none; padding:0; }
     .side-ad-banner { position:sticky; top:100px; }
     .side-ad-link { display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);text-align:center;transition:all 0.2s;min-height:300px;justify-content:center }
@@ -394,19 +393,9 @@
       </div>
     </form>
   </div>
-  <div class="side-ad">
-    <div class="side-ad-banner">
-      <a href="/ad-inquiry" class="side-ad-link" id="ad-box-rw">
-        <div id="ad-def-rw"><div style="font-size:1.5rem;margin-bottom:6px">📢</div><div style="font-size:0.82rem;font-weight:700;color:rgba(255,255,255,0.4)">광고 문의</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.2);margin-top:2px">여기에 광고를 게재하세요</div></div>
-        <div id="ad-img-rw" style="display:none;width:100%"></div>
-      </a>
-    </div>
-  </div>
   </div><!-- /page-layout -->
 
   <script>
-    // 사이드 광고 로드
-    fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-rw'),df=document.getElementById('ad-def-rw'),ld=document.getElementById('ad-img-rw');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;border-radius:8px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});
     const form = document.querySelector('form');
     const mode = '{{mode}}';
     const reportId = '{{reportId}}';

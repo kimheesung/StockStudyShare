@@ -82,18 +82,17 @@
     <div class="section">
       <h2>광고 등록</h2>
       <div class="card">
+        <!-- 유형 선택 탭 -->
+        <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.08)">
+          <button class="type-tab active" id="tab-banner" onclick="switchAdType('banner')" style="padding:10px 24px;background:none;border:none;border-bottom:2px solid #6366f1;color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit">배너 광고</button>
+          <button class="type-tab" id="tab-adsense" onclick="switchAdType('adsense')" style="padding:10px 24px;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,0.4);font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit">Google AdSense</button>
+        </div>
+
         <form class="ad-form" id="ad-form" enctype="multipart/form-data">
+          <input type="hidden" name="ad_type" id="ad-type" value="banner">
           <div>
             <label>광고 제목</label>
             <input type="text" name="title" id="ad-title" required placeholder="광고주 / 캠페인명">
-          </div>
-          <div>
-            <label>클릭 시 이동 URL</label>
-            <input type="text" name="link_url" id="ad-link" placeholder="https://...">
-          </div>
-          <div>
-            <label>이미지 업로드</label>
-            <input type="file" name="image" id="ad-image" accept="image/*">
           </div>
           <div>
             <label>위치</label>
@@ -114,6 +113,32 @@
               <option value="home">홈 (비로그인)</option>
             </select>
           </div>
+
+          <!-- 배너 전용 필드 -->
+          <div id="banner-fields">
+            <div>
+              <label>클릭 시 이동 URL</label>
+              <input type="text" name="link_url" id="ad-link" placeholder="https://...">
+            </div>
+            <div>
+              <label>이미지 업로드</label>
+              <input type="file" name="image" id="ad-image" accept="image/*">
+            </div>
+          </div>
+
+          <!-- 애드센스 전용 필드 -->
+          <div id="adsense-fields" style="display:none;grid-column:1/-1">
+            <div style="margin-bottom:12px">
+              <label>AdSense 코드</label>
+              <textarea name="adsense_code" id="ad-adsense-code" rows="6" placeholder='<ins class="adsbygoogle" ...'
+                style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#4ade80;font-size:0.82rem;font-family:'Courier New',monospace;resize:vertical"></textarea>
+            </div>
+            <div style="padding:10px 14px;background:rgba(66,133,244,0.06);border:1px solid rgba(66,133,244,0.15);border-radius:10px;font-size:0.78rem;color:rgba(255,255,255,0.4);line-height:1.6">
+              Google AdSense에서 발급받은 광고 코드를 그대로 붙여넣으세요.<br>
+              &lt;ins class="adsbygoogle" ...&gt;&lt;/ins&gt; + &lt;script&gt; 태그를 포함한 전체 코드를 입력합니다.
+            </div>
+          </div>
+
           <div>
             <button type="submit" class="btn-add">광고 등록</button>
           </div>

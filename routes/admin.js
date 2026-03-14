@@ -606,13 +606,24 @@ router.get('/ads', isLoggedIn, isAdmin, (req, res) => {
   const ads = db.prepare('SELECT * FROM ads ORDER BY created_at DESC').all();
   const inquiries = db.prepare('SELECT * FROM ad_inquiries ORDER BY created_at DESC').all();
 
-  const adList = ads.length > 0 ? ads.map(a => `
-    <div class="card">
+  const adList = ads.length > 0 ? ads.map(a => {
+    const isAdsense = a.ad_type === 'adsense';
+    const typeBadge = isAdsense
+      ? '<span style="font-size:0.68rem;padding:2px 8px;border-radius:6px;background:rgba(66,133,244,0.15);color:#4285f4;font-weight:700;margin-left:6px">AdSense</span>'
+      : '<span style="font-size:0.68rem;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);margin-left:6px">배너</span>';
+    const thumb = isAdsense
+      ? '<div class="ad-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem;background:rgba(66,133,244,0.08);border:1px dashed rgba(66,133,244,0.3)">G</div>'
+      : (a.image_url ? `<img src="${escapeHtml(a.image_url)}" class="ad-thumb">` : '<div class="ad-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:rgba(255,255,255,0.2)">이미지 없음</div>');
+    const linkInfo = isAdsense
+      ? `<span style="color:rgba(255,255,255,0.2);font-size:0.72rem">애드센스 코드 등록됨</span> · ${a.position}`
+      : `${escapeHtml(a.link_url || '링크 없음')} · ${a.position}`;
+
+    return `<div class="card">
       <div class="ad-item">
-        ${a.image_url ? `<img src="${escapeHtml(a.image_url)}" class="ad-thumb">` : '<div class="ad-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:rgba(255,255,255,0.2)">이미지 없음</div>'}
+        ${thumb}
         <div class="ad-info">
-          <div class="ad-title">${escapeHtml(a.title)}</div>
-          <div class="ad-link">${escapeHtml(a.link_url || '링크 없음')} · ${a.position}</div>
+          <div class="ad-title">${escapeHtml(a.title)}${typeBadge}</div>
+          <div class="ad-link">${linkInfo}</div>
         </div>
         <span class="ad-status ${a.is_active ? 'active' : 'inactive'}">${a.is_active ? '활성' : '비활성'}</span>
         <div class="ad-actions">
@@ -620,8 +631,8 @@ router.get('/ads', isLoggedIn, isAdmin, (req, res) => {
           <button class="btn-sm btn-delete" onclick="deleteAd(${a.id})">삭제</button>
         </div>
       </div>
-    </div>
-  `).join('') : '<div class="empty-text">등록된 광고가 없습니다.</div>';
+    </div>`;
+  }).join('') : '<div class="empty-text">등록된 광고가 없습니다.</div>';
 
   const inquiryList = inquiries.length > 0 ? inquiries.map(i => `
     <div class="card inq-item">
@@ -651,12 +662,20 @@ router.get('/ads', isLoggedIn, isAdmin, (req, res) => {
 
 // 광고 등록
 router.post('/ads', isLoggedIn, isAdmin, adUpload.single('image'), (req, res) => {
-  const { title, link_url, position } = req.body;
+  const { title, link_url, position, ad_type, adsense_code } = req.body;
   if (!title) return res.json({ ok: false, error: '제목을 입력해주세요.' });
-  const imageUrl = req.file ? `/uploads/ads/${req.file.filename}` : null;
-  db.prepare('INSERT INTO ads (title, image_url, link_url, position) VALUES (?, ?, ?, ?)').run(
-    title, imageUrl, link_url || null, position || 'loading'
-  );
+
+  if (ad_type === 'adsense') {
+    if (!adsense_code || !adsense_code.trim()) return res.json({ ok: false, error: '애드센스 코드를 입력해주세요.' });
+    db.prepare('INSERT INTO ads (title, image_url, link_url, position, ad_type, adsense_code) VALUES (?, NULL, NULL, ?, ?, ?)').run(
+      title, position || 'dashboard', 'adsense', adsense_code.trim()
+    );
+  } else {
+    const imageUrl = req.file ? `/uploads/ads/${req.file.filename}` : null;
+    db.prepare('INSERT INTO ads (title, image_url, link_url, position, ad_type) VALUES (?, ?, ?, ?, ?)').run(
+      title, imageUrl, link_url || null, position || 'loading', 'banner'
+    );
+  }
   res.json({ ok: true });
 });
 
@@ -693,7 +712,7 @@ router.get('/club-verifications', isLoggedIn, isAdmin, (req, res) => {
     ORDER BY cv.status = 'pending' DESC, cv.created_at DESC
   `).all();
 
-  const clubNames = { '10b': '10억 클럽', '100b': '100억 클럽', '1000b': '1000억 클럽', '1t': '1조 클럽' };
+  const clubNames = { '10b': '100만P 클럽', '100b': '1000만P 클럽', '1000b': '1억P 클럽' };
   const rows = apps.map(a => `
     <tr>
       <td>${escapeHtml(a.nickname || a.name)}</td>
@@ -764,11 +783,98 @@ router.post('/club-verifications/:id/review', isLoggedIn, isAdmin, (req, res) =>
 
   if (action === 'approve') {
     db.prepare("UPDATE club_verifications SET status = 'approved', admin_memo = ?, reviewed_at = datetime('now') WHERE id = ?").run(memo || '', app.id);
-    const clubNames = { '10b': '10억 클럽', '100b': '100억 클럽', '1000b': '1000억 클럽', '1t': '1조 클럽' };
+    const clubNames = { '10b': '100만P 클럽', '100b': '1000만P 클럽', '1000b': '1억P 클럽' };
     notify(db, app.user_id, 'study_approved', '클럽 인증 승인', `${clubNames[app.club] || app.club} 인증이 승인되었습니다!`, '/community?board=' + app.club);
   } else {
     db.prepare("UPDATE club_verifications SET status = 'rejected', admin_memo = ?, reviewed_at = datetime('now') WHERE id = ?").run(memo || '', app.id);
     notify(db, app.user_id, 'study_rejected', '클럽 인증 반려', `클럽 인증이 반려되었습니다.${memo ? ' 사유: ' + memo : ''}`, '/community/club-apply?club=' + app.club);
+  }
+  res.json({ ok: true });
+});
+
+// 신고 게시글 관리
+router.get('/board-reports', isLoggedIn, isAdmin, (req, res) => {
+  const posts = db.prepare(`
+    SELECT bp.*, u.nickname, u.name,
+           (SELECT COUNT(*) FROM board_reports WHERE post_id = bp.id) as report_count
+    FROM board_posts bp
+    JOIN users u ON bp.user_id = u.id
+    WHERE bp.is_hidden = 1 AND bp.is_deleted = 0
+    ORDER BY bp.report_count DESC, bp.created_at DESC
+  `).all();
+
+  const boardNames = { all: '모두', '10b': '100만P 클럽', '100b': '1000만P 클럽', '1000b': '1억P 클럽' };
+  const rows = posts.length > 0 ? posts.map(p => `
+    <div style="padding:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div>
+          <span style="font-size:0.72rem;padding:2px 8px;background:rgba(239,68,68,0.15);color:#ef4444;border-radius:8px;font-weight:700">신고 ${p.report_count}건</span>
+          <span style="font-size:0.72rem;padding:2px 8px;background:rgba(79,70,229,0.15);color:#a5b4fc;border-radius:8px;margin-left:6px">${boardNames[p.board] || p.board}</span>
+        </div>
+        <span style="font-size:0.72rem;color:rgba(255,255,255,0.25)">${new Date(p.created_at).toLocaleDateString('ko-KR')}</span>
+      </div>
+      <div style="font-size:1rem;font-weight:700;margin-bottom:6px">${escapeHtml(p.title)}</div>
+      <div style="font-size:0.85rem;color:rgba(255,255,255,0.5);margin-bottom:8px;line-height:1.6;max-height:80px;overflow:hidden">${escapeHtml(p.content).slice(0, 200)}</div>
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.3);margin-bottom:12px">작성자: ${escapeHtml(p.board_nickname || '익명')} (${escapeHtml(p.nickname || p.name)})</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="reviewBoardPost(${p.id},'restore')" style="padding:8px 18px;background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3);border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;border:none">복원 (가리기 해제)</button>
+        <button onclick="reviewBoardPost(${p.id},'delete')" style="padding:8px 18px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;border:none">삭제</button>
+        <a href="/community/post/${p.id}" style="padding:8px 18px;background:rgba(79,70,229,0.15);color:#a5b4fc;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none">글 보기</a>
+      </div>
+    </div>
+  `).join('') : '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">가려진 게시글이 없습니다.</div>';
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>신고 게시글 관리 - 관리자</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+      nav{position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:rgba(15,12,41,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+      .logo{font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none}
+      .nav-links{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+      .nav-item{padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:50px;color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.82rem;font-weight:600}
+      .user-area{display:flex;align-items:center;gap:16px}
+      .user-area img{width:36px;height:36px;border-radius:50%;border:2px solid rgba(79,70,229,0.5)}
+      .logout-btn{padding:8px 20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:50px;color:#fff;text-decoration:none;font-size:0.85rem}
+      .container{max-width:800px;margin:0 auto;padding:40px 20px}
+      .back-link{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem;margin-bottom:20px;display:inline-block}
+      h1{font-size:1.5rem;font-weight:900;margin-bottom:20px}
+      h1 .highlight{background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    </style></head><body>
+    <nav>${buildNav(req.user)}</nav>
+    <div class="container">
+      <a href="/admin" class="back-link">&larr; 관리자 대시보드</a>
+      <h1><span class="highlight">신고 게시글</span> 관리 (${posts.length}건)</h1>
+      ${rows}
+    </div>
+    <script>
+      function reviewBoardPost(id, action) {
+        var msg = action === 'delete' ? '이 게시글을 완전히 삭제하시겠습니까?' : '이 게시글의 가리기를 해제하고 다시 게시하시겠습니까?';
+        if (!confirm(msg)) return;
+        fetch('/admin/board-reports/' + id + '/review', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+          body: JSON.stringify({ action: action })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+          if (d.ok) window.location.reload(); else alert(d.error);
+        });
+      }
+    </script></body></html>`;
+  res.send(html);
+});
+
+// 신고 게시글 처리 (복원/삭제)
+router.post('/board-reports/:id/review', isLoggedIn, isAdmin, (req, res) => {
+  const post = db.prepare('SELECT * FROM board_posts WHERE id = ?').get(req.params.id);
+  if (!post) return res.json({ ok: false, error: '게시글을 찾을 수 없습니다.' });
+
+  if (req.body.action === 'restore') {
+    db.prepare('UPDATE board_posts SET is_hidden = 0, report_count = 0 WHERE id = ?').run(post.id);
+    db.prepare('DELETE FROM board_reports WHERE post_id = ?').run(post.id);
+    notify(db, post.user_id, 'report_approved', '게시글 복원', `"${post.title}" 게시글이 관리자 검토 후 다시 게시되었습니다.`, '/community/post/' + post.id);
+  } else if (req.body.action === 'delete') {
+    db.prepare('UPDATE board_posts SET is_deleted = 1 WHERE id = ?').run(post.id);
+    notify(db, post.user_id, 'report_rejected', '게시글 삭제', `"${post.title}" 게시글이 관리자 검토 후 삭제되었습니다.`, '/community');
   }
   res.json({ ok: true });
 });

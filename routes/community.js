@@ -4,12 +4,19 @@ const { render, isLoggedIn, isAdmin, buildNav, escapeHtml, notify } = require('.
 const router = express.Router();
 
 const BOARDS = {
-  all: { name: '모두', icon: '💬', needVerify: false },
-  '10b': { name: '10억 클럽', icon: '💰', needVerify: true },
-  '100b': { name: '100억 클럽', icon: '💎', needVerify: true },
-  '1000b': { name: '1000억 클럽', icon: '👑', needVerify: true },
-  '1t': { name: '1조 클럽', icon: '🏆', needVerify: true },
+  all: { name: '모두', icon: '💬', needVerify: false, minPoints: 0 },
+  '10b': { name: '100만P 클럽', icon: '💰', needVerify: true, minPoints: 1000000 },
+  '100b': { name: '1000만P 클럽', icon: '💎', needVerify: true, minPoints: 10000000 },
+  '1000b': { name: '1억P 클럽', icon: '👑', needVerify: true, minPoints: 100000000 },
 };
+
+function hasClubAccess(user, board) {
+  const boardInfo = BOARDS[board];
+  if (!boardInfo || !boardInfo.needVerify) return true;
+  if (user.role === 'admin') return true;
+  const userPoints = db.prepare('SELECT points FROM users WHERE id = ?').get(user.id);
+  return userPoints && userPoints.points >= boardInfo.minPoints;
+}
 
 function getUserBoardNickname(userId) {
   const row = db.prepare('SELECT board_nickname FROM user_board_profiles WHERE user_id = ?').get(userId);
@@ -27,36 +34,33 @@ router.get('/', isLoggedIn, (req, res) => {
   const boardInfo = BOARDS[board];
   if (!boardInfo) return res.redirect('/community?board=all');
 
-  // 클럽 접근 권한 체크
-  if (boardInfo.needVerify) {
-    const verified = getUserVerifiedClubs(req.user.id);
-    if (!verified.has(board) && req.user.role !== 'admin') {
-      return res.redirect('/community/club-apply?club=' + board);
-    }
+  // 클럽 접근 권한 체크 (포인트 기반)
+  if (boardInfo.needVerify && !hasClubAccess(req.user, board)) {
+    return res.redirect('/community/club-info?club=' + board);
   }
 
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
 
-  const totalCount = db.prepare('SELECT COUNT(*) as c FROM board_posts WHERE board = ? AND is_deleted = 0').get(board).c;
+  const totalCount = db.prepare('SELECT COUNT(*) as c FROM board_posts WHERE board = ? AND is_deleted = 0 AND is_hidden = 0').get(board).c;
   const posts = db.prepare(`
     SELECT bp.*, u.photo
     FROM board_posts bp
     JOIN users u ON bp.user_id = u.id
-    WHERE bp.board = ? AND bp.is_deleted = 0
+    WHERE bp.board = ? AND bp.is_deleted = 0 AND bp.is_hidden = 0
     ORDER BY bp.created_at DESC
     LIMIT ? OFFSET ?
   `).all(board, limit, offset);
 
   const boardNickname = getUserBoardNickname(req.user.id);
-  const verifiedClubs = getUserVerifiedClubs(req.user.id);
 
   // 탭
   const boardTabs = Object.entries(BOARDS).map(([key, info]) => {
     const isActive = key === board;
-    const isLocked = info.needVerify && !verifiedClubs.has(key) && req.user.role !== 'admin';
-    return `<a href="/community?board=${key}" class="board-tab ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}">${info.icon} ${info.name}${isLocked ? ' 🔒' : ''}</a>`;
+    const isLocked = info.needVerify && !hasClubAccess(req.user, key);
+    const pointLabel = info.minPoints > 0 ? ` (${(info.minPoints / 10000).toLocaleString()}만P)` : '';
+    return `<a href="/community?board=${key}" class="board-tab ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}">${info.icon} ${info.name}${isLocked ? ' 🔒' + pointLabel : ''}</a>`;
   }).join('');
 
   // 글 목록
@@ -118,11 +122,8 @@ router.post('/write', isLoggedIn, (req, res) => {
   const boardInfo = BOARDS[board];
   if (!boardInfo) return res.json({ ok: false, error: '유효하지 않은 게시판입니다.' });
 
-  if (boardInfo.needVerify) {
-    const verified = getUserVerifiedClubs(req.user.id);
-    if (!verified.has(board) && req.user.role !== 'admin') {
-      return res.json({ ok: false, error: '인증된 회원만 글을 작성할 수 있습니다.' });
-    }
+  if (boardInfo.needVerify && !hasClubAccess(req.user, board)) {
+    return res.json({ ok: false, error: `${boardInfo.name}은 ${(boardInfo.minPoints / 10000).toLocaleString()}만P 이상 보유자만 글을 작성할 수 있습니다.` });
   }
 
   if (!title || !content) return res.json({ ok: false, error: '제목과 내용을 입력해주세요.' });
@@ -145,12 +146,14 @@ router.get('/post/:id', isLoggedIn, (req, res) => {
   `).get(req.params.id);
   if (!post) return res.status(404).send('글을 찾을 수 없습니다.');
 
+  // 가려진 글은 작성자와 관리자만 볼 수 있음
+  if (post.is_hidden && post.user_id !== req.user.id && req.user.role !== 'admin') {
+    return res.status(403).send('이 글은 신고 누적으로 가려진 상태입니다. 관리자 검토 중입니다.');
+  }
+
   const boardInfo = BOARDS[post.board];
-  if (boardInfo && boardInfo.needVerify) {
-    const verified = getUserVerifiedClubs(req.user.id);
-    if (!verified.has(post.board) && req.user.role !== 'admin') {
-      return res.redirect('/community/club-apply?club=' + post.board);
-    }
+  if (boardInfo && boardInfo.needVerify && !hasClubAccess(req.user, post.board)) {
+    return res.redirect('/community/club-info?club=' + post.board);
   }
 
   const comments = db.prepare(`
@@ -223,12 +226,19 @@ router.post('/post/:id/report', isLoggedIn, (req, res) => {
   const newCount = db.prepare('SELECT COUNT(*) as c FROM board_reports WHERE post_id = ?').get(post.id).c;
   db.prepare('UPDATE board_posts SET report_count = ? WHERE id = ?').run(newCount, post.id);
 
-  // 5개 이상 신고 시 자동 삭제
+  // 5개 이상 신고 시 가리기 (관리자 확인 대기)
+  let hidden = false;
   if (newCount >= 5) {
-    db.prepare('UPDATE board_posts SET is_deleted = 1 WHERE id = ?').run(post.id);
+    db.prepare('UPDATE board_posts SET is_hidden = 1 WHERE id = ?').run(post.id);
+    hidden = true;
+    // 관리자에게 알림
+    const admins = db.prepare("SELECT id FROM users WHERE role = 'admin'").all();
+    for (const admin of admins) {
+      notify(db, admin.id, 'report_pending_admin', '게시글 신고 누적', `"${post.title}" 게시글이 신고 ${newCount}건으로 자동 가려졌습니다. 확인이 필요합니다.`, '/admin/board-reports');
+    }
   }
 
-  res.json({ ok: true, count: newCount, deleted: newCount >= 5 });
+  res.json({ ok: true, count: newCount, hidden });
 });
 
 // 글 삭제 (본인만)
@@ -239,44 +249,74 @@ router.post('/post/:id/delete', isLoggedIn, (req, res) => {
   res.json({ ok: true });
 });
 
-// 클럽 인증 신청 페이지
-router.get('/club-apply', isLoggedIn, (req, res) => {
+// 클럽 접근 불가 안내 페이지
+router.get('/club-info', isLoggedIn, (req, res) => {
   const club = req.query.club;
   const clubInfo = BOARDS[club];
   if (!clubInfo || !clubInfo.needVerify) return res.redirect('/community');
 
-  const existing = db.prepare("SELECT * FROM club_verifications WHERE user_id = ? AND club = ? ORDER BY created_at DESC LIMIT 1").get(req.user.id, club);
+  const userPoints = db.prepare('SELECT points FROM users WHERE id = ?').get(req.user.id);
+  const currentPoints = userPoints ? userPoints.points : 0;
+  const needed = clubInfo.minPoints - currentPoints;
+  const minPointsStr = clubInfo.minPoints >= 100000000
+    ? (clubInfo.minPoints / 100000000).toLocaleString() + '억'
+    : (clubInfo.minPoints / 10000).toLocaleString() + '만';
 
-  const html = render('views/community-club-apply.html', {
-    nav: buildNav(req.user),
-    clubKey: club,
-    clubName: clubInfo.name,
-    clubIcon: clubInfo.icon,
-    existingStatus: existing ? existing.status : '',
-    adminMemo: existing ? escapeHtml(existing.admin_memo || '') : '',
-  });
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>${clubInfo.name} - StockStudyShare</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+      nav{position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:rgba(15,12,41,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+      .logo{font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none}
+      .nav-links{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+      .nav-item{padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:50px;color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.82rem;font-weight:600}
+      .user-area{display:flex;align-items:center;gap:16px}
+      .user-area img{width:36px;height:36px;border-radius:50%;border:2px solid rgba(79,70,229,0.5)}
+      .logout-btn{padding:8px 20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:50px;color:#fff;text-decoration:none;font-size:0.85rem}
+      .container{max-width:600px;margin:0 auto;padding:60px 20px;text-align:center}
+      .club-icon{font-size:4rem;margin-bottom:16px}
+      h1{font-size:1.8rem;font-weight:900;margin-bottom:12px}
+      .desc{color:rgba(255,255,255,0.5);font-size:0.95rem;line-height:1.7;margin-bottom:32px}
+      .info-box{padding:28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;margin-bottom:24px}
+      .info-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.95rem}
+      .info-row:last-child{border-bottom:none}
+      .info-label{color:rgba(255,255,255,0.4)}
+      .info-value{font-weight:700}
+      .progress-bar{height:10px;background:rgba(255,255,255,0.08);border-radius:5px;margin:20px 0 8px;overflow:hidden}
+      .progress-fill{height:100%;border-radius:5px;transition:width 0.5s}
+      .btn-charge{display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#4f46e5,#6366f1);border-radius:50px;color:#fff;text-decoration:none;font-weight:700;font-size:1rem;transition:all 0.3s}
+      .btn-charge:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(79,70,229,0.5)}
+      .back-link{display:inline-block;margin-top:16px;color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem}
+    </style></head><body>
+    <nav>${buildNav(req.user)}</nav>
+    <div class="container">
+      <div class="club-icon">${clubInfo.icon}</div>
+      <h1>${clubInfo.name}</h1>
+      <p class="desc">${clubInfo.name}은 <strong>${minPointsStr}P 이상</strong> 보유한 회원만<br>글을 쓰고 읽을 수 있는 프리미엄 게시판입니다.</p>
+      <div class="info-box">
+        <div class="info-row">
+          <span class="info-label">필요 포인트</span>
+          <span class="info-value" style="color:#fbbf24">${clubInfo.minPoints.toLocaleString()}P</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">내 보유 포인트</span>
+          <span class="info-value">${currentPoints.toLocaleString()}P</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">부족 포인트</span>
+          <span class="info-value" style="color:#ef4444">${needed > 0 ? needed.toLocaleString() + 'P' : '충족!'}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${Math.min(100, (currentPoints / clubInfo.minPoints) * 100)}%;background:linear-gradient(90deg,#4f46e5,#06b6d4)"></div>
+        </div>
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.3)">${Math.min(100, (currentPoints / clubInfo.minPoints * 100)).toFixed(1)}% 달성</div>
+      </div>
+      <a href="/my/points" class="btn-charge">포인트 충전하기</a>
+      <br><a href="/community" class="back-link">&larr; 게시판으로 돌아가기</a>
+    </div></body></html>`;
   res.send(html);
-});
-
-// 클럽 인증 신청 제출
-router.post('/club-apply', isLoggedIn, (req, res) => {
-  const { club, proof_text } = req.body;
-  const clubInfo = BOARDS[club];
-  if (!clubInfo || !clubInfo.needVerify) return res.json({ ok: false, error: '유효하지 않은 클럽입니다.' });
-
-  const existing = db.prepare("SELECT id FROM club_verifications WHERE user_id = ? AND club = ? AND status = 'pending'").get(req.user.id, club);
-  if (existing) return res.json({ ok: false, error: '이미 심사 중인 신청이 있습니다.' });
-
-  db.prepare('INSERT INTO club_verifications (user_id, club, proof_text) VALUES (?, ?, ?)').run(req.user.id, club, proof_text || '');
-
-  // 관리자에게 알림
-  const admins = db.prepare("SELECT id FROM users WHERE role = 'admin'").all();
-  const userName = req.user.nickname || req.user.name;
-  for (const admin of admins) {
-    notify(db, admin.id, 'report_pending_admin', '클럽 인증 신청', `${userName}님이 ${clubInfo.name} 인증을 신청했습니다.`, '/admin/club-verifications');
-  }
-
-  res.json({ ok: true });
 });
 
 function getTimeAgo(dateStr) {
