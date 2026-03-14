@@ -55,8 +55,12 @@
       background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(79,70,229,0.06));
       border: 1px solid rgba(251,191,36,0.15); border-radius: 20px;
     }
-    .rating-section h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .rating-section h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
     .rating-summary { font-size: 0.85rem; color: rgba(255,255,255,0.4); margin-bottom: 16px; }
+    .avg-stars { display: inline-flex; gap: 4px; margin-bottom: 8px; }
+    .avg-star { font-size: 1.6rem; color: rgba(255,255,255,0.15); }
+    .avg-star.filled { color: #fbbf24; }
+    .avg-star.half { background: linear-gradient(90deg, #fbbf24 50%, rgba(255,255,255,0.15) 50%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .rating-summary .avg { font-size: 1.4rem; font-weight: 900; color: #fbbf24; }
     .star-select { display: inline-flex; gap: 6px; margin-bottom: 14px; }
     .star-btn {
@@ -175,12 +179,27 @@
     <div class="rating-section">
       <h3>리포트 평가</h3>
       <div class="rating-summary">
+        <div class="avg-stars" id="avg-stars"></div>
         <span class="avg" id="avg-rating">{{avgRating}}</span> / 5.0
         <span>({{ratingCount}}명 평가)</span>
       </div>
       <div id="rating-area"></div>
     </div>
   </div>
+  <script>
+    // 평균 별점 시각화
+    (function() {
+      var avg = parseFloat('{{avgRating}}') || 0;
+      var container = document.getElementById('avg-stars');
+      var html = '';
+      for (var i = 1; i <= 5; i++) {
+        if (avg >= i) html += '<span class="avg-star filled">&#9733;</span>';
+        else if (avg >= i - 0.5) html += '<span class="avg-star half">&#9733;</span>';
+        else html += '<span class="avg-star">&#9733;</span>';
+      }
+      container.innerHTML = html;
+    })();
+  </script>
 
   <script>
     // 수익률 로드
@@ -244,7 +263,13 @@
       }
 
       if (!canRate) {
-        area.innerHTML = '<div class="rating-msg">리포트를 구매한 분만 평가할 수 있습니다.</div>';
+        var saleP = parseInt('{{reportSalePrice}}') || 0;
+        var reportUrl = '/reports/' + reportId;
+        if (saleP > 0) {
+          area.innerHTML = '<div class="rating-msg">리포트를 구매한 분만 평가할 수 있습니다.</div>';
+        } else {
+          area.innerHTML = '<div class="rating-msg">평가할 수 없는 리포트입니다.</div>';
+        }
         return;
       }
 
