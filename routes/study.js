@@ -391,6 +391,10 @@ router.post('/:id/apply', isLoggedIn, applyUpload.single('report_file'), (req, r
     room.id, req.user.id, message, intro, filePath
   );
 
+  // 스터디장에게 지원 알림
+  const applicantName = req.user.nickname || req.user.name;
+  notify(db, room.owner_id, 'study_approved', '새 스터디 지원', `"${room.name}" 스터디방에 ${applicantName}님이 지원했습니다.`, `/study/${room.id}/applications`);
+
   res.redirect('/study');
 });
 
