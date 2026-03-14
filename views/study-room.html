@@ -41,9 +41,10 @@
     }
     .btn-leave:hover { background: rgba(239,68,68,0.2); }
 
-    .two-col { display: grid; grid-template-columns: 280px 1fr 200px; gap: 24px; }
-    @media (max-width: 960px) { .two-col { grid-template-columns: 280px 1fr; } .right-banner { display: none; } }
-    @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+    .two-col { display: grid; grid-template-columns: 70% 30%; gap: 20px; }
+    .study-area { display: grid; grid-template-columns: 250px 1fr; gap: 20px; }
+    @media (max-width: 960px) { .two-col { grid-template-columns: 1fr; } .study-area { grid-template-columns: 1fr; } }
+    .right-banner { position: sticky; top: 80px; align-self: start; }
 
     .ad-banner {
       padding: 20px 16px; background: linear-gradient(180deg, rgba(79,70,229,0.06), rgba(6,182,212,0.04));
@@ -149,19 +150,21 @@
     </div>
 
     <div class="two-col">
-      <div class="sidebar">
-        <div class="sidebar-title">멤버 <span class="count">{{memberCount}}명</span></div>
-        <div class="member-list">
-          {{memberCards}}
+      <div class="study-area">
+        <div class="sidebar">
+          <div class="sidebar-title">멤버 <span class="count">{{memberCount}}명</span></div>
+          <div class="member-list">
+            {{memberCards}}
+          </div>
         </div>
-      </div>
-      <div class="main-content">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <h2 style="margin-bottom:0">스터디원 리포트</h2>
-          <a href="/author/reports/new" style="padding:8px 20px;background:linear-gradient(135deg,#4f46e5,#6366f1);border-radius:50px;color:#fff;text-decoration:none;font-size:0.82rem;font-weight:700;box-shadow:0 2px 12px rgba(79,70,229,0.3)">+ 리포트 작성</a>
-        </div>
-        <div class="report-grid">
-          {{reportCards}}
+        <div class="main-content">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2 style="margin-bottom:0">스터디원 리포트</h2>
+            <a href="/author/reports/new" style="padding:8px 20px;background:linear-gradient(135deg,#4f46e5,#6366f1);border-radius:50px;color:#fff;text-decoration:none;font-size:0.82rem;font-weight:700;box-shadow:0 2px 12px rgba(79,70,229,0.3)">+ 리포트 작성</a>
+          </div>
+          <div class="report-grid">
+            {{reportCards}}
+          </div>
         </div>
       </div>
       <div class="right-banner">
