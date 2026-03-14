@@ -86,23 +86,13 @@
   <nav>{{nav}}</nav>
   <div class="container">
 
-    <!-- 상승률 순위 -->
-    <h2 class="section-title"><span class="icon">🚀</span> 리포트 종목 상승률 순위</h2>
-    <div class="gainer-list">
-      {{topGainersHtml}}
-    </div>
-
-    <!-- 팔로우한 작성자 리포트 -->
-    <h2 class="section-title"><span class="icon">⭐</span> 팔로우 작성자 최신 리포트</h2>
-    <div class="report-grid">
-      {{followCards}}
-    </div>
-
     <!-- 리포트 탭 -->
     <div class="report-tabs">
       <button class="report-tab active" onclick="switchTab('latest')">📝 최신</button>
       <button class="report-tab" onclick="switchTab('hot')">🔥 핫한</button>
       <button class="report-tab" onclick="switchTab('topReturn')">💰 수익률 TOP</button>
+      <button class="report-tab" onclick="switchTab('follow')">⭐ 팔로우</button>
+      <button class="report-tab" onclick="switchTab('gainers')">🚀 상승률</button>
     </div>
     <div class="report-tab-content" id="tab-latest">
       <div class="report-grid">{{latestCards}}</div>
@@ -112,6 +102,12 @@
     </div>
     <div class="report-tab-content" id="tab-topReturn" style="display:none">
       <div class="report-grid">{{topReturnCards}}</div>
+    </div>
+    <div class="report-tab-content" id="tab-follow" style="display:none">
+      <div class="report-grid">{{followCards}}</div>
+    </div>
+    <div class="report-tab-content" id="tab-gainers" style="display:none">
+      <div class="gainer-list">{{topGainersHtml}}</div>
     </div>
     <a href="/reports" class="see-all">전체 리포트 보기 →</a>
 
