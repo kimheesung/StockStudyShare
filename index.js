@@ -14,6 +14,15 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'YOUR_CLIENT_SE
 // 콤마 구분으로 여러 admin ID 지정 가능
 const ADMIN_GOOGLE_IDS = (process.env.ADMIN_GOOGLE_ID || '').split(',').map(s => s.trim()).filter(Boolean);
 
+// 서버 시작 시 최초 admin 세팅 (이미 가입된 유저를 admin으로 승격)
+for (const adminId of ADMIN_GOOGLE_IDS) {
+  const u = db.prepare('SELECT id, role FROM users WHERE id = ?').get(adminId);
+  if (u && u.role !== 'admin') {
+    db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(adminId);
+    console.log(`Admin promoted: ${adminId}`);
+  }
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -55,11 +64,8 @@ passport.use(new GoogleStrategy({
     // 가입 환영 포인트 로그
     db.prepare("INSERT INTO point_logs (user_id, amount, type, description) VALUES (?, 100000, 'welcome', '가입 환영 포인트')").run(id);
   } else {
-    // 기존 유저: 이름/사진 업데이트 + 관리자 승격 체크
+    // 기존 유저: 이름/사진 업데이트
     db.prepare('UPDATE users SET name = ?, photo = ? WHERE id = ?').run(name, photo, id);
-    if (ADMIN_GOOGLE_IDS.includes(id) && user.role !== 'admin') {
-      db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(id);
-    }
     user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
   }
   return done(null, user);
