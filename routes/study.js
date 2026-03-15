@@ -633,7 +633,7 @@ router.get('/:id/applications', isLoggedIn, (req, res) => {
   if (!room || room.owner_id !== req.user.id) return res.status(403).send('권한이 없습니다.');
 
   const apps = db.prepare(`
-    SELECT sa.*, COALESCE(u.nickname, u.name) as name, u.email, u.photo, 
+    SELECT sa.*, COALESCE(u.nickname, u.name) as name, u.email, u.photo
     FROM study_applications sa
     JOIN users u ON sa.user_id = u.id
     WHERE sa.room_id = ? AND sa.status = 'pending'

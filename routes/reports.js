@@ -92,7 +92,7 @@ router.get('/', (req, res) => {
   const authors = db.prepare(`
     SELECT u.id, u.name, u.photo, u.custom_photo, u.role, u.nickname,
            COALESCE(u.nickname, ap.display_name, u.name) as display_name,
-           COALESCE(ap.bio, u.bio) as bio, ap.sectors,
+           ap.bio, ap.sectors,
            (SELECT COUNT(*) FROM reports WHERE author_id = u.id AND status = 'on_sale') as report_count,
            (SELECT COUNT(*) FROM orders o JOIN reports r2 ON o.report_id = r2.id WHERE r2.author_id = u.id) as total_sales,
            (SELECT MAX(published_at) FROM reports WHERE author_id = u.id AND status = 'on_sale') as latest_published,
