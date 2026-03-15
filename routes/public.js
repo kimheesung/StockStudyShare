@@ -281,6 +281,11 @@ router.post('/ad-inquiry', (req, res) => {
 
 // 활성 광고 조회 API (광고 제거 아이템 보유자는 빈 배열)
 router.get('/api/ads', (req, res) => {
+  // 광고 배너 숨김 설정 체크
+  try {
+    const setting = db.prepare("SELECT value FROM site_settings WHERE key = 'show_ad_banner'").get();
+    if (setting && setting.value === 'false') return res.json([]);
+  } catch {}
   if (req.user) {
     const hasAdRemove = db.prepare("SELECT id FROM shop_purchases WHERE user_id = ? AND item_key = 'ad_remove'").get(req.user.id);
     if (hasAdRemove) return res.json([]);
@@ -288,6 +293,14 @@ router.get('/api/ads', (req, res) => {
   const position = req.query.position || 'loading';
   const ads = db.prepare('SELECT id, title, image_url, link_url, ad_type, adsense_code FROM ads WHERE is_active = 1 AND position = ? ORDER BY RANDOM() LIMIT 1').all(position);
   res.json(ads);
+});
+
+// 광고 배너 표시 여부 API
+router.get('/api/show-ad-banner', (req, res) => {
+  try {
+    const setting = db.prepare("SELECT value FROM site_settings WHERE key = 'show_ad_banner'").get();
+    res.json({ show: setting ? setting.value === 'true' : true });
+  } catch { res.json({ show: true }); }
 });
 
 // DART 주요 공시 데이터
