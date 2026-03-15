@@ -68,7 +68,7 @@ passport.use(new GoogleStrategy({
   if (!user) {
     const isAdminUser = ADMIN_GOOGLE_IDS.includes(id);
     const role = isAdminUser ? 'admin' : 'user';
-    const nickname = isAdminUser ? 'admin' : null;
+    const nickname = isAdminUser ? (process.env.ADMIN_NICKNAME || '에드가') : null;
     db.prepare('INSERT INTO users (id, name, email, photo, role, nickname, points) VALUES (?, ?, ?, ?, ?, ?, 100000)').run(id, name, email, photo, role, nickname);
     user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
     // 가입 환영 포인트 로그
@@ -246,6 +246,6 @@ app.get('/author-profile/:id', (req, res) => {
   res.send(html);
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server running at http://localhost:${port}`);
 });

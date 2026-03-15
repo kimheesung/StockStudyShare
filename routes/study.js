@@ -150,10 +150,10 @@ router.get('/leader-apply', isLoggedIn, (req, res) => {
 
 // 스터디장 지원 제출
 router.post('/leader-apply', isLoggedIn, (req, res) => {
-  const { study_name, report_cycle, quality_plan, study_plan, agreement, leader_intro } = req.body;
+  const { study_name, report_cycle, quality_plan, agreement, leader_intro } = req.body;
   const sectors = Array.isArray(req.body.sectors) ? req.body.sectors.join(', ') : (req.body.sectors || '');
 
-  if (!study_name || !study_plan || !agreement || !quality_plan || !report_cycle) {
+  if (!study_name || !agreement || !quality_plan || !report_cycle) {
     return res.status(400).send('필수 항목을 모두 입력해주세요.');
   }
 
@@ -167,7 +167,6 @@ router.post('/leader-apply', isLoggedIn, (req, res) => {
     `[리포트 제출 주기] ${report_cycle}`,
     `[주력 섹터] ${sectors || '미선택'}`,
     `[품질 관리 방안]\n${quality_plan.trim()}`,
-    `[스터디 운영 방식]\n${study_plan.trim()}`,
     leader_intro ? `[스터디장 소개]\n${leader_intro.trim()}` : '',
   ].filter(Boolean).join('\n\n');
 
@@ -381,8 +380,14 @@ router.post('/:id/apply', isLoggedIn, applyUpload.single('report_file'), (req, r
   const room = db.prepare('SELECT * FROM study_rooms WHERE id = ?').get(req.params.id);
   if (!room) return res.status(404).send('스터디방을 찾을 수 없습니다.');
 
+  // 블랙유저 체크
+  const userInfo = db.prepare('SELECT points, is_blacklisted FROM users WHERE id = ?').get(req.user.id);
+  if (userInfo?.is_blacklisted) {
+    return res.status(403).send('블랙리스트에 등록된 유저는 스터디방에 가입할 수 없습니다. 관리자에게 문의하세요.');
+  }
+
   // 포인트 부족 체크 (가입비 10,000P)
-  const currentUser = db.prepare('SELECT points FROM users WHERE id = ?').get(req.user.id);
+  const currentUser = userInfo;
   if (!currentUser || currentUser.points < 10000) {
     return res.redirect('/my/points?need=10000&reason=study_join');
   }
@@ -531,6 +536,19 @@ router.get('/:id', isLoggedIn, (req, res) => {
           <form method="POST" action="/study/${room.id}/reports/${r.id}/reject" style="display:inline"><button class="btn-kick" style="padding:5px 14px;font-size:0.75rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#ef4444;border-radius:8px;cursor:pointer;font-family:inherit">반려</button></form>
          </div>` : '';
 
+    // 투표 집계
+    const likes = db.prepare("SELECT COUNT(*) as c FROM study_report_votes WHERE report_id = ? AND vote = 'like'").get(r.id).c;
+    const dislikes = db.prepare("SELECT COUNT(*) as c FROM study_report_votes WHERE report_id = ? AND vote = 'dislike'").get(r.id).c;
+    const myVote = db.prepare('SELECT vote FROM study_report_votes WHERE report_id = ? AND user_id = ?').get(r.id, req.user.id);
+    const isMineReport = r.author_id === req.user.id;
+    const showVote = ['study_published', 'on_sale'].includes(r.status) && !isMineReport;
+
+    const voteHtml = showVote ? `
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center" onclick="event.stopPropagation()">
+        <button onclick="voteReport(${room.id},${r.id},'like',this)" style="padding:4px 14px;border-radius:20px;font-size:0.78rem;cursor:pointer;font-family:inherit;border:none;transition:all 0.15s;${myVote?.vote === 'like' ? 'background:rgba(74,222,128,0.2);color:#4ade80;border:1px solid rgba(74,222,128,0.3)' : 'background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.08)'}">👍 ${likes}</button>
+        <button onclick="voteReport(${room.id},${r.id},'dislike',this)" style="padding:4px 14px;border-radius:20px;font-size:0.78rem;cursor:pointer;font-family:inherit;border:none;transition:all 0.15s;${myVote?.vote === 'dislike' ? 'background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid rgba(239,68,68,0.3)' : 'background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.08)'}">👎 ${dislikes}</button>
+      </div>` : (likes + dislikes > 0 ? `<div style="font-size:0.72rem;color:rgba(255,255,255,0.25);margin-top:8px">👍 ${likes} · 👎 ${dislikes}</div>` : '');
+
     return `<div class="report-card" ${viewLink !== '#' ? `onclick="window.location='${viewLink}'" style="cursor:pointer"` : ''}>
       <div class="report-card-top">
         <span class="report-sector">${escapeHtml(r.sector || '기타')}</span>
@@ -543,6 +561,7 @@ router.get('/:id', isLoggedIn, (req, res) => {
         <span>${new Date(r.created_at).toLocaleDateString('ko-KR')}</span>
       </div>
       ${leaderBtn}
+      ${voteHtml}
     </div>`;
   }).join('') : '<div class="empty-msg">스터디원이 올린 리포트가 아직 없습니다.</div>';
 
@@ -749,6 +768,86 @@ router.post('/:id/leave', isLoggedIn, (req, res) => {
   }
 
   res.redirect('/study');
+});
+
+// 스터디 리포트 좋아요/싫어요 투표
+router.post('/:id/reports/:reportId/vote', isLoggedIn, (req, res) => {
+  const room = db.prepare('SELECT * FROM study_rooms WHERE id = ?').get(req.params.id);
+  if (!room) return res.json({ ok: false, error: '스터디방을 찾을 수 없습니다.' });
+
+  const isMember = db.prepare('SELECT id FROM study_members WHERE room_id = ? AND user_id = ?').get(room.id, req.user.id);
+  if (!isMember) return res.json({ ok: false, error: '스터디방 멤버만 투표할 수 있습니다.' });
+
+  const report = db.prepare('SELECT * FROM reports WHERE id = ? AND study_room_id = ?').get(req.params.reportId, room.id);
+  if (!report) return res.json({ ok: false, error: '리포트를 찾을 수 없습니다.' });
+
+  // 자기 리포트 투표 방지
+  if (report.author_id === req.user.id) return res.json({ ok: false, error: '자신의 리포트에는 투표할 수 없습니다.' });
+
+  const vote = req.body.vote; // 'like' or 'dislike'
+  if (!['like', 'dislike'].includes(vote)) return res.json({ ok: false, error: '잘못된 투표입니다.' });
+
+  // 중복 투표 체크
+  const existing = db.prepare('SELECT id, vote FROM study_report_votes WHERE report_id = ? AND user_id = ?').get(report.id, req.user.id);
+  if (existing) {
+    if (existing.vote === vote) {
+      // 같은 투표 → 취소
+      db.prepare('DELETE FROM study_report_votes WHERE id = ?').run(existing.id);
+    } else {
+      // 다른 투표 → 변경
+      db.prepare('UPDATE study_report_votes SET vote = ? WHERE id = ?').run(vote, existing.id);
+    }
+  } else {
+    db.prepare('INSERT INTO study_report_votes (report_id, room_id, user_id, vote) VALUES (?, ?, ?, ?)').run(
+      report.id, room.id, req.user.id, vote
+    );
+  }
+
+  // 투표 결과 집계
+  const likes = db.prepare("SELECT COUNT(*) as c FROM study_report_votes WHERE report_id = ? AND vote = 'like'").get(report.id).c;
+  const dislikes = db.prepare("SELECT COUNT(*) as c FROM study_report_votes WHERE report_id = ? AND vote = 'dislike'").get(report.id).c;
+  const totalMembers = db.prepare('SELECT COUNT(*) as c FROM study_members WHERE room_id = ?').get(room.id).c;
+  const myVote = db.prepare('SELECT vote FROM study_report_votes WHERE report_id = ? AND user_id = ?').get(report.id, req.user.id);
+
+  // 70% 이상 싫어요 → 작성자 제명
+  let kicked = false;
+  if (totalMembers > 1 && dislikes >= Math.ceil(totalMembers * 0.7)) {
+    // 작성자가 스터디장이면 제명 불가
+    if (report.author_id !== room.owner_id) {
+      const kickTx = db.transaction(() => {
+        // 멤버에서 제거
+        db.prepare('DELETE FROM study_members WHERE room_id = ? AND user_id = ?').run(room.id, report.author_id);
+        // 제명 기록
+        db.prepare('INSERT INTO study_kicks (user_id, room_id, reason) VALUES (?, ?, ?)').run(
+          report.author_id, room.id, `리포트 "${report.title}" 싫어요 ${dislikes}/${totalMembers} (70% 초과)`
+        );
+        // 작성자에게 알림
+        notify(db, report.author_id, 'study_rejected', '스터디방 제명',
+          `"${room.name}" 스터디방에서 리포트 평가(싫어요 ${dislikes}/${totalMembers})로 제명되었습니다.`,
+          '/study');
+
+        // 3번 이상 제명 → 블랙리스트
+        const kickCount = db.prepare('SELECT COUNT(*) as c FROM study_kicks WHERE user_id = ?').get(report.author_id).c;
+        if (kickCount >= 3) {
+          db.prepare('UPDATE users SET is_blacklisted = 1 WHERE id = ?').run(report.author_id);
+          notify(db, report.author_id, 'report_rejected', '블랙리스트 등록',
+            `${kickCount}번 이상 스터디방에서 제명되어 블랙리스트에 등록되었습니다.`,
+            '/my/profile');
+          // 관리자에게 알림
+          const admins = db.prepare("SELECT id FROM users WHERE role = 'admin'").all();
+          for (const admin of admins) {
+            notify(db, admin.id, 'report_pending_admin', '블랙유저 등록',
+              `${report.author_id} 유저가 ${kickCount}번 제명되어 블랙리스트에 등록되었습니다.`,
+              '/admin/users');
+          }
+        }
+      });
+      kickTx();
+      kicked = true;
+    }
+  }
+
+  res.json({ ok: true, likes, dislikes, myVote: myVote?.vote || null, kicked });
 });
 
 module.exports = router;

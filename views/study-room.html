@@ -211,6 +211,25 @@
     if ('{{pendingCount}}' === '0') {
       document.getElementById('pending-badge').style.display = 'none';
     }
+
+    // 리포트 투표
+    function voteReport(roomId, reportId, vote, btn) {
+      fetch('/study/' + roomId + '/reports/' + reportId + '/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ vote: vote })
+      }).then(function(r) { return r.json(); }).then(function(data) {
+        if (data.ok) {
+          if (data.kicked) {
+            alert('싫어요 70% 초과로 해당 스터디원이 제명되었습니다.');
+          }
+          window.location.reload();
+        } else {
+          alert(data.error || '투표에 실패했습니다.');
+        }
+      }).catch(function() { alert('오류가 발생했습니다.'); });
+    }
   </script>
 </body>
 </html>

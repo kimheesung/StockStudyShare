@@ -309,7 +309,7 @@ async function fetchDartDisclosures() {
   try {
     const endDate = new Date();
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 7);
+    startDate.setDate(startDate.getDate() - 3);
     const fmt = d => d.toISOString().slice(0, 10).replace(/-/g, '');
 
     const results = [];
@@ -611,17 +611,39 @@ router.get('/dashboard', async (req, res) => {
     topGainersHtml = '<div class="report-empty">표시할 데이터가 없습니다.</div>';
   }
 
-  // 주요 공시 카드
+  // 주요 공시 카드 (가로 스크롤)
+  function extractSummary(reportNm, label) {
+    // 보고서명에서 금액/비율 등 핵심 숫자 추출
+    const amountMatch = reportNm.match(/(\d[\d,]*)\s*원/);
+    const pctMatch = reportNm.match(/(\d+\.?\d*)%/);
+    const sharesMatch = reportNm.match(/(\d[\d,]*)\s*주/);
+    if (amountMatch) {
+      const num = parseInt(amountMatch[1].replace(/,/g, ''));
+      if (num >= 100000000) return `${(num / 100000000).toFixed(0)}억원`;
+      if (num >= 10000) return `${(num / 10000).toFixed(0)}만원`;
+    }
+    if (pctMatch) return `${pctMatch[1]}%`;
+    if (sharesMatch) return `${sharesMatch[1]}주`;
+    const shortName = reportNm.replace(/\(.*?\)/g, '').trim();
+    if (label === '전환사채 발행') return 'CB 발행';
+    if (label === '유상증자' || label === '3자배정 유증') return '유증 결정';
+    if (label === '매출액 변동') return '실적 변동';
+    if (label === '대규모 투자') return '투자 결정';
+    return '';
+  }
+
   const dartCards = dartData.length > 0 ? dartData.map(d => {
     const dateStr = d.rcept_dt ? `${d.rcept_dt.slice(0,4)}.${d.rcept_dt.slice(4,6)}.${d.rcept_dt.slice(6,8)}` : '';
     const dartUrl = `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${d.rcept_no}`;
-    return `<a href="${dartUrl}" target="_blank" class="dart-card" style="text-decoration:none;color:#fff">
+    const summary = extractSummary(d.report_nm, d.label);
+    return `<a href="${dartUrl}" target="_blank" class="dart-card">
       <div class="dart-badge" style="background:${d.color}20;color:${d.color};border:1px solid ${d.color}40">${d.icon} ${escapeHtml(d.label)}</div>
       <div class="dart-corp">${escapeHtml(d.corp_name)} <span class="dart-market">${d.corp_cls}</span></div>
+      ${summary ? `<div class="dart-summary">${escapeHtml(summary)}</div>` : ''}
       <div class="dart-report">${escapeHtml(d.report_nm)}</div>
       <div class="dart-date">${dateStr}</div>
     </a>`;
-  }).join('') : '<div class="report-empty">공시 데이터를 불러올 수 없습니다. DART API 키를 설정해주세요.</div>';
+  }).join('') : '<div style="min-width:280px;padding:30px;text-align:center;color:rgba(255,255,255,0.25);font-size:0.85rem">공시 데이터 없음</div>';
 
   const html = render('views/dashboard.html', {
     nav: buildNav(req.user),
@@ -638,6 +660,26 @@ router.get('/dashboard', async (req, res) => {
     adBanner: adBannerHtml(),
   });
   res.send(html);
+});
+
+// 공시 엑셀 다운로드
+router.get('/api/dart-excel', async (req, res) => {
+  if (!req.isAuthenticated()) return res.status(401).send('로그인이 필요합니다.');
+  const data = await fetchDartDisclosures();
+  if (!data || data.length === 0) return res.status(404).send('데이터가 없습니다.');
+
+  // CSV (엑셀 호환)
+  const BOM = '\uFEFF';
+  let csv = BOM + '날짜,기업명,시장,유형,보고서명,DART링크\n';
+  for (const d of data) {
+    const dateStr = d.rcept_dt ? `${d.rcept_dt.slice(0,4)}-${d.rcept_dt.slice(4,6)}-${d.rcept_dt.slice(6,8)}` : '';
+    const url = `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${d.rcept_no}`;
+    csv += `${dateStr},"${d.corp_name}",${d.corp_cls},${d.label},"${d.report_nm.replace(/"/g, '""')}",${url}\n`;
+  }
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="dart_disclosures_${new Date().toISOString().slice(0,10)}.csv"`);
+  res.send(csv);
 });
 
 // 시장 데이터 API (자동 새로고침용)
