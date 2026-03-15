@@ -26,8 +26,8 @@
       animation: float 8s ease-in-out infinite;
     }
     .bg-glow.one { background: #4f46e5; top: -100px; left: -100px; }
-    .bg-glow.two { background: #06b6d4); bottom: -100px; right: -100px; animation-delay: 4s; }
-    .bg-glow.three { background: #a855f7); top: 50%; left: 50%; animation-delay: 2s; }
+    .bg-glow.two { background: #06b6d4; bottom: -100px; right: -100px; animation-delay: 4s; }
+    .bg-glow.three { background: #a855f7; top: 50%; left: 50%; animation-delay: 2s; }
     @keyframes float {
       0%, 100% { transform: translate(0, 0) scale(1); }
       50% { transform: translate(30px, -30px) scale(1.1); }
@@ -267,6 +267,137 @@
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    /* 모바일 최적화 */
+    @media (max-width: 768px) {
+      body { -webkit-tap-highlight-color: transparent; }
+      .bg-glow {
+        width: 240px; height: 240px;
+        filter: blur(80px);
+        opacity: 0.25;
+      }
+      .bg-glow.one { top: -60px; left: -60px; }
+      .bg-glow.two { bottom: -60px; right: -60px; }
+      .bg-glow.three { width: 180px; height: 180px; top: 40%; left: 50%; transform: translate(-50%, -50%); }
+
+      nav {
+        padding: 12px 16px 12px 20px;
+        padding-top: max(12px, env(safe-area-inset-top));
+        align-items: center;
+      }
+      .logo {
+        font-size: 1.15rem;
+        max-width: 55%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .nav-login {
+        padding: 8px 16px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .hero {
+        padding: 100px 20px 60px;
+        padding-top: max(80px, calc(60px + env(safe-area-inset-top)));
+        padding-bottom: max(60px, calc(40px + env(safe-area-inset-bottom)));
+        align-items: stretch;
+        text-align: left;
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+      .badge {
+        font-size: 0.8rem;
+        padding: 10px 18px;
+        margin-bottom: 24px;
+        text-align: center;
+        align-self: flex-start;
+      }
+      .hero h1 {
+        font-size: clamp(1.75rem, 8vw, 2.25rem);
+        line-height: 1.35;
+        margin-bottom: 20px;
+      }
+      .hero p {
+        font-size: 0.95rem;
+        line-height: 1.75;
+        margin-bottom: 32px;
+        text-align: left;
+      }
+      .cta-group {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+      }
+      .btn-primary,
+      .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 24px;
+        font-size: 0.98rem;
+        border-radius: 14px;
+      }
+      .btn-primary svg { width: 22px; height: 22px; }
+      .chart-visual {
+        margin-top: 40px;
+        height: 56px;
+        gap: 4px;
+      }
+      .chart-bar { width: 6px; }
+
+      .features {
+        padding: 50px 20px 60px;
+      }
+      .features-title {
+        font-size: 1.5rem;
+        margin-bottom: 32px;
+      }
+      .features-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .feature-card {
+        padding: 28px 24px;
+      }
+      .feature-icon {
+        width: 48px; height: 48px;
+        font-size: 1.3rem;
+        margin-bottom: 16px;
+      }
+      .feature-card h3 { font-size: 1.1rem; }
+      .feature-card p { font-size: 0.9rem; }
+
+      .stats {
+        padding: 40px 20px 50px;
+        gap: 32px;
+      }
+      .stat-number { font-size: 2.2rem; }
+      .stat-label { font-size: 0.85rem; }
+
+      .cta-section { padding: 50px 20px 60px; }
+      .cta-box {
+        padding: 36px 24px;
+        border-radius: 24px;
+      }
+      .cta-box h2 { font-size: 1.4rem; }
+      .cta-box p { font-size: 0.9rem; margin-bottom: 24px; }
+
+      footer {
+        padding: 28px 20px;
+        padding-bottom: max(28px, calc(20px + env(safe-area-inset-bottom)));
+        font-size: 0.8rem;
+      }
+    }
+
+    @media (max-width: 380px) {
+      nav { padding-left: 14px; padding-right: 14px; }
+      .logo { font-size: 1.05rem; }
+      .nav-login { padding: 8px 12px; font-size: 0.75rem; }
+      .hero { padding-left: 16px; padding-right: 16px; }
+      .hero h1 { font-size: 1.6rem; }
+    }
   </style>
 </head>
 <body>
@@ -360,5 +491,17 @@
   <footer>
     &copy; 2026 StockStudyShare. All rights reserved.
   </footer>
+  <script>
+    // 인앱 브라우저 감지 → 안내 배너
+    (function() {
+      var ua = navigator.userAgent.toLowerCase();
+      if (/kakaotalk|kakao|naver|line|instagram|fbav|fban|twitter|snapchat/.test(ua)) {
+        var banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;padding:16px 20px;background:rgba(239,68,68,0.95);color:#fff;text-align:center;z-index:9999;font-size:0.88rem;line-height:1.5;backdrop-filter:blur(10px)';
+        banner.innerHTML = '⚠️ <strong>인앱 브라우저에서는 Google 로그인이 제한됩니다.</strong><br>우측 상단 메뉴(⋯)에서 <strong>"다른 브라우저로 열기"</strong>를 눌러주세요.';
+        document.body.appendChild(banner);
+      }
+    })();
+  </script>
 </body>
 </html>

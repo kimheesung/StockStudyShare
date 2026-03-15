@@ -533,22 +533,39 @@ router.get('/:id/pdf', isLoggedIn, async (req, res) => {
 
     for (const page of pages) {
       const { width, height } = page.getSize();
-      // 대각선 워터마크
-      page.drawText(watermarkText, {
-        x: width * 0.1,
-        y: height * 0.3,
-        size: 28,
-        color: rgb(0.7, 0.7, 0.7),
-        opacity: 0.15,
-        rotate: degrees(45),
-      });
-      // 하단 워터마크
+      // 대각선 워터마크 (여러 위치에 반복)
+      const positions = [
+        { x: width * 0.05, y: height * 0.2 },
+        { x: width * 0.05, y: height * 0.55 },
+        { x: width * 0.05, y: height * 0.8 },
+        { x: width * 0.35, y: height * 0.35 },
+        { x: width * 0.35, y: height * 0.7 },
+      ];
+      for (const pos of positions) {
+        page.drawText(watermarkText, {
+          x: pos.x,
+          y: pos.y,
+          size: 24,
+          color: rgb(0.5, 0.5, 0.5),
+          opacity: 0.12,
+          rotate: degrees(35),
+        });
+      }
+      // 상단 워터마크
       page.drawText(`StockStudyShare | ${watermarkText}`, {
         x: 10,
+        y: height - 15,
+        size: 7,
+        color: rgb(0.5, 0.5, 0.5),
+        opacity: 0.25,
+      });
+      // 하단 워터마크
+      page.drawText(`이 문서는 ${watermarkText} 님에게 제공된 사본입니다. 무단 배포를 금지합니다.`, {
+        x: 10,
         y: 10,
-        size: 8,
-        color: rgb(0.6, 0.6, 0.6),
-        opacity: 0.3,
+        size: 7,
+        color: rgb(0.5, 0.5, 0.5),
+        opacity: 0.25,
       });
     }
 
