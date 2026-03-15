@@ -63,7 +63,10 @@ async function fetchImportantDisclosures() {
       if (title.includes('전환사채') || title.includes('CB')) {
         category = '전환사채(CB)';
         impact = 'negative';
-      } else if (title.includes('유상증자') || title.includes('3자배정') || title.includes('제3자배정')) {
+      } else if (title.includes('3자배정') || title.includes('제3자배정')) {
+        category = '3자배정 유증';
+        impact = 'positive';
+      } else if (title.includes('유상증자') || title.includes('주주배정')) {
         category = '유상증자';
         impact = 'negative';
       } else if (title.includes('매출액') || title.includes('영업이익') || title.includes('당기순이익')) {
@@ -131,8 +134,8 @@ router.get('/', isLoggedIn, async (req, res) => {
   const impactLabel = { positive: '호재', negative: '악재', neutral: '중립' };
 
   const rows = filtered.length > 0 ? filtered.map(d => `
-    <a href="${escapeHtml(d.dartUrl)}" target="_blank" class="disc-row">
-      <div class="disc-impact">${impactIcon[d.impact] || '⚪'}</div>
+    <a href="${escapeHtml(d.dartUrl)}" target="_blank" class="disc-row ${d.impact}">
+      <div class="disc-signal"><div class="signal-light ${d.impact}"></div></div>
       <div class="disc-main">
         <div class="disc-header">
           <span class="disc-corp">${escapeHtml(d.corpName)}</span>
@@ -169,7 +172,14 @@ router.get('/', isLoggedIn, async (req, res) => {
       .count{font-size:0.85rem;color:rgba(255,255,255,0.3);margin-bottom:16px}
       .disc-row{display:flex;align-items:center;gap:14px;padding:16px 20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:8px;text-decoration:none;color:#fff;transition:all 0.2s}
       .disc-row:hover{background:rgba(255,255,255,0.06);border-color:rgba(79,70,229,0.2)}
-      .disc-impact{font-size:1.2rem;flex-shrink:0}
+      .disc-row.positive{border-left:3px solid #4ade80}
+      .disc-row.negative{border-left:3px solid #ef4444}
+      .disc-row.neutral{border-left:3px solid #fbbf24}
+      .disc-signal{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+      .signal-light{width:18px;height:18px;border-radius:50%;box-shadow:0 0 8px currentColor}
+      .signal-light.positive{background:#4ade80;color:#4ade80;box-shadow:0 0 12px rgba(74,222,128,0.6)}
+      .signal-light.negative{background:#ef4444;color:#ef4444;box-shadow:0 0 12px rgba(239,68,68,0.6)}
+      .signal-light.neutral{background:#fbbf24;color:#fbbf24;box-shadow:0 0 12px rgba(251,191,36,0.6)}
       .disc-main{flex:1;min-width:0}
       .disc-header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
       .disc-corp{font-weight:900;font-size:0.95rem}
