@@ -114,9 +114,8 @@
     <div class="report-tabs">
       <button class="report-tab active" onclick="switchTab('latest')">📝 최신</button>
       <button class="report-tab" onclick="switchTab('hot')">🔥 핫한</button>
-      <button class="report-tab" onclick="switchTab('gainers')">🚀 상승률</button>
+      <button class="report-tab" onclick="switchTab('topReturn')">📈 수익률상승률(3개월)</button>
       <button class="report-tab" onclick="switchTab('follow')">⭐ 팔로우</button>
-      <button class="report-tab" onclick="switchTab('topReturn')">💰 수익률 TOP</button>
     </div>
     <div class="report-tab-content" id="tab-latest">
       <div class="report-grid">{{latestCards}}</div>
@@ -124,14 +123,11 @@
     <div class="report-tab-content" id="tab-hot" style="display:none">
       <div class="report-grid">{{hotCards}}</div>
     </div>
-    <div class="report-tab-content" id="tab-gainers" style="display:none">
-      <div class="report-grid">{{topGainersHtml}}</div>
+    <div class="report-tab-content" id="tab-topReturn" style="display:none">
+      <div class="report-grid">{{topReturnCards}}</div>
     </div>
     <div class="report-tab-content" id="tab-follow" style="display:none">
       <div class="report-grid">{{followCards}}</div>
-    </div>
-    <div class="report-tab-content" id="tab-topReturn" style="display:none">
-      <div class="report-grid">{{topReturnCards}}</div>
     </div>
     <a href="/reports" class="see-all">전체 리포트 보기 →</a>
 
@@ -188,7 +184,7 @@
 
   </div>
   <script>
-    var tabOrder = ['latest','hot','gainers','follow','topReturn'];
+    var tabOrder = ['latest','hot','topReturn','follow'];
     var currentTabIdx = 0;
     var autoRollTimer = null;
 

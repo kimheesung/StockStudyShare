@@ -114,6 +114,26 @@
         btn.textContent = '변경';
       }
     }
+
+    async function givePoints(userId, form) {
+      var amount = form.querySelector('input[name="amount"]').value;
+      var reason = form.querySelector('input[name="reason"]').value;
+      if (!amount) { alert('금액을 입력해주세요.'); return; }
+      try {
+        var res = await fetch('/admin/users/' + userId + '/points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ amount: parseInt(amount), reason: reason })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          window.location.reload();
+        } else {
+          alert(data.error || '실패했습니다.');
+        }
+      } catch(e) { alert('오류가 발생했습니다.'); }
+    }
   </script>
 </body>
 </html>

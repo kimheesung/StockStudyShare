@@ -346,12 +346,17 @@ router.get('/users', isLoggedIn, isAdmin, (req, res) => {
            <button type="submit" class="btn-sm">변경</button>
            <span class="btn-saved"><span class="check-icon">&#10003;</span> 저장됨</span>
          </form>`;
+    const pointsForm = isSelf ? '' : `<form style="display:flex;gap:4px;align-items:center;margin-top:4px" onsubmit="event.preventDefault();givePoints('${u.id}',this)">
+          <input type="number" name="amount" placeholder="금액" style="width:80px;padding:4px 8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:0.75rem">
+          <input type="text" name="reason" placeholder="사유" style="width:80px;padding:4px 8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:0.75rem">
+          <button type="submit" class="btn-sm" style="padding:4px 10px;font-size:0.7rem">지급</button>
+        </form>`;
     return `
       <tr>
         <td><img src="${u.photo || ''}" class="table-avatar"> ${escapeHtml(u.name)}</td>
         <td>${escapeHtml(u.nickname || '-')}</td>
         <td>${escapeHtml(u.email || '')}</td>
-        <td style="color:#fbbf24;font-weight:700">${(u.points || 0).toLocaleString()}P</td>
+        <td style="color:#fbbf24;font-weight:700">${(u.points || 0).toLocaleString()}P${pointsForm}</td>
         <td>${escapeHtml(u.referrer_nickname || '-')}</td>
         <td>${roleCell}</td>
         <td>${new Date(u.joined_at).toLocaleDateString('ko-KR')}</td>
@@ -389,6 +394,28 @@ router.post('/users/:id/role', isLoggedIn, isAdmin, (req, res) => {
     return res.json({ ok: true, role });
   }
   res.redirect('/admin/users');
+});
+
+// 회원 포인트 지급/차감
+router.post('/users/:id/points', isLoggedIn, isAdmin, (req, res) => {
+  const amount = parseInt(req.body.amount);
+  const reason = (req.body.reason || '').trim();
+  if (!amount || isNaN(amount)) return res.json({ ok: false, error: '유효한 금액을 입력해주세요.' });
+
+  const user = db.prepare('SELECT id, points, nickname, name FROM users WHERE id = ?').get(req.params.id);
+  if (!user) return res.json({ ok: false, error: '유저를 찾을 수 없습니다.' });
+
+  db.prepare('UPDATE users SET points = points + ? WHERE id = ?').run(amount, user.id);
+  db.prepare("INSERT INTO point_logs (user_id, amount, type, description) VALUES (?, ?, 'admin_adjust', ?)").run(
+    user.id, amount, reason || `관리자 포인트 ${amount > 0 ? '지급' : '차감'}`
+  );
+
+  // 유저에게 알림
+  notify(db, user.id, 'points', '포인트 ' + (amount > 0 ? '지급' : '차감'),
+    `관리자가 ${Math.abs(amount).toLocaleString()}P를 ${amount > 0 ? '지급' : '차감'}했습니다.${reason ? ' 사유: ' + reason : ''}`,
+    '/my/points');
+
+  res.json({ ok: true, newPoints: (user.points || 0) + amount });
 });
 
 // 신고 관리
