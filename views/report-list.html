@@ -126,8 +126,13 @@
   <div class="container">
     <h1><span class="highlight">리포트</span> 검색</h1>
     <div class="page-tabs">
+      <a href="/reports?view=top30" class="page-tab" id="tab-top30">📈 수익률 TOP 30</a>
       <a href="/reports" class="page-tab active" id="tab-reports">리포트 검색</a>
       <a href="/reports?view=authors" class="page-tab" id="tab-authors">리포터 보기</a>
+    </div>
+
+    <div id="top30-section" style="display:none">
+      <div class="report-grid">{{top30Cards}}</div>
     </div>
 
     <div id="report-section">
@@ -180,7 +185,12 @@
   <script>
     // 탭 전환
     var currentView = new URLSearchParams(window.location.search).get('view');
-    if (currentView === 'authors') {
+    if (currentView === 'top30') {
+      document.getElementById('report-section').style.display = 'none';
+      document.getElementById('top30-section').style.display = 'block';
+      document.getElementById('tab-reports').classList.remove('active');
+      document.getElementById('tab-top30').classList.add('active');
+    } else if (currentView === 'authors') {
       document.getElementById('report-section').style.display = 'none';
       document.getElementById('author-section').style.display = 'block';
       document.getElementById('tab-reports').classList.remove('active');

@@ -19,11 +19,15 @@ const SYMBOLS = [
   { symbol: '^GSPC', name: 'S&P 500', category: '미국' },
   { symbol: '^IXIC', name: 'NASDAQ', category: '미국' },
   { symbol: '^DJI', name: 'Dow Jones', category: '미국' },
+  { symbol: '^SOX', name: 'Philadelphia 반도체', category: '미국' },
   { symbol: 'KRW=X', name: 'USD/KRW', category: '환율' },
   { symbol: 'JPY=X', name: 'USD/JPY', category: '환율' },
   { symbol: 'GC=F', name: 'Gold', category: '원자재' },
   { symbol: 'CL=F', name: 'WTI Oil', category: '원자재' },
   { symbol: 'BTC-USD', name: 'Bitcoin', category: '암호화폐' },
+  { symbol: 'MU', name: 'Micron (RAM)', category: '반도체' },
+  { symbol: 'WDC', name: 'WD (NAND)', category: '반도체' },
+  { symbol: '000660.KS', name: 'SK하이닉스', category: '반도체' },
 ];
 
 async function fetchMarketData() {
@@ -456,7 +460,7 @@ router.get('/dashboard', async (req, res) => {
     LIMIT 6
   `).all();
 
-  // 핫한 리포트 (최근 2주간 조회수 기준, 6개)
+  // 핫한 리포트 (구매순 → 조회순, 6개)
   const twoWeeksAgo = new Date();
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
   const hotReports = db.prepare(`
@@ -468,7 +472,7 @@ router.get('/dashboard', async (req, res) => {
     JOIN users u ON r.author_id = u.id
     LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
     WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')
-    ORDER BY view_count DESC, r.published_at DESC
+    ORDER BY purchase_count DESC, view_count DESC, r.published_at DESC
     LIMIT 6
   `).all(twoWeeksAgo.toISOString());
 
@@ -560,6 +564,7 @@ router.get('/dashboard', async (req, res) => {
           <span>${date}</span>
         </div>
         <div class="report-purchases">${extra}</div>
+        <div class="report-return" data-report-id="${r.id}" style="font-size:0.78rem;color:rgba(255,255,255,0.2);margin-top:4px"></div>
       </a>`;
     }).join('');
   }

@@ -22,11 +22,11 @@
     .updated { font-size: 0.72rem; color: rgba(255,255,255,0.25); margin-bottom: 24px; }
 
     /* 시장 지표 카드 */
-    .market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 36px; }
-    .market-card { padding: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; }
-    .market-card .name { font-size: 0.82rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
-    .market-card .price { font-size: 1.2rem; font-weight: 900; }
-    .market-card .change { font-size: 0.8rem; font-weight: 700; }
+    .market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 28px; }
+    .market-card { padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+    .market-card .name { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
+    .market-card .price { font-size: 0.95rem; font-weight: 900; }
+    .market-card .change { font-size: 0.72rem; font-weight: 700; }
     .up { color: #ef4444; }
     .down { color: #3b82f6; }
 
@@ -127,7 +127,34 @@
   <nav>{{nav}}</nav>
   <div class="container">
 
-    <a href="/report-dashboard" style="display:inline-flex;align-items:center;gap:8px;padding:14px 24px;background:rgba(79,70,229,0.1);border:1px solid rgba(79,70,229,0.25);border-radius:14px;color:#a5b4fc;text-decoration:none;font-size:0.9rem;font-weight:700;margin-bottom:24px;transition:all 0.2s">🏠 리포트 대시보드 바로가기 →</a>
+    <!-- 시장 주요 지표 (최상단) -->
+    <h2 class="section-title"><span class="icon">📊</span> 시장 주요 지표 <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);font-weight:400">{{updatedAt}}</span></h2>
+    <div class="market-grid" id="market-grid">
+      {{marketCards}}
+    </div>
+
+    <a href="/report-dashboard" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:rgba(79,70,229,0.1);border:1px solid rgba(79,70,229,0.25);border-radius:14px;color:#a5b4fc;text-decoration:none;font-size:0.85rem;font-weight:700;margin-bottom:24px;transition:all 0.2s">🏠 리포트 대시보드 바로가기 →</a>
+
+    <h2 class="section-title"><span class="icon">📄</span> 리포트</h2>
+    <div class="report-tabs">
+      <button class="report-tab active" onclick="switchTab('topReturn')">📈 수익률 TOP</button>
+      <button class="report-tab" onclick="switchTab('hot')">🔥 핫한</button>
+      <button class="report-tab" onclick="switchTab('latest')">📝 최신</button>
+      <button class="report-tab" onclick="switchTab('follow')">⭐ 팔로우</button>
+    </div>
+    <div class="report-tab-content" id="tab-topReturn">
+      <div class="report-grid">{{topReturnCards}}</div>
+    </div>
+    <div class="report-tab-content" id="tab-hot" style="display:none">
+      <div class="report-grid">{{hotCards}}</div>
+    </div>
+    <div class="report-tab-content" id="tab-latest" style="display:none">
+      <div class="report-grid">{{latestCards}}</div>
+    </div>
+    <div class="report-tab-content" id="tab-follow" style="display:none">
+      <div class="report-grid">{{followCards}}</div>
+    </div>
+    <a href="/reports" class="see-all">전체 리포트 보기 →</a>
 
     <!-- 주요 공시 -->
     <div class="dart-header">
@@ -147,13 +174,6 @@
       <div id="ad-loaded" style="display:none;width:100%;height:100%"></div>
     </a>
     <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box'),df=document.getElementById('ad-default'),ld=document.getElementById('ad-loaded');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
-
-    <!-- 시장 주요 지표 -->
-    <h2 class="section-title"><span class="icon">📊</span> 시장 주요 지표</h2>
-    <p class="updated">업데이트: {{updatedAt}}</p>
-    <div class="market-grid" id="market-grid">
-      {{marketCards}}
-    </div>
 
     <!-- 투자자 매매동향 / 신용잔고 -->
     <div class="data-grid">
@@ -182,7 +202,7 @@
 
   </div>
   <script>
-    var tabOrder = ['latest','hot','topReturn','follow'];
+    var tabOrder = ['topReturn','hot','latest','follow'];
     var currentTabIdx = 0;
     var autoRollTimer = null;
 
@@ -216,6 +236,22 @@
       }, 10000);
     }
     startAutoRoll();
+
+    // 리포트 카드 수익률 로드
+    (function(){
+      var els = document.querySelectorAll('.report-return[data-report-id]');
+      els.forEach(function(el){
+        var rid = el.dataset.reportId;
+        fetch('/api/report-performance/' + rid)
+          .then(function(r){return r.json()})
+          .then(function(d){
+            if(!d || d.error || d.totalReturn === null || d.totalReturn === undefined) return;
+            var up = d.totalReturn >= 0;
+            var sign = up ? '+' : '';
+            el.innerHTML = '<span style="font-weight:700;color:' + (up ? '#ef4444' : '#3b82f6') + '">' + sign + d.totalReturn.toFixed(2) + '%</span>';
+          }).catch(function(){});
+      });
+    })();
   </script>
 </body>
 </html>

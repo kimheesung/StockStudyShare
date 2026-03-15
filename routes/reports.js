@@ -4,7 +4,7 @@ const { render, isLoggedIn, buildNav, escapeHtml, addPoints, adBannerHtml, notif
 const router = express.Router();
 
 // 리포트 목록
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const user = req.user;
   const { sector, market, sort, q } = req.query;
 
@@ -142,10 +142,95 @@ router.get('/', (req, res) => {
     </a>`;
   }).join('') : '<p class="empty-text">아직 리포터가 없습니다.</p>';
 
+  // 수익률 TOP 30 (실시간 현재가 기반)
+  const top30Cards = await (async () => {
+    const candidates = db.prepare(`
+      SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
+             COALESCE(u.nickname, u.name) as author_name, r.author_id, u.photo as author_photo,
+             (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as sales_count,
+             r.entry_price, r.stock_code, r.market_type,
+             (SELECT AVG(rating) FROM report_ratings WHERE report_id = r.id) as avg_rating,
+             (SELECT COUNT(*) FROM report_ratings WHERE report_id = r.id) as rating_count
+      FROM reports r
+      JOIN users u ON r.author_id = u.id
+      WHERE r.status = 'on_sale' AND r.entry_price IS NOT NULL AND r.entry_price > 0
+        AND r.stock_code IS NOT NULL AND r.stock_code != ''
+      ORDER BY r.published_at DESC LIMIT 50
+    `).all();
+    if (candidates.length === 0) return '<p class="empty-text">수익률 데이터가 있는 리포트가 없습니다.</p>';
+
+    const symbolMap = {};
+    for (const r of candidates) {
+      const code = r.stock_code.replace(/[^0-9A-Za-z]/g, '');
+      symbolMap[r.id] = /^\d{6}$/.test(code) ? (r.market_type === 'KOSDAQ' ? `${code}.KQ` : `${code}.KS`) : code;
+    }
+    const uniqueSymbols = [...new Set(Object.values(symbolMap))];
+    const priceMap = {};
+    await Promise.all(uniqueSymbols.map(async (sym) => {
+      try {
+        const resp = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const json = await resp.json();
+        const price = json.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if (price) priceMap[sym] = price;
+      } catch {}
+    }));
+
+    const results = [];
+    for (const r of candidates) {
+      const currentPrice = priceMap[symbolMap[r.id]];
+      if (!currentPrice) continue;
+      const returnRate = ((currentPrice - r.entry_price) / r.entry_price) * 100;
+      results.push({ ...r, currentPrice, returnRate });
+    }
+    results.sort((a, b) => b.returnRate - a.returnRate);
+
+    const purchasedSetLocal = purchasedSet;
+    return results.slice(0, 30).map((r, i) => {
+      const rank = i + 1;
+      const price = r.sale_price === 0 ? '무료' : `${r.sale_price.toLocaleString()}P`;
+      const isUp = r.returnRate >= 0;
+      const sign = isUp ? '+' : '';
+      const cls = isUp ? 'color:#ef4444' : 'color:#3b82f6';
+      const isPurchased = purchasedSetLocal.has(r.id);
+      const date = r.published_at ? new Date(r.published_at).toLocaleDateString('ko-KR') : '';
+      return `
+        <a href="/reports/${r.id}" class="report-card-full">
+          <div class="report-body">
+            <div class="report-card-tags">
+              <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:900;background:${rank <= 3 ? 'rgba(251,191,36,0.2);color:#fbbf24' : 'rgba(255,255,255,0.06);color:rgba(255,255,255,0.4)'}">#${rank}</span>
+              <span class="tag-market">${escapeHtml(r.market_type || '')}</span>
+              <span class="tag-sector">${escapeHtml(r.sector || '')}</span>
+              ${isPurchased ? '<span class="tag-purchased">구매함</span>' : ''}
+            </div>
+            <h3>${escapeHtml(r.title)}</h3>
+            <p class="report-stock">${escapeHtml(r.stock_name)} (${escapeHtml(r.stock_code || '')})</p>
+            <div style="display:flex;gap:16px;align-items:center;margin:8px 0;flex-wrap:wrap">
+              <span style="font-size:1.1rem;font-weight:900;${cls}">${sign}${r.returnRate.toFixed(2)}%</span>
+              <span style="font-size:0.82rem;color:rgba(255,255,255,0.4)">현재 ${Math.round(r.currentPrice).toLocaleString()}원</span>
+              <span style="font-size:0.78rem;color:rgba(255,255,255,0.25)">기준가 ${Math.round(r.entry_price).toLocaleString()}원</span>
+            </div>
+            <div class="report-stats">
+              <span class="stat-sales">${r.sales_count}명 구매</span>
+              <span class="stat-rating">${r.avg_rating ? `<span style="color:#fbbf24">&#9733;</span> ${Number(r.avg_rating).toFixed(1)}` : '<span style="color:rgba(255,255,255,0.2)">평가 없음</span>'}</span>
+            </div>
+            <div class="report-meta-full">
+              <img src="${r.author_photo || ''}" class="report-author-photo">
+              <span class="author-name">${escapeHtml(r.author_name)}</span>
+              <span class="dot">·</span>
+              <span class="report-price">${price}</span>
+              <span class="dot">·</span>
+              <span>${date}</span>
+            </div>
+          </div>
+        </a>`;
+    }).join('') || '<p class="empty-text">수익률 데이터가 있는 리포트가 없습니다.</p>';
+  })();
+
   const html = render('views/report-list.html', {
     nav: buildNav(user),
     reportCards,
     authorCards,
+    top30Cards,
     currentSector: sector || '',
     currentMarket: market || '',
     currentSort: sort || '',
