@@ -155,7 +155,7 @@ router.post('/reports/extract', isLoggedIn, isAuthor, upload.single('file'), asy
         text = result.value;
       }
     } else if (req.body.url) {
-      const url = req.body.url.trim();
+      let url = req.body.url.trim();
       // SSRF 방지: 허용된 프로토콜 및 외부 호스트만 허용
       let parsedUrl;
       try { parsedUrl = new URL(url); } catch { return res.json({ error: '유효하지 않은 URL입니다.' }); }
@@ -164,7 +164,17 @@ router.post('/reports/extract', isLoggedIn, isAuthor, upload.single('file'), asy
       if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname.startsWith('10.') || hostname.startsWith('172.') || hostname.startsWith('192.168.') || hostname === '169.254.169.254' || hostname.endsWith('.internal') || hostname === '[::1]') {
         return res.json({ error: '내부 네트워크 주소는 허용되지 않습니다.' });
       }
-      const resp = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, redirect: 'manual' });
+
+      // 네이버 블로그: 모바일 URL로 변환 (본문이 SSR로 포함됨)
+      if (hostname === 'blog.naver.com' || hostname === 'm.blog.naver.com') {
+        url = url.replace('blog.naver.com', 'm.blog.naver.com');
+      }
+      // 티스토리: m. 프리픽스 추가
+      if (hostname.endsWith('.tistory.com') && !hostname.startsWith('m.')) {
+        url = url.replace('://', '://m.');
+      }
+
+      const resp = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)' }, redirect: 'follow' });
       const contentType = resp.headers.get('content-type') || '';
 
       if (contentType.includes('pdf')) {
