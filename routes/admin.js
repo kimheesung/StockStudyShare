@@ -48,8 +48,17 @@ router.get('/', isLoggedIn, isAdmin, (req, res) => {
     pendingFlags: String(pendingFlags),
     totalReports: String(totalReports),
     pendingVisitNotes: String(pendingVisitNotes),
+    showAdBanner: (db.prepare("SELECT value FROM site_settings WHERE key = 'show_ad_banner'").get()?.value || 'true'),
   });
   res.send(html);
+});
+
+// 광고 배너 표시 토글
+router.post('/toggle-ad-banner', isLoggedIn, isAdmin, (req, res) => {
+  const current = db.prepare("SELECT value FROM site_settings WHERE key = 'show_ad_banner'").get();
+  const newVal = (current?.value === 'true') ? 'false' : 'true';
+  db.prepare("INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES ('show_ad_banner', ?, datetime('now'))").run(newVal);
+  res.json({ ok: true, show: newVal === 'true' });
 });
 
 // 스터디장 지원서 관리

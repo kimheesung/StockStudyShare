@@ -113,6 +113,32 @@
         <p>신고로 가려진 게시글을 검토하고 복원/삭제합니다.</p>
       </a>
     </div>
+
+    <div style="margin-top:32px;padding:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:12px">사이트 설정</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:0.9rem;font-weight:700">광고 문의 배너</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.4)">각 페이지의 광고 문의 배너 표시 여부</div>
+        </div>
+        <button id="ad-toggle" onclick="toggleAdBanner()" style="padding:10px 24px;border-radius:50px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;border:none;transition:all 0.2s"></button>
+      </div>
+    </div>
   </div>
+  <script>
+    var showAd = '{{showAdBanner}}' === 'true';
+    function updateToggle() {
+      var btn = document.getElementById('ad-toggle');
+      btn.textContent = showAd ? '표시중 (클릭하여 숨기기)' : '숨김 (클릭하여 표시)';
+      btn.style.background = showAd ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)';
+      btn.style.color = showAd ? '#4ade80' : '#ef4444';
+    }
+    updateToggle();
+    function toggleAdBanner() {
+      fetch('/admin/toggle-ad-banner', { method: 'POST', credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) { if (d.ok) { showAd = d.show; updateToggle(); } });
+    }
+  </script>
 </body>
 </html>

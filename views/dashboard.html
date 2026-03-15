@@ -135,27 +135,6 @@
 
     <a href="/report-dashboard" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:rgba(79,70,229,0.1);border:1px solid rgba(79,70,229,0.25);border-radius:14px;color:#a5b4fc;text-decoration:none;font-size:0.85rem;font-weight:700;margin-bottom:24px;transition:all 0.2s">🏠 리포트 대시보드 바로가기 →</a>
 
-    <h2 class="section-title"><span class="icon">📄</span> 리포트</h2>
-    <div class="report-tabs">
-      <button class="report-tab active" onclick="switchTab('topReturn')">📈 수익률 TOP</button>
-      <button class="report-tab" onclick="switchTab('hot')">🔥 핫한</button>
-      <button class="report-tab" onclick="switchTab('latest')">📝 최신</button>
-      <button class="report-tab" onclick="switchTab('follow')">⭐ 팔로우</button>
-    </div>
-    <div class="report-tab-content" id="tab-topReturn">
-      <div class="report-grid">{{topReturnCards}}</div>
-    </div>
-    <div class="report-tab-content" id="tab-hot" style="display:none">
-      <div class="report-grid">{{hotCards}}</div>
-    </div>
-    <div class="report-tab-content" id="tab-latest" style="display:none">
-      <div class="report-grid">{{latestCards}}</div>
-    </div>
-    <div class="report-tab-content" id="tab-follow" style="display:none">
-      <div class="report-grid">{{followCards}}</div>
-    </div>
-    <a href="/reports" class="see-all">전체 리포트 보기 →</a>
-
     <!-- 주요 공시 -->
     <div class="dart-header">
       <div>
