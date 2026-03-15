@@ -83,8 +83,50 @@ JSON만 출력:
     const kstHour = (now.getUTCHours() + 9) % 24;
     if (kstHour === 7 && now.getMinutes() < 5) {
       fetchMemoryPricesFromAI();
+      fetchCreditDataFromAI();
     }
   }, 5 * 60 * 1000); // 5분마다 체크
+})();
+
+// 신용잔고 AI 수집
+async function fetchCreditDataFromAI() {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return;
+  try {
+    const existing = db.prepare('SELECT id FROM credit_data LIMIT 1').get();
+    if (existing) return; // 데이터 있으면 스킵 (첫 수집만)
+
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey });
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: `한국 주식시장 신용융자 잔고 데이터를 최근 5거래일 알려줘. 금융투자협회 기준.
+항목: 날짜, 신규(억원), 상환(억원), 잔고(억원)
+JSON만: {"items":[{"date":"2026-03-14","newCredit":숫자,"repayment":숫자,"balance":숫자},...]}`
+      }],
+    });
+    const content = response.content[0].text;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return;
+    const data = JSON.parse(jsonMatch[0]);
+    if (!data.items) return;
+    for (const item of data.items) {
+      if (!item.date || !item.balance) continue;
+      db.prepare('INSERT OR IGNORE INTO credit_data (date, newCredit, repayment, balance) VALUES (?, ?, ?, ?)').run(
+        item.date, item.newCredit || 0, item.repayment || 0, item.balance
+      );
+    }
+    console.log('[Credit] AI fetched', data.items.length, 'rows');
+  } catch (e) { console.error('[Credit AI]', e.message); }
+}
+
+// 서버 시작 시 신용잔고 데이터 없으면 수집
+(function() {
+  const existing = db.prepare('SELECT id FROM credit_data LIMIT 1').get();
+  if (!existing) setTimeout(() => fetchCreditDataFromAI(), 15000);
 })();
 
 // 시장 데이터 캐시 (5분)
@@ -208,7 +250,14 @@ async function fetchCreditData() {
   }
 
   try {
-    // 네이버 금융 신용잔고 (bizdate 파라미터 사용)
+    // DB에 저장된 신용잔고 데이터 조회 (AI 수집)
+    const dbRows = db.prepare('SELECT * FROM credit_data ORDER BY date DESC LIMIT 5').all();
+    if (dbRows.length > 0) {
+      creditCache = { data: dbRows, ts: now };
+      return dbRows;
+    }
+
+    // 네이버 금융 신용잔고 시도 (bizdate 파라미터)
     const today = new Date();
     const bizdate = today.toISOString().slice(0, 10).replace(/-/g, '');
     const resp = await fetch(`https://finance.naver.com/sise/sise_credit.naver?bizdate=${bizdate}`, {
@@ -217,7 +266,6 @@ async function fetchCreditData() {
     const html = await resp.text();
 
     const rows = [];
-    // type_1 또는 type2 테이블 모두 시도
     const tableMatch = html.match(/<table[^>]*class="type_1"[^>]*>([\s\S]*?)<\/table>/) || html.match(/<table[^>]*class="type2"[^>]*>([\s\S]*?)<\/table>/);
     if (tableMatch) {
       const trMatches = tableMatch[1].match(/<tr>([\s\S]*?)<\/tr>/g) || [];
@@ -227,15 +275,11 @@ async function fetchCreditData() {
         const clean = (s) => s.replace(/<[^>]*>/g, '').replace(/,/g, '').replace(/&nbsp;/g, '').trim();
         const date = clean(tds[0]);
         if (!/\d{2}\.\d{2}\.\d{2}/.test(date)) continue;
-        const newCredit = clean(tds[1]);
-        const repayment = clean(tds[2]);
-        const balance = clean(tds[3]);
-        if (!balance || balance === '') continue;
         rows.push({
           date,
-          newCredit: parseInt(newCredit) || 0,
-          repayment: parseInt(repayment) || 0,
-          balance: parseInt(balance) || 0,
+          newCredit: parseInt(clean(tds[1])) || 0,
+          repayment: parseInt(clean(tds[2])) || 0,
+          balance: parseInt(clean(tds[3])) || 0,
         });
         if (rows.length >= 5) break;
       }
