@@ -22,13 +22,16 @@
     .updated { font-size: 0.72rem; color: rgba(255,255,255,0.25); margin-bottom: 24px; }
 
     /* 시장 지표 - 카테고리 그룹 */
-    .market-grid { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
-    .market-group-title { font-size: 0.82rem; font-weight: 700; color: rgba(255,255,255,0.5); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-    .market-group-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-    .market-card { padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
-    .market-name { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
-    .market-price { font-size: 0.95rem; font-weight: 900; }
-    .market-change { font-size: 0.72rem; font-weight: 700; }
+    .market-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .market-group { padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; }
+    .market-group-title { font-size: 0.85rem; font-weight: 900; color: rgba(255,255,255,0.6); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .market-group-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+    .market-card { padding: 10px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; transition: all 0.2s; }
+    .market-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(79,70,229,0.2); }
+    .market-name { font-size: 0.7rem; color: rgba(255,255,255,0.45); margin-bottom: 2px; }
+    .market-price { font-size: 0.9rem; font-weight: 900; }
+    .market-change { font-size: 0.7rem; font-weight: 700; }
+    .change-arrow { font-size: 0.6rem; }
     .up { color: #ef4444; }
     .down { color: #3b82f6; }
 
@@ -110,9 +113,10 @@
       nav { padding: 12px 16px; }
       .container { padding: 24px 16px; }
       .section-title { font-size: 1rem; margin-bottom: 12px; }
-      .market-group-items { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-      .market-card { padding: 14px; }
-      .market-card .price { font-size: 1rem; }
+      .market-group { padding: 12px; }
+      .market-group-items { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .market-card { padding: 8px 10px; }
+      .market-price { font-size: 0.85rem; }
       .report-grid { grid-template-columns: 1fr; gap: 12px; }
       .report-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; margin-bottom: 16px; }
       .report-tab { padding: 10px 16px; font-size: 0.85rem; white-space: nowrap; }
