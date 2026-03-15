@@ -121,20 +121,19 @@ router.get('/:id', isLoggedIn, (req, res) => {
 
   if (!report) return res.status(404).send('탐방노트를 찾을 수 없습니다.');
 
-  let hasPurchased = false;
-  if (req.user.id === report.author_id || req.user.role === 'admin') hasPurchased = true;
-  else if (report.sale_price === 0) hasPurchased = true;
-  else {
-    const order = db.prepare('SELECT id FROM orders WHERE user_id = ? AND report_id = ?').get(req.user.id, report.id);
-    hasPurchased = !!order;
-  }
+  const isOwner = req.user.id === report.author_id;
+  const isAdmin = req.user.role === 'admin';
+  const order = db.prepare('SELECT id FROM orders WHERE user_id = ? AND report_id = ?').get(req.user.id, report.id);
+  const hasPurchased = isOwner || isAdmin || !!order;
 
   const price = report.sale_price === 0 ? '무료' : `${report.sale_price.toLocaleString()}P`;
   let actionButton;
-  if (hasPurchased) {
-    actionButton = `<a href="/visit-notes/${report.id}/view" class="btn-primary">탐방노트 열람하기</a>`;
+  if (isOwner) {
+    actionButton = `<span style="display:inline-block;padding:8px 20px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);border-radius:50px;color:#4ade80;font-size:0.88rem;font-weight:700;margin-right:12px">&#9989; 내가 작성한 탐방노트</span><a href="/visit-notes/${report.id}/view" class="btn-primary">열람하기</a>`;
+  } else if (hasPurchased) {
+    actionButton = `<span style="display:inline-block;padding:8px 20px;background:rgba(79,70,229,0.12);border:1px solid rgba(79,70,229,0.3);border-radius:50px;color:#a5b4fc;font-size:0.88rem;font-weight:700;margin-right:12px">&#128179; 보유중</span><a href="/visit-notes/${report.id}/view" class="btn-primary">열람하기</a>`;
   } else {
-    actionButton = `<form method="POST" action="/visit-notes/${report.id}/purchase" onsubmit="return confirm('정말 구매하시겠습니까?\\n${price}가 차감됩니다.')"><button type="submit" class="btn-primary">탐방노트 구매하기 (${price})</button></form>`;
+    actionButton = `<button type="button" class="btn-primary" onclick="openPurchaseModal()">탐방노트 구매하기 (${price})</button>`;
   }
 
   const visitDate = report.visit_date ? new Date(report.visit_date).toLocaleDateString('ko-KR') : '';
@@ -190,7 +189,49 @@ router.get('/:id', isLoggedIn, (req, res) => {
       <div style="padding:16px 20px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;font-size:0.8rem;color:rgba(255,255,255,0.3)">
         보유 여부: ${escapeHtml(report.holding_disclosure || '')} · 이해충돌: ${escapeHtml(report.conflict_disclosure || '')}
       </div>
-    </div></body></html>`;
+    </div>
+    ${!hasPurchased ? `
+    <div id="purchase-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+      <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:36px 32px 28px;max-width:440px;width:92%;position:relative;animation:modalIn 0.25s ease-out">
+        <button onclick="document.getElementById('purchase-overlay').style.display='none'" style="position:absolute;top:16px;right:20px;background:none;border:none;color:rgba(255,255,255,0.4);font-size:1.5rem;cursor:pointer">&times;</button>
+        <div style="text-align:center;font-size:2.5rem;margin-bottom:12px">🗒️</div>
+        <h3 style="text-align:center;font-size:1.2rem;font-weight:900;margin-bottom:6px">탐방노트 구매</h3>
+        <p style="text-align:center;font-size:0.85rem;color:rgba(255,255,255,0.4);margin-bottom:24px">아래 내용을 확인 후 구매를 진행해주세요.</p>
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem"><span style="color:rgba(255,255,255,0.45)">탐방노트</span><span style="font-weight:700;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(report.title)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem"><span style="color:rgba(255,255,255,0.45)">종목</span><span style="color:#67e8f9">${escapeHtml(report.stock_name)}</span></div>
+          <div style="height:1px;background:rgba(255,255,255,0.08);margin:8px 0"></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem"><span style="color:rgba(255,255,255,0.45)">가격</span><span style="font-size:1.15rem;font-weight:900;color:#fbbf24">${price}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem"><span style="color:rgba(255,255,255,0.45)">보유 포인트</span><span id="modal-pts" style="color:#fbbf24">로딩중...</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem"><span style="color:rgba(255,255,255,0.45)">구매 후 잔액</span><span id="modal-after" style="font-weight:700"></span></div>
+        </div>
+        <div id="modal-warning" style="display:none;padding:12px 16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:12px;color:#ef4444;font-size:0.85rem;font-weight:600;margin-bottom:16px">&#9888; 포인트가 부족합니다.</div>
+        <div style="display:flex;gap:12px;margin-bottom:16px">
+          <button onclick="document.getElementById('purchase-overlay').style.display='none'" style="flex:0.6;padding:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:50px;color:rgba(255,255,255,0.6);font-size:0.95rem;cursor:pointer;font-family:inherit">취소</button>
+          <form method="POST" action="/visit-notes/${report.id}/purchase" id="purchase-form" style="flex:1;display:flex">
+            <button type="submit" id="modal-btn-buy" style="flex:1;padding:14px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:50px;color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit">구매하기</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <style>@keyframes modalIn{from{opacity:0;transform:scale(0.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}</style>
+    <script>
+    function openPurchaseModal(){
+      var overlay=document.getElementById('purchase-overlay');
+      overlay.style.display='flex';
+      fetch('/api/my-points').then(function(r){return r.json()}).then(function(d){
+        var pts=d.points||0,sp=${report.sale_price},after=pts-sp;
+        document.getElementById('modal-pts').textContent=pts.toLocaleString()+'P';
+        var afterEl=document.getElementById('modal-after');
+        afterEl.textContent=after.toLocaleString()+'P';
+        afterEl.style.color=after>=0?'#4ade80':'#ef4444';
+        if(after<0){document.getElementById('modal-warning').style.display='flex';document.getElementById('modal-btn-buy').disabled=true;document.getElementById('modal-btn-buy').textContent='포인트 부족';}
+      });
+    }
+    document.getElementById('purchase-overlay').addEventListener('click',function(e){if(e.target===this)this.style.display='none'});
+    document.getElementById('purchase-form').addEventListener('submit',function(){var b=document.getElementById('modal-btn-buy');b.disabled=true;b.textContent='처리 중...';});
+    </script>` : ''}
+    </body></html>`;
   res.send(html);
 });
 
@@ -258,7 +299,7 @@ router.post('/:id/purchase', isLoggedIn, (req, res) => {
     tx();
   }
 
-  res.redirect(`/visit-notes/${report.id}/view`);
+  res.redirect(`/visit-notes/${report.id}?purchased=1`);
 });
 
 // 탐방노트 열람 (구매 후)
@@ -272,9 +313,8 @@ router.get('/:id/view', isLoggedIn, (req, res) => {
 
   const isOwner = req.user.id === report.author_id;
   const isAdmin = req.user.role === 'admin';
-  const isFree = report.sale_price === 0;
   const hasPurchased = !!db.prepare('SELECT id FROM orders WHERE user_id = ? AND report_id = ?').get(req.user.id, report.id);
-  if (!isOwner && !isAdmin && !isFree && !hasPurchased) return res.redirect(`/visit-notes/${report.id}`);
+  if (!isOwner && !isAdmin && !hasPurchased) return res.redirect(`/visit-notes/${report.id}`);
 
   const visitDate = report.visit_date ? new Date(report.visit_date).toLocaleDateString('ko-KR') : '';
 

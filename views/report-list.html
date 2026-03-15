@@ -102,6 +102,22 @@
       background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7);
     }
     .btn-follow.following:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+
+    @media (max-width: 768px) {
+      nav { padding: 12px 16px; }
+      .page-wrap, .container { padding: 24px 16px; }
+      h1 { font-size: 1.4rem; }
+      .sub-text { margin-bottom: 20px; font-size: 0.88rem; }
+      .page-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 20px; }
+      .page-tab { padding: 10px 20px; font-size: 0.9rem; white-space: nowrap; }
+      .filter-bar { flex-direction: column; align-items: stretch; margin-bottom: 22px; }
+      .filter-bar select, .filter-bar input { flex: 1; min-width: 0; }
+      .filter-bar button { width: 100%; }
+      .report-card-full { padding: 18px 20px; }
+      .report-body h3 { font-size: 1rem; }
+      .author-grid { grid-template-columns: 1fr; }
+      .author-card { padding: 20px; }
+    }
   </style>
 </head>
 <body>

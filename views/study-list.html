@@ -64,10 +64,21 @@
     }
 
     @media (max-width: 768px) {
-      .study-hero {
-        flex-direction: column;
-        min-height: 0;
-      }
+      nav { padding: 12px 16px; }
+      .container { max-width: none; padding: 24px 16px; }
+      .study-hero { flex-direction: column; min-height: 0; padding: 20px 18px; margin-bottom: 24px; }
+      .study-hero-main h1 { font-size: 1.35rem; }
+      .study-hero-ad { min-height: 80px; }
+      .search-section { margin-bottom: 20px; }
+      .search-form { flex-direction: column; align-items: stretch; }
+      .input-field { min-width: 0; }
+      .study-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 28px; }
+      .study-card { padding: 18px; }
+      .study-card-header h3 { font-size: 1rem; }
+      .leader-apply-section { flex-direction: column; align-items: stretch; padding: 16px 18px; margin-bottom: 20px; text-align: center; }
+      .btn-leader-apply { align-self: center; }
+      .create-modal { padding: 24px 20px; }
+      .apply-modal { padding: 24px 20px; max-height: 85vh; }
     }
 
     .search-section { margin-bottom: 28px; }

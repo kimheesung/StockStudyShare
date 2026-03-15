@@ -191,6 +191,26 @@ router.post('/reports/extract', isLoggedIn, isAuthor, upload.single('file'), asy
         url = url.replace('://', '://m.');
       }
 
+      // 노션: 비공식 API로 텍스트 추출
+      if (hostname.endsWith('.notion.site') || hostname === 'www.notion.so' || hostname === 'notion.so') {
+        const pageIdMatch = url.match(/([a-f0-9]{32})/);
+        if (pageIdMatch) {
+          const notionResp = await fetch(`https://notion-api.splitbee.io/v1/page/${pageIdMatch[1]}`);
+          const notionData = await notionResp.json();
+          const texts = [];
+          for (const [id, block] of Object.entries(notionData)) {
+            const v = block.value;
+            if (v && v.properties && v.properties.title) {
+              const t = v.properties.title.map(seg => seg[0]).join('');
+              if (t.trim()) texts.push(t.trim());
+            }
+          }
+          text = texts.join('\n');
+        }
+        if (!text) return res.json({ error: '노션 페이지에서 텍스트를 추출할 수 없습니다. 페이지가 공개 상태인지 확인해주세요.' });
+      }
+
+      if (!text) {
       const resp = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)' }, redirect: 'follow' });
       const contentType = resp.headers.get('content-type') || '';
 
@@ -212,6 +232,7 @@ router.post('/reports/extract', isLoggedIn, isAuthor, upload.single('file'), asy
                     .replace(/\n{3,}/g, '\n\n')
                     .trim();
       }
+      } // end if (!text)
     }
 
     if (!text) return res.json({ error: '텍스트를 추출할 수 없습니다.' });
