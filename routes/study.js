@@ -473,7 +473,7 @@ router.get('/:id', isLoggedIn, (req, res) => {
 
   // 멤버 목록
   const members = db.prepare(`
-    SELECT u.id, COALESCE(u.nickname, u.name) as name, u.photo, u.custom_photo, u.role, sm.joined_at
+    SELECT u.id, COALESCE(u.nickname, u.name) as name, u.photo, u.role, sm.joined_at
     FROM study_members sm
     JOIN users u ON sm.user_id = u.id
     WHERE sm.room_id = ?
@@ -486,7 +486,7 @@ router.get('/:id', isLoggedIn, (req, res) => {
       ? `<form method="POST" action="/study/${room.id}/kick" style="display:inline"><input type="hidden" name="user_id" value="${m.id}"><button type="submit" class="btn-kick">내보내기</button></form>`
       : '';
     return `<div class="member-card">
-      <img src="${m.custom_photo || m.photo || ''}" alt="">
+      <img src="${m.photo || ''}" alt="">
       <div class="member-info">
         <span class="member-name">${escapeHtml(m.name)}</span>
         ${isRoomOwner ? '<span class="owner-badge">스터디장</span>' : '<span class="member-badge">스터디원</span>'}
@@ -633,7 +633,7 @@ router.get('/:id/applications', isLoggedIn, (req, res) => {
   if (!room || room.owner_id !== req.user.id) return res.status(403).send('권한이 없습니다.');
 
   const apps = db.prepare(`
-    SELECT sa.*, COALESCE(u.nickname, u.name) as name, u.email, u.photo, u.custom_photo
+    SELECT sa.*, COALESCE(u.nickname, u.name) as name, u.email, u.photo, 
     FROM study_applications sa
     JOIN users u ON sa.user_id = u.id
     WHERE sa.room_id = ? AND sa.status = 'pending'
