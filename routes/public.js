@@ -20,14 +20,15 @@ const SYMBOLS = [
   { symbol: '^GSPC', name: 'S&P 500', category: '지수' },
   { symbol: '^IXIC', name: 'NASDAQ', category: '지수' },
   { symbol: '^DJI', name: 'Dow Jones', category: '지수' },
-  // 반도체
-  { symbol: '^SOX', name: '필라델피아 반도체', category: '반도체' },
-  { symbol: '000660.KS', name: 'SK하이닉스', category: '반도체' },
-  { symbol: 'MU', name: 'Micron (RAM)', category: '반도체' },
-  { symbol: 'WDC', name: 'WD (NAND)', category: '반도체' },
   // 환율
   { symbol: 'KRW=X', name: 'USD/KRW', category: '환율' },
   { symbol: 'JPY=X', name: 'USD/JPY', category: '환율' },
+  // 반도체
+  { symbol: '^SOX', name: 'SOX 반도체지수', category: '반도체' },
+  { symbol: '005930.KS', name: '삼성전자', category: '반도체' },
+  { symbol: '000660.KS', name: 'SK하이닉스', category: '반도체' },
+  { symbol: 'MU', name: 'Micron (RAM)', category: '반도체' },
+  { symbol: 'WDC', name: 'WD (NAND)', category: '반도체' },
   // 원자재
   { symbol: 'GC=F', name: 'Gold', category: '원자재' },
   { symbol: 'CL=F', name: 'WTI Oil', category: '원자재' },
@@ -402,7 +403,7 @@ router.get('/dashboard', async (req, res) => {
   ]);
 
   // 카테고리별 그룹핑
-  const categoryOrder = ['지수', '반도체', '환율', '원자재', '암호화폐'];
+  const categoryOrder = ['지수', '환율', '반도체', '원자재', '암호화폐'];
   const categoryIcons = { '지수': '📊', '반도체': '💾', '환율': '💱', '원자재': '🛢️', '암호화폐': '₿' };
   const grouped = {};
   for (const m of marketData) {

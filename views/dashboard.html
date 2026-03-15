@@ -22,7 +22,8 @@
     .updated { font-size: 0.72rem; color: rgba(255,255,255,0.25); margin-bottom: 24px; }
 
     /* 시장 지표 - 카테고리 그룹 */
-    .market-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .market-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+    @media (max-width: 900px) { .market-grid { grid-template-columns: 1fr; } }
     .market-group { padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; }
     .market-group-title { font-size: 0.85rem; font-weight: 900; color: rgba(255,255,255,0.6); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .market-group-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
