@@ -109,16 +109,14 @@
   </div>
 
   <script>
-    // 날짜 초기값 설정
+    // 날짜 초기값 설정 (SQLite 형식 그대로 datetime-local로 변환)
     (function() {
       var created = '{{createdAt}}';
       var published = '{{publishedAt}}';
       function toLocal(s) {
         if (!s) return '';
-        var d = new Date(s);
-        if (isNaN(d)) return '';
-        var pad = function(n) { return n < 10 ? '0' + n : n; };
-        return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+        // SQLite: "2026-03-15 07:00:00" → "2026-03-15T07:00:00"
+        return s.replace(' ', 'T').slice(0, 19);
       }
       document.getElementById('input-created').value = toLocal(created);
       document.getElementById('input-published').value = toLocal(published);

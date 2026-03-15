@@ -277,8 +277,9 @@ router.post('/reports/:id/review', isLoggedIn, isAdmin, (req, res) => {
   else if (action === 'suspend') newStatus = 'suspended';
   else return res.status(400).send('잘못된 액션입니다.');
 
-  db.prepare("UPDATE reports SET status = ?, published_at = CASE WHEN ? = 'on_sale' THEN datetime('now') ELSE published_at END, updated_at = datetime('now') WHERE id = ?")
-    .run(newStatus, newStatus, report.id);
+  const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+  db.prepare("UPDATE reports SET status = ?, published_at = CASE WHEN ? = 'on_sale' AND published_at IS NULL THEN ? ELSE published_at END, updated_at = ? WHERE id = ?")
+    .run(newStatus, newStatus, nowKST, nowKST, report.id);
 
   db.prepare('INSERT INTO report_review_logs (report_id, reviewer_id, action, reason) VALUES (?, ?, ?, ?)')
     .run(report.id, req.user.id, action, reason || '');
