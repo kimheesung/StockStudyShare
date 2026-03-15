@@ -7,7 +7,8 @@ const { render, isLoggedIn, isStudyLeader, buildNav, escapeHtml, notify, adBanne
 const router = express.Router();
 
 // 지원서 파일 업로드 설정
-const applyUploadDir = path.join(__dirname, '..', 'uploads', 'applications');
+const studyDataDir = process.env.DATA_DIR || path.join(__dirname, '..');
+const applyUploadDir = path.join(studyDataDir, 'uploads', 'applications');
 if (!fs.existsSync(applyUploadDir)) fs.mkdirSync(applyUploadDir, { recursive: true });
 const applyUpload = multer({
   storage: multer.diskStorage({

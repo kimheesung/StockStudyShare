@@ -28,6 +28,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Fly.io: DATA_DIR 볼륨의 uploads도 서빙
+if (process.env.DATA_DIR) {
+  app.use('/uploads', express.static(path.join(process.env.DATA_DIR, 'uploads')));
+}
 
 // Render 등 리버스 프록시 뒤에서 동작 시 필요
 if (isProduction) app.set('trust proxy', 1);

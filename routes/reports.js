@@ -418,7 +418,7 @@ router.post('/:id/purchase', isLoggedIn, (req, res) => {
     purchaseTransaction();
   }
 
-  res.redirect(`/reports/${report.id}?purchased=1`);
+  res.redirect(`/reports/${report.id}/view`);
 });
 
 // 웹 뷰어
@@ -462,7 +462,7 @@ router.get('/:id/view', isLoggedIn, (req, res) => {
   // 평가 데이터
   const ratingStats = db.prepare('SELECT AVG(rating) as avg, COUNT(*) as cnt FROM report_ratings WHERE report_id = ?').get(report.id);
   const myRating = db.prepare('SELECT rating FROM report_ratings WHERE user_id = ? AND report_id = ?').get(req.user.id, report.id);
-  const canRate = hasPurchased && !myRating && !isOwner;
+  const canRate = (hasPurchased || isFree) && !myRating && !isOwner;
 
   const html = render('views/report-viewer.html', {
     nav: buildNav(req.user),
@@ -501,9 +501,10 @@ router.post('/:id/rate', isLoggedIn, (req, res) => {
   const report = db.prepare('SELECT * FROM reports WHERE id = ?').get(req.params.id);
   if (!report) return res.status(404).json({ error: '리포트를 찾을 수 없습니다.' });
 
-  // 구매자만 평가 가능
+  // 구매자 또는 무료 리포트 열람자만 평가 가능
   const order = db.prepare('SELECT id FROM orders WHERE user_id = ? AND report_id = ?').get(req.user.id, report.id);
-  if (!order) return res.status(403).json({ error: '리포트를 구매한 사람만 평가할 수 있습니다.' });
+  const isFreeReport = report.sale_price === 0;
+  if (!order && !isFreeReport) return res.status(403).json({ error: '리포트를 구매한 사람만 평가할 수 있습니다.' });
 
   // 이미 평가했는지 확인
   const existing = db.prepare('SELECT id FROM report_ratings WHERE user_id = ? AND report_id = ?').get(req.user.id, report.id);

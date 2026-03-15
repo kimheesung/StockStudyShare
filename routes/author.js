@@ -21,7 +21,8 @@ const upload = multer({
 });
 
 // 리포트 PDF 업로드 설정 (디스크 저장, 20MB 제한)
-const reportPdfDir = path.join(__dirname, '..', 'uploads', 'reports');
+const dataDir = process.env.DATA_DIR || path.join(__dirname, '..');
+const reportPdfDir = path.join(dataDir, 'uploads', 'reports');
 if (!fs.existsSync(reportPdfDir)) fs.mkdirSync(reportPdfDir, { recursive: true });
 const reportPdfUpload = multer({
   storage: multer.diskStorage({
