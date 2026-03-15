@@ -4,3 +4,5 @@ data/database.sqlite
 data/database.sqlite-shm
 data/database.sqlite-wal
 uploads/ads/
+uploads/applications/
+uploads/profiles/

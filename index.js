@@ -23,15 +23,23 @@ for (const adminId of ADMIN_GOOGLE_IDS) {
   }
 }
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Render 등 리버스 프록시 뒤에서 동작 시 필요
+if (isProduction) app.set('trust proxy', 1);
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {
     maxAge: 30 * 24 * 60 * 60 * 1000,
+    secure: isProduction,
+    sameSite: isProduction ? 'lax' : false,
   },
 }));
 app.use(passport.initialize());
