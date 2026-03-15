@@ -464,6 +464,79 @@ router.post('/flags/:id/resolve', isLoggedIn, isAdmin, (req, res) => {
   res.redirect('/admin/flags');
 });
 
+// 스터디 현황 관리 (스터디장별 승인 요청 현황)
+router.get('/study-status', isLoggedIn, isAdmin, (req, res) => {
+  const rooms = db.prepare(`
+    SELECT sr.*, COALESCE(u.nickname, u.name) as owner_name, u.photo as owner_photo,
+      (SELECT COUNT(*) FROM study_members WHERE room_id = sr.id) as member_count,
+      (SELECT COUNT(*) FROM reports WHERE study_room_id = sr.id AND status = 'pending_leader') as pending_leader,
+      (SELECT COUNT(*) FROM reports WHERE study_room_id = sr.id AND status = 'pending_admin') as pending_admin,
+      (SELECT COUNT(*) FROM reports WHERE study_room_id = sr.id AND status = 'on_sale') as published_count,
+      (SELECT COUNT(*) FROM reports WHERE study_room_id = sr.id AND status = 'study_published') as study_only_count,
+      (SELECT COUNT(*) FROM study_applications WHERE room_id = sr.id AND status = 'pending') as pending_apps,
+      (SELECT COUNT(*) FROM reports WHERE study_room_id = sr.id) as total_reports
+    FROM study_rooms sr
+    JOIN users u ON sr.owner_id = u.id
+    ORDER BY pending_leader + pending_admin + pending_apps DESC, sr.created_at DESC
+  `).all();
+
+  const totalPendingLeader = rooms.reduce((s, r) => s + r.pending_leader, 0);
+  const totalPendingAdmin = rooms.reduce((s, r) => s + r.pending_admin, 0);
+  const totalPendingApps = rooms.reduce((s, r) => s + r.pending_apps, 0);
+
+  const rows = rooms.map(r => {
+    const hasPending = r.pending_leader + r.pending_admin + r.pending_apps > 0;
+    return `
+    <div style="padding:20px;background:rgba(255,255,255,0.03);border:1px solid ${hasPending ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.08)'};border-radius:16px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <img src="${r.owner_photo || ''}" style="width:36px;height:36px;border-radius:50%;border:2px solid rgba(79,70,229,0.3)">
+        <div style="flex:1">
+          <div style="font-weight:900;font-size:0.95rem">${escapeHtml(r.name)}</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.4)">스터디장: ${escapeHtml(r.owner_name)} · ${r.member_count}/${r.max_members || 20}명</div>
+        </div>
+        <div style="font-weight:700;color:#fbbf24;font-size:0.85rem">${(r.points || 0).toLocaleString()}P</div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.8rem">
+        ${r.pending_apps > 0 ? `<span style="padding:4px 12px;border-radius:10px;background:rgba(168,85,247,0.15);color:#c084fc;font-weight:700">가입 대기 ${r.pending_apps}건</span>` : ''}
+        ${r.pending_leader > 0 ? `<span style="padding:4px 12px;border-radius:10px;background:rgba(251,191,36,0.15);color:#fbbf24;font-weight:700">스터디장 승인 대기 ${r.pending_leader}건</span>` : ''}
+        ${r.pending_admin > 0 ? `<span style="padding:4px 12px;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;font-weight:700">관리자 승인 대기 ${r.pending_admin}건</span>` : ''}
+        <span style="padding:4px 12px;border-radius:10px;background:rgba(74,222,128,0.1);color:#4ade80">판매중 ${r.published_count}건</span>
+        <span style="padding:4px 12px;border-radius:10px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4)">스터디 전용 ${r.study_only_count}건</span>
+        <span style="padding:4px 12px;border-radius:10px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4)">전체 ${r.total_reports}건</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>스터디 현황 - 관리자</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+      .container{max-width:900px;margin:0 auto;padding:40px 20px}
+      .back-link{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem;margin-bottom:20px;display:inline-block}
+      h1{font-size:1.5rem;font-weight:900;margin-bottom:20px}
+      h1 .highlight{background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+      .summary{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+      .summary-card{flex:1;min-width:140px;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;text-align:center}
+      .summary-val{font-size:1.5rem;font-weight:900}
+      .summary-label{font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:2px}
+    </style></head><body>
+    <nav>${buildNav(req.user)}</nav>
+    <div class="container">
+      <a href="/admin" class="back-link">&larr; 관리자 대시보드</a>
+      <h1><span class="highlight">스터디</span> 현황 관리</h1>
+      <div class="summary">
+        <div class="summary-card"><div class="summary-val" style="color:#fbbf24">${totalPendingLeader}</div><div class="summary-label">스터디장 승인 대기</div></div>
+        <div class="summary-card"><div class="summary-val" style="color:#ef4444">${totalPendingAdmin}</div><div class="summary-label">관리자 승인 대기</div></div>
+        <div class="summary-card"><div class="summary-val" style="color:#c084fc">${totalPendingApps}</div><div class="summary-label">가입 대기</div></div>
+        <div class="summary-card"><div class="summary-val">${rooms.length}</div><div class="summary-label">총 스터디방</div></div>
+      </div>
+      ${rows || '<div style="color:rgba(255,255,255,0.3);text-align:center;padding:40px">스터디방이 없습니다.</div>'}
+    </div></body></html>`;
+  res.send(html);
+});
+
 // 스터디방 포인트 관리
 router.get('/study-rooms', isLoggedIn, isAdmin, (req, res) => {
   const rooms = db.prepare(`
