@@ -50,6 +50,87 @@
 
     .rules-box { padding: 20px 24px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; margin-bottom: 28px; font-size: 0.82rem; color: rgba(255,255,255,0.4); line-height: 1.8; }
     .rules-box strong { color: rgba(255,255,255,0.7); }
+
+    .btn-open-create {
+      padding: 12px 28px; background: linear-gradient(135deg, #ef4444, #f97316); border: none;
+      border-radius: 50px; color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: all 0.3s; box-shadow: 0 4px 20px rgba(239,68,68,0.3);
+    }
+    .btn-open-create:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(239,68,68,0.5); }
+
+    /* 대회 개설 모달 */
+    .create-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:999; align-items:center; justify-content:center; }
+    .create-overlay.show { display:flex; }
+    .create-modal {
+      background: linear-gradient(135deg, #1a1a3e, #2a2050); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 28px; padding: 0; max-width: 440px; width: 92%; overflow: hidden;
+    }
+    .create-modal-header {
+      padding: 32px 32px 20px; text-align: center;
+      background: linear-gradient(180deg, rgba(239,68,68,0.12), transparent);
+    }
+    .create-modal-header .modal-icon { font-size: 3rem; margin-bottom: 10px; }
+    .create-modal-header h3 { font-size: 1.2rem; font-weight: 900; margin-bottom: 4px; }
+    .create-modal-header p { font-size: 0.82rem; color: rgba(255,255,255,0.4); }
+    .create-modal-body { padding: 8px 32px 28px; }
+    .create-modal-cost {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15);
+      border-radius: 14px; margin-bottom: 20px;
+    }
+    .create-modal-cost .cost-label { font-size: 0.82rem; color: rgba(255,255,255,0.5); }
+    .create-modal-cost .cost-value { font-size: 1.3rem; font-weight: 900; color: #fbbf24; }
+    .create-modal-cost .cost-desc { font-size: 0.7rem; color: rgba(255,255,255,0.25); }
+    .create-modal-field { margin-bottom: 18px; }
+    .create-modal-field label { display: block; font-size: 0.85rem; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 8px; }
+    .create-modal-field select {
+      width: 100%; padding: 13px 18px; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; color: #fff;
+      font-size: 0.95rem; font-family: inherit; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 16px center;
+    }
+    .create-modal-field select:focus { outline: none; border-color: rgba(239,68,68,0.4); }
+    .create-modal-field select option { background: #1a1a2e; }
+    .create-modal-info {
+      padding: 14px 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.35); line-height: 1.6; margin-bottom: 20px;
+    }
+    .create-modal-actions { display: flex; gap: 10px; }
+    .create-modal-actions button {
+      flex: 1; padding: 14px; border-radius: 14px; font-size: 0.95rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; border: none; transition: all 0.2s;
+    }
+    .btn-modal-submit { background: linear-gradient(135deg, #ef4444, #f97316); color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,0.3); }
+    .btn-modal-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(239,68,68,0.5); }
+    .btn-modal-cancel { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15) !important; color: #fff; }
+
+    /* 결제 확인 모달 */
+    .confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center; }
+    .confirm-overlay.show { display:flex; }
+    .confirm-box {
+      background: linear-gradient(135deg, #1e1040, #2a1848); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 28px; padding: 40px 36px; max-width: 380px; width: 90%; text-align: center;
+      animation: confirmPop 0.25s ease-out;
+    }
+    @keyframes confirmPop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .confirm-box .c-icon { font-size: 3.5rem; margin-bottom: 14px; }
+    .confirm-box .c-title { font-size: 1.15rem; font-weight: 900; margin-bottom: 8px; }
+    .confirm-box .c-desc { font-size: 0.85rem; color: rgba(255,255,255,0.45); line-height: 1.6; margin-bottom: 16px; }
+    .confirm-box .c-price-tag {
+      display: inline-block; padding: 10px 28px; background: rgba(251,191,36,0.08);
+      border: 1px solid rgba(251,191,36,0.2); border-radius: 14px;
+      font-size: 1.5rem; font-weight: 900; color: #fbbf24; margin-bottom: 8px;
+    }
+    .confirm-box .c-balance { font-size: 0.78rem; color: rgba(255,255,255,0.3); margin-bottom: 24px; }
+    .confirm-box .c-actions { display: flex; gap: 10px; }
+    .confirm-box .c-actions button {
+      flex: 1; padding: 14px; border-radius: 14px; font-size: 0.95rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; border: none; transition: all 0.2s;
+    }
+    .c-btn-pay { background: linear-gradient(135deg, #ef4444, #f97316); color: #fff; box-shadow: 0 4px 20px rgba(239,68,68,0.3); }
+    .c-btn-pay:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(239,68,68,0.5); }
+    .c-btn-cancel { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15) !important; color: #fff; }
   </style>
 </head>
 <body>
@@ -68,29 +149,102 @@
       &#8226; 누구나 대회를 개설할 수 있습니다.
     </div>
 
-    <div class="create-section">
-      <h3>&#128293; 새 대회 개설</h3>
-      <form class="create-form" method="POST" action="/contest/create" onsubmit="return confirm('주최비 100,000P가 결제됩니다. 개설하시겠습니까?')">
-        <div class="field" style="flex:1;min-width:200px">
-          <label>대회 기간</label>
-          <select name="duration_days" class="input-field">
-            <option value="7">1주</option>
-            <option value="14">2주</option>
-            <option value="30" selected>1개월</option>
-            <option value="60">2개월</option>
-            <option value="90">3개월</option>
-          </select>
-        </div>
-        <button type="submit" class="btn-create">&#127831; 대회 개설 (100,000P)</button>
+    <!-- 검색바 + 개설 버튼 -->
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px;flex-wrap:wrap">
+      <form method="GET" action="/contest" style="display:flex;gap:10px;flex:1;min-width:200px">
+        <input type="text" name="q" class="input-field" placeholder="대회명 검색..." value="{{currentQ}}" style="flex:1">
+        <button type="submit" style="padding:10px 20px;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:12px;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit">검색</button>
       </form>
-      <div style="margin-top:10px;font-size:0.78rem;color:rgba(255,255,255,0.35)">
-        대회명은 자동으로 "닉네임 리포트 치킨배"로 생성됩니다. 주최비 10만P는 상금(치킨 기프트콘 5개)으로 사용됩니다.
-      </div>
+      <button class="btn-open-create" onclick="document.getElementById('create-modal').classList.add('show')">🍗 대회 개설하기</button>
     </div>
 
     <div class="contest-grid">
       {{contestCards}}
     </div>
   </div>
+  <!-- 대회 개설 모달 -->
+  <div class="create-overlay" id="create-modal">
+    <div class="create-modal">
+      <div class="create-modal-header">
+        <div class="modal-icon">🍗</div>
+        <h3>새 대회 개설</h3>
+        <p>리포트 수익률 대결! 치킨 기프트콘을 걸고 도전하세요.</p>
+      </div>
+      <div class="create-modal-body">
+        <div class="create-modal-cost">
+          <div>
+            <div class="cost-label">주최비</div>
+            <div class="cost-value">100,000P</div>
+          </div>
+          <div style="text-align:right">
+            <div class="cost-desc">상금(치킨 기프트콘 5개)으로<br>전액 사용됩니다</div>
+          </div>
+        </div>
+        <form method="POST" action="/contest/create" id="contest-form">
+          <div class="create-modal-field">
+            <label>대회 기간</label>
+            <select name="duration_days">
+              <option value="7">1주</option>
+              <option value="14">2주</option>
+              <option value="30" selected>1개월</option>
+              <option value="60">2개월</option>
+              <option value="90">3개월</option>
+            </select>
+          </div>
+          <div class="create-modal-info">
+            &#127942; 대회명은 <strong style="color:rgba(255,255,255,0.6)">"닉네임 리포트 치킨배"</strong>로 자동 생성<br>
+            &#127831; 1~5등에게 치킨 기프트콘 1개씩 균일 지급<br>
+            &#128101; 최소 5명 ~ 최대 10명 참가
+          </div>
+          <div class="create-modal-actions">
+            <button type="submit" class="btn-modal-submit">🍗 개설하기</button>
+            <button type="button" class="btn-modal-cancel" onclick="document.getElementById('create-modal').classList.remove('show')">취소</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- 결제 확인 모달 -->
+  <div class="confirm-overlay" id="confirm-modal">
+    <div class="confirm-box">
+      <div class="c-icon">🍗</div>
+      <div class="c-title">대회를 개설하시겠습니까?</div>
+      <div class="c-desc">주최비는 상금(치킨 기프트콘 5개)으로<br>전액 사용됩니다.</div>
+      <div class="c-price-tag">100,000P</div>
+      <div class="c-balance">결제 후 잔여 포인트: <span id="remaining-pts"></span></div>
+      <div class="c-actions">
+        <button class="c-btn-pay" id="c-btn-pay" onclick="doSubmit()">🍗 결제하고 개설하기</button>
+        <button class="c-btn-cancel" onclick="document.getElementById('confirm-modal').classList.remove('show')">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('create-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+    document.getElementById('confirm-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+
+    var myPts = parseInt('{{userPoints}}') || 0;
+
+    // 개설하기 버튼 → confirm 모달 열기
+    document.getElementById('contest-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var remaining = myPts - 100000;
+      document.getElementById('remaining-pts').textContent = remaining.toLocaleString() + 'P';
+      if (remaining < 0) {
+        document.getElementById('remaining-pts').style.color = '#ef4444';
+      } else {
+        document.getElementById('remaining-pts').style.color = '#4ade80';
+      }
+      document.getElementById('create-modal').classList.remove('show');
+      document.getElementById('confirm-modal').classList.add('show');
+    });
+
+    function doSubmit() {
+      var btn = document.getElementById('c-btn-pay');
+      btn.disabled = true;
+      btn.textContent = '처리중...';
+      document.getElementById('contest-form').submit();
+    }
+  </script>
 </body>
 </html>

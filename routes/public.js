@@ -472,23 +472,50 @@ router.get('/dashboard', async (req, res) => {
     LIMIT 6
   `).all(twoWeeksAgo.toISOString());
 
-  // 3개월 수익률 최고 리포트
-  const threeMonthsAgo = new Date();
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-  const topReturnReports = db.prepare(`
-    SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
-           COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id,
-           (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as purchase_count,
-           r.entry_price, r.stock_code, r.market_type
-    FROM reports r
-    JOIN users u ON r.author_id = u.id
-    LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
-    WHERE r.status = 'on_sale'
-      AND r.entry_price IS NOT NULL AND r.entry_price > 0
-      AND r.published_at <= ?
-    ORDER BY r.published_at ASC
-    LIMIT 30
-  `).all(threeMonthsAgo.toISOString());
+  // 수익률 TOP: entry_price 있는 리포트의 실시간 수익률 계산
+  const topReturnReports = await (async () => {
+    const candidates = db.prepare(`
+      SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
+             COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id,
+             (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as purchase_count,
+             r.entry_price, r.stock_code, r.market_type
+      FROM reports r
+      JOIN users u ON r.author_id = u.id
+      LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
+      WHERE r.status = 'on_sale'
+        AND r.entry_price IS NOT NULL AND r.entry_price > 0
+        AND r.stock_code IS NOT NULL AND r.stock_code != ''
+      ORDER BY r.published_at DESC
+      LIMIT 30
+    `).all();
+    if (candidates.length === 0) return [];
+
+    const symbolMap = {};
+    for (const r of candidates) {
+      const code = r.stock_code.replace(/[^0-9A-Za-z]/g, '');
+      symbolMap[r.id] = /^\d{6}$/.test(code) ? (r.market_type === 'KOSDAQ' ? `${code}.KQ` : `${code}.KS`) : code;
+    }
+    const uniqueSymbols = [...new Set(Object.values(symbolMap))];
+    const priceMap = {};
+    await Promise.all(uniqueSymbols.map(async (sym) => {
+      try {
+        const resp = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const json = await resp.json();
+        const price = json.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if (price) priceMap[sym] = price;
+      } catch {}
+    }));
+
+    const results = [];
+    for (const r of candidates) {
+      const currentPrice = priceMap[symbolMap[r.id]];
+      if (!currentPrice) continue;
+      const returnRate = ((currentPrice - r.entry_price) / r.entry_price) * 100;
+      results.push({ ...r, currentPrice, returnRate });
+    }
+    results.sort((a, b) => b.returnRate - a.returnRate);
+    return results.slice(0, 6);
+  })();
 
   // 팔로우한 작성자의 리포트
   const followReports = db.prepare(`
@@ -540,12 +567,17 @@ router.get('/dashboard', async (req, res) => {
   const latestCards = buildReportCards(latestReports);
   const hotCards = buildReportCards(hotReports, r => `${r.view_count || 0}회 조회 · ${r.purchase_count}명 구매`);
 
-  // 3개월 수익률 카드: entry_price 대비 현재가는 클라이언트에서 로드하므로 entry_price 기반으로 표시
   const topReturnCards = buildReportCards(topReturnReports, r => {
-    return `<span style="font-size:0.72rem;color:rgba(255,255,255,0.3)">발행가 ${Math.round(r.entry_price).toLocaleString()}원</span>`;
+    if (!r.returnRate && r.returnRate !== 0) return `발행가 ${Math.round(r.entry_price).toLocaleString()}원`;
+    const isUp = r.returnRate >= 0;
+    const sign = isUp ? '+' : '';
+    const cls = isUp ? 'color:#ef4444' : 'color:#3b82f6';
+    return `<span style="font-weight:700;${cls}">${sign}${r.returnRate.toFixed(2)}%</span> · 현재 ${Math.round(r.currentPrice).toLocaleString()}원`;
   });
 
-  const followCards = buildReportCards(followReports);
+  const followCards = followReports.length > 0
+    ? buildReportCards(followReports)
+    : '<div class="report-empty" style="padding:40px 20px">팔로우한 리포터가 없습니다.<br><a href="/reports?view=authors" style="display:inline-block;margin-top:14px;padding:10px 24px;background:linear-gradient(135deg,#4f46e5,#6366f1);border-radius:50px;color:#fff;text-decoration:none;font-size:0.88rem;font-weight:700;box-shadow:0 4px 16px rgba(79,70,229,0.3)">리포터 보기</a></div>';
 
   // 상승률 순위 HTML
   let topGainersHtml = '';
@@ -879,9 +911,9 @@ router.get('/api/author-return/:authorId', async (req, res) => {
       } catch {}
     }));
 
-    if (returns.length === 0) return res.json({ avgReturn: null });
+    if (returns.length === 0) return res.json({ avgReturn: null, total: reports.length, counted: 0 });
     const avg = returns.reduce((a, b) => a + b, 0) / returns.length;
-    res.json({ avgReturn: avg, count: returns.length });
+    res.json({ avgReturn: avg, count: returns.length, total: reports.length });
   } catch {
     res.json({ avgReturn: null });
   }

@@ -1,3 +1,6 @@
 node_modules/
 .env
 data/database.sqlite
+data/database.sqlite-shm
+data/database.sqlite-wal
+uploads/ads/

@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../lib/db');
-const { render, isLoggedIn, buildNav, escapeHtml, addPoints, adBannerHtml } = require('../lib/helpers');
+const { render, isLoggedIn, buildNav, escapeHtml, addPoints, adBannerHtml, notify } = require('../lib/helpers');
 const router = express.Router();
 
 // 리포트 목록
@@ -441,13 +441,22 @@ router.post('/:id/rate', isLoggedIn, (req, res) => {
 
 // 신고 폼
 router.get('/:id/flag', isLoggedIn, (req, res) => {
-  const report = db.prepare('SELECT id, title FROM reports WHERE id = ? AND status = ?').get(req.params.id, 'on_sale');
+  const report = db.prepare('SELECT id, title, author_id FROM reports WHERE id = ? AND status = ?').get(req.params.id, 'on_sale');
   if (!report) return res.status(404).send('리포트를 찾을 수 없습니다.');
+
+  // 자기 리포트 신고 방지
+  if (req.user.id === report.author_id) return res.redirect(`/reports/${report.id}`);
+
+  // 이미 신고 여부
+  const alreadyFlagged = !!db.prepare('SELECT id FROM report_flags WHERE reporter_id = ? AND report_id = ?').get(req.user.id, report.id);
+  const flagCount = db.prepare('SELECT COUNT(*) as c FROM report_flags WHERE report_id = ?').get(report.id).c;
 
   const html = render('views/report-flag.html', {
     nav: buildNav(req.user),
     reportId: String(report.id),
     reportTitle: escapeHtml(report.title),
+    alreadyFlagged: alreadyFlagged ? 'true' : '',
+    flagCount: String(flagCount),
   });
   res.send(html);
 });
@@ -455,12 +464,39 @@ router.get('/:id/flag', isLoggedIn, (req, res) => {
 // 신고 제출
 router.post('/:id/flag', isLoggedIn, (req, res) => {
   const { reason, detail } = req.body;
-  const report = db.prepare('SELECT id FROM reports WHERE id = ? AND status = ?').get(req.params.id, 'on_sale');
+  const report = db.prepare('SELECT id, title, author_id FROM reports WHERE id = ? AND status = ?').get(req.params.id, 'on_sale');
   if (!report) return res.status(404).send('리포트를 찾을 수 없습니다.');
+
+  // 중복 신고 체크
+  const existing = db.prepare('SELECT id FROM report_flags WHERE reporter_id = ? AND report_id = ?').get(req.user.id, report.id);
+  if (existing) return res.redirect(`/reports/${report.id}?flagged=already`);
+
+  // 자기 리포트 신고 방지
+  if (req.user.id === report.author_id) return res.redirect(`/reports/${report.id}`);
 
   db.prepare('INSERT INTO report_flags (reporter_id, report_id, reason, detail) VALUES (?, ?, ?, ?)').run(
     req.user.id, report.id, reason, detail || ''
   );
+
+  const flagCount = db.prepare('SELECT COUNT(*) as c FROM report_flags WHERE report_id = ?').get(report.id).c;
+
+  // 5건 이상 신고 시 자동 판매중지
+  if (flagCount >= 5) {
+    db.prepare("UPDATE reports SET status = 'suspended' WHERE id = ? AND status = 'on_sale'").run(report.id);
+
+    // 작성자에게 알림
+    notify(db, report.author_id, 'report_rejected', '리포트 판매 중지',
+      `"${report.title}" 리포트가 신고 ${flagCount}건 누적으로 판매가 일시 중지되었습니다. 관리자 검토 후 처리됩니다.`,
+      `/author/dashboard`);
+
+    // 관리자에게 알림
+    const admins = db.prepare("SELECT id FROM users WHERE role = 'admin'").all();
+    for (const admin of admins) {
+      notify(db, admin.id, 'report_pending_admin', '리포트 신고 누적',
+        `"${report.title}" 리포트가 신고 ${flagCount}건으로 자동 판매중지되었습니다. 확인이 필요합니다.`,
+        `/admin/reports?status=suspended`);
+    }
+  }
 
   res.redirect(`/reports/${report.id}?flagged=1`);
 });

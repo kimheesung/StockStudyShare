@@ -18,17 +18,23 @@ const PRIZE_DISTRIBUTION = [
 
 // 모두의 리포트 치킨배 목록
 router.get('/', isLoggedIn, (req, res) => {
-  const contests = db.prepare(`
+  const searchQ = (req.query.q || '').trim();
+  let sql = `
     SELECT c.*,
            u.nickname as creator_name, u.photo as creator_photo,
            (SELECT COUNT(*) FROM competition_entries WHERE competition_id = c.id AND entry_status = 'selected') as participant_count,
            (SELECT COUNT(*) FROM competition_entries WHERE competition_id = c.id AND entry_status = 'pending') as applicant_count
     FROM competitions c
-    JOIN users u ON c.creator_id = u.id
-    ORDER BY
+    JOIN users u ON c.creator_id = u.id`;
+  const params = [];
+  if (searchQ) {
+    sql += ` WHERE c.name LIKE ?`;
+    params.push(`%${searchQ}%`);
+  }
+  sql += ` ORDER BY
       CASE c.status WHEN 'recruiting' THEN 0 WHEN 'active' THEN 1 ELSE 2 END,
-      c.created_at DESC
-  `).all();
+      c.created_at DESC`;
+  const contests = db.prepare(sql).all(...params);
 
   const myEntries = new Set();
   db.prepare('SELECT competition_id FROM competition_entries WHERE user_id = ?').all(req.user.id)
@@ -102,6 +108,7 @@ router.get('/', isLoggedIn, (req, res) => {
   const html = render('views/contest-list.html', {
     nav: buildNav(req.user),
     contestCards,
+    currentQ: escapeHtml(searchQ),
     userPoints: String(req.user.points || 0),
   });
   res.send(html);

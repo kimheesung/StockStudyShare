@@ -225,12 +225,13 @@
             var targets = document.querySelectorAll('.author-avg-return[data-author-id="' + authorId + '"]');
             targets.forEach(function(el) {
               if (data.avgReturn === null) {
-                el.textContent = '수익률 데이터 없음';
+                el.textContent = data.total > 0 ? '수익률 계산 불가' : '수익률 데이터 없음';
                 el.style.color = 'rgba(255,255,255,0.2)';
               } else {
                 var isUp = data.avgReturn >= 0;
                 var sign = isUp ? '+' : '';
-                el.textContent = '평균수익률 ' + sign + data.avgReturn.toFixed(2) + '% (' + data.count + '건)';
+                var suffix = data.total > data.count ? ' (' + data.count + '/' + data.total + '건)' : ' (' + data.count + '건)';
+                el.textContent = '평균수익률 ' + sign + data.avgReturn.toFixed(2) + '%' + suffix;
                 el.style.color = isUp ? '#ef4444' : '#3b82f6';
                 el.style.fontWeight = '700';
               }

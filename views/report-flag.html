@@ -35,7 +35,13 @@
       border-radius: 50px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
       transition: all 0.3s;
     }
-    .btn-submit:hover { background: #dc2626); transform: translateY(-2px); }
+    .btn-submit:hover { background: #dc2626; transform: translateY(-2px); }
+    .btn-submit:disabled { opacity: 0.4; cursor: default; transform: none; }
+    .already-box { padding: 20px 24px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); border-radius: 14px; margin-bottom: 20px; text-align: center; }
+    .already-box .icon { font-size: 2rem; margin-bottom: 8px; }
+    .already-box .msg { font-size: 0.92rem; font-weight: 700; color: #fbbf24; margin-bottom: 4px; }
+    .already-box .sub { font-size: 0.78rem; color: rgba(255,255,255,0.35); }
+    .flag-count { font-size: 0.78rem; color: rgba(255,255,255,0.25); margin-bottom: 20px; }
   </style>
 </head>
 <body>
@@ -45,7 +51,15 @@
     <h1>리포트 신고</h1>
     <p class="sub-text">{{reportTitle}}</p>
 
-    <form method="POST" action="/reports/{{reportId}}/flag">
+    <div class="already-box" id="already-box" style="display:none">
+      <div class="icon">&#9888;</div>
+      <div class="msg">이미 이 리포트를 신고하셨습니다.</div>
+      <div class="sub">중복 신고는 할 수 없습니다.</div>
+    </div>
+
+    <div class="flag-count" id="flag-count" style="display:none">현재 신고 {{flagCount}}건</div>
+
+    <form method="POST" action="/reports/{{reportId}}/flag" id="flag-form">
       <div class="form-group">
         <label>신고 사유</label>
         <select name="reason" required>
@@ -61,8 +75,16 @@
         <label>상세 내용</label>
         <textarea name="detail" placeholder="신고 사유를 자세히 설명해주세요..."></textarea>
       </div>
-      <button type="submit" class="btn-submit">신고 제출</button>
+      <button type="submit" class="btn-submit" id="btn-submit">신고 제출</button>
     </form>
   </div>
+  <script>
+    if ('{{alreadyFlagged}}' === 'true') {
+      document.getElementById('already-box').style.display = 'block';
+      document.getElementById('flag-form').style.display = 'none';
+    }
+    var fc = parseInt('{{flagCount}}');
+    if (fc > 0) document.getElementById('flag-count').style.display = 'block';
+  </script>
 </body>
 </html>
