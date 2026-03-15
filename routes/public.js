@@ -159,24 +159,24 @@ async function fetchInvestorData() {
   }
 
   try {
-    const resp = await fetch('https://finance.naver.com/sise/investorDealTrendDay.naver', {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
+    // 오늘 데이터 없으면 전일 기준 (주말/공휴일 대비)
+    const today = new Date();
+    const bizdate = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const resp = await fetch(`https://finance.naver.com/sise/investorDealTrendDay.naver?bizdate=${bizdate}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 'Referer': 'https://finance.naver.com' },
     });
     const html = await resp.text();
 
-    // 테이블에서 최근 거래일 데이터 파싱
     const rows = [];
-    // 각 투자자 유형별 순매수 금액 추출 (억원)
-    // HTML 테이블 구조: 날짜, 개인, 외국인, 기관...
-    const tableMatch = html.match(/<table[^>]*class="type2"[^>]*>([\s\S]*?)<\/table>/);
+    const tableMatch = html.match(/<table[^>]*class="type_1"[^>]*>([\s\S]*?)<\/table>/);
     if (tableMatch) {
-      const trMatches = tableMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/g) || [];
+      const trMatches = tableMatch[1].match(/<tr>([\s\S]*?)<\/tr>/g) || [];
       for (const tr of trMatches) {
         const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/g);
-        if (!tds || tds.length < 6) continue;
-        const clean = (s) => s.replace(/<[^>]*>/g, '').replace(/,/g, '').trim();
+        if (!tds || tds.length < 4) continue;
+        const clean = (s) => s.replace(/<[^>]*>/g, '').replace(/,/g, '').replace(/&nbsp;/g, '').trim();
         const date = clean(tds[0]);
-        if (!/\d{4}\.\d{2}\.\d{2}/.test(date) && !/\d{2}\.\d{2}/.test(date)) continue;
+        if (!/\d{2}\.\d{2}\.\d{2}/.test(date)) continue;
         const individual = clean(tds[1]);
         const foreign = clean(tds[2]);
         const institutional = clean(tds[3]);
@@ -208,21 +208,25 @@ async function fetchCreditData() {
   }
 
   try {
-    const resp = await fetch('https://finance.naver.com/sise/sise_credit.naver', {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
+    // 네이버 금융 신용잔고 (bizdate 파라미터 사용)
+    const today = new Date();
+    const bizdate = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const resp = await fetch(`https://finance.naver.com/sise/sise_credit.naver?bizdate=${bizdate}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 'Referer': 'https://finance.naver.com' },
     });
     const html = await resp.text();
 
     const rows = [];
-    const tableMatch = html.match(/<table[^>]*class="type2"[^>]*>([\s\S]*?)<\/table>/);
+    // type_1 또는 type2 테이블 모두 시도
+    const tableMatch = html.match(/<table[^>]*class="type_1"[^>]*>([\s\S]*?)<\/table>/) || html.match(/<table[^>]*class="type2"[^>]*>([\s\S]*?)<\/table>/);
     if (tableMatch) {
-      const trMatches = tableMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/g) || [];
+      const trMatches = tableMatch[1].match(/<tr>([\s\S]*?)<\/tr>/g) || [];
       for (const tr of trMatches) {
         const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/g);
-        if (!tds || tds.length < 5) continue;
-        const clean = (s) => s.replace(/<[^>]*>/g, '').replace(/,/g, '').trim();
+        if (!tds || tds.length < 4) continue;
+        const clean = (s) => s.replace(/<[^>]*>/g, '').replace(/,/g, '').replace(/&nbsp;/g, '').trim();
         const date = clean(tds[0]);
-        if (!/\d{4}\.\d{2}\.\d{2}/.test(date) && !/\d{2}\.\d{2}/.test(date)) continue;
+        if (!/\d{2}\.\d{2}\.\d{2}/.test(date)) continue;
         const newCredit = clean(tds[1]);
         const repayment = clean(tds[2]);
         const balance = clean(tds[3]);
@@ -531,7 +535,7 @@ router.get('/dashboard', async (req, res) => {
   let memoryItems = [];
   try {
     const latestDate = db.prepare('SELECT MAX(date) as d FROM memory_prices').get()?.d;
-    const memPrices = latestDate ? db.prepare('SELECT * FROM memory_prices WHERE date = ? ORDER BY type, product').all(latestDate) : [];
+    const memPrices = latestDate ? db.prepare("SELECT * FROM memory_prices WHERE date = ? ORDER BY CASE WHEN type IN ('DRAM','RAM','DDR') THEN 0 ELSE 1 END, type, product").all(latestDate) : [];
     if (memPrices.length > 0) {
       // 전일 대비
       const prevDate = db.prepare('SELECT MAX(date) as d FROM memory_prices WHERE date < ?').get(latestDate)?.d;
@@ -539,14 +543,41 @@ router.get('/dashboard', async (req, res) => {
       if (prevDate) {
         db.prepare('SELECT product, price FROM memory_prices WHERE date = ?').all(prevDate).forEach(p => { prevMap[p.product] = p.price; });
       }
-      // 전월 대비 (약 30일 전)
+      // 전월 대비 (같은 날짜 기준, ±3일 범위)
       const oneMonthAgo = new Date(latestDate);
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
       const momDateStr = oneMonthAgo.toISOString().slice(0, 10);
-      const momDate = db.prepare('SELECT MIN(date) as d FROM memory_prices WHERE date >= ?').get(momDateStr)?.d;
+      const momRange1 = new Date(oneMonthAgo.getTime() - 3*86400000).toISOString().slice(0,10);
+      const momRange2 = new Date(oneMonthAgo.getTime() + 3*86400000).toISOString().slice(0,10);
+      const momDate = db.prepare('SELECT date as d FROM memory_prices WHERE date BETWEEN ? AND ? ORDER BY ABS(julianday(date) - julianday(?)) LIMIT 1').get(momRange1, momRange2, momDateStr)?.d;
       const momMap = {};
       if (momDate && momDate !== latestDate) {
         db.prepare('SELECT product, price FROM memory_prices WHERE date = ?').all(momDate).forEach(p => { momMap[p.product] = p.price; });
+      }
+      // DB에 전월 데이터 없으면 AI에게 비동기 요청 (다음 로드 시 반영)
+      if (!momDate) {
+        (async () => {
+          try {
+            const apiKey = process.env.ANTHROPIC_API_KEY;
+            if (!apiKey) return;
+            const Anthropic = require('@anthropic-ai/sdk');
+            const client = new Anthropic({ apiKey });
+            const resp = await client.messages.create({
+              model: 'claude-haiku-4-5-20251001', max_tokens: 500,
+              messages: [{ role: 'user', content: `${momDateStr} 날짜 기준 반도체 메모리 스팟 가격. 정확한 가격 없으면 해당 시점 추정가.\n항목: DDR5 16GB, DDR4 8GB, NAND 256GB TLC, NAND 512GB TLC\nJSON만: {"date":"${momDateStr}","items":[{"type":"RAM","product":"DDR5 16GB","price":숫자,"unit":"USD"},...]}`}],
+            });
+            const jm = resp.content[0].text.match(/\{[\s\S]*\}/);
+            if (!jm) return;
+            const d = JSON.parse(jm[0]);
+            if (!d.items) return;
+            for (const it of d.items) {
+              if (!it.product || !it.price) continue;
+              const ex = db.prepare('SELECT id FROM memory_prices WHERE product = ? AND date = ?').get(it.product, d.date || momDateStr);
+              if (!ex) db.prepare('INSERT INTO memory_prices (type, product, price, unit, date) VALUES (?, ?, ?, ?, ?)').run(it.type || 'RAM', it.product, it.price, it.unit || 'USD', d.date || momDateStr);
+            }
+            console.log('[Memory MoM] Fetched ' + momDateStr + ' data via AI');
+          } catch(e) { console.error('[Memory MoM AI]', e.message); }
+        })();
       }
       memoryItems = memPrices.map(p => {
         const prev = prevMap[p.product];
