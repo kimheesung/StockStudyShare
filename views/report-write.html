@@ -501,11 +501,11 @@
           var p = data.parsed || {};
           var filled = 0;
 
-          // 종목명, 종목코드, 제목 채우기
+          // 종목명, 종목코드, 제목 채우기 (기존 값 덮어쓰기)
           function fillInput(selector, val) {
             if (!val) return;
             var el = document.querySelector(selector);
-            if (el && !el.value.trim()) {
+            if (el) {
               el.value = val;
               el.style.borderColor = 'rgba(79,70,229,0.4)';
               el.style.background = 'rgba(79,70,229,0.06)';
@@ -552,7 +552,7 @@
           fields.forEach(function(f) {
             if (f.val) {
               var el = document.querySelector('textarea[name="' + f.name + '"]');
-              if (el && !el.value.trim()) {
+              if (el) {
                 el.value = f.val;
                 el.style.borderColor = 'rgba(79,70,229,0.4)';
                 el.style.background = 'rgba(79,70,229,0.06)';

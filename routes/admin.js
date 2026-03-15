@@ -879,4 +879,125 @@ router.post('/board-reports/:id/review', isLoggedIn, isAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── 관리자 쪽지 ──
+
+// 쪽지 목록
+router.get('/messages', isLoggedIn, isAdmin, (req, res) => {
+  const threads = db.prepare(`
+    SELECT dt.*, u.nickname, u.name, u.photo,
+      (SELECT content FROM dm_messages WHERE thread_id = dt.id ORDER BY created_at DESC LIMIT 1) as last_message,
+      (SELECT COUNT(*) FROM dm_messages WHERE thread_id = dt.id AND is_read = 0 AND sender_id != ?) as unread_count
+    FROM dm_threads dt
+    JOIN users u ON dt.user_id = u.id
+    ORDER BY dt.updated_at DESC
+  `).all(req.user.id);
+
+  const rows = threads.length > 0 ? threads.map(t => {
+    const displayName = t.nickname || t.name;
+    return `<a href="/admin/messages/${t.id}" class="thread-row ${t.unread_count > 0 ? 'unread' : ''}">
+      <img src="${t.photo || ''}" style="width:36px;height:36px;border-radius:50%;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.4);margin-bottom:2px">${escapeHtml(displayName)}</div>
+        <div style="font-size:0.95rem;font-weight:700;margin-bottom:4px">${escapeHtml(t.subject)}${t.unread_count > 0 ? ' <span style="display:inline-block;padding:1px 7px;background:#4f46e5;color:#fff;border-radius:10px;font-size:0.68rem;font-weight:700">' + t.unread_count + '</span>' : ''}</div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.35);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml((t.last_message || '').slice(0, 60))}</div>
+      </div>
+    </a>`;
+  }).join('') : '<div style="color:rgba(255,255,255,0.25);text-align:center;padding:40px">쪽지가 없습니다.</div>';
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>쪽지 관리 - 관리자</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+      .container{max-width:700px;margin:0 auto;padding:40px 20px}
+      .back-link{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem;margin-bottom:20px;display:inline-block}
+      h1{font-size:1.5rem;font-weight:900;margin-bottom:20px}
+      h1 .highlight{background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+      .thread-row{display:flex;align-items:center;gap:14px;padding:16px 20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:8px;text-decoration:none;color:#fff;transition:all 0.2s}
+      .thread-row:hover{background:rgba(255,255,255,0.06)}
+      .thread-row.unread{border-left:3px solid #4f46e5;background:rgba(79,70,229,0.05)}
+    </style></head><body>
+    <nav>${buildNav(req.user)}</nav>
+    <div class="container">
+      <a href="/admin" class="back-link">&larr; 관리자 대시보드</a>
+      <h1><span class="highlight">쪽지</span> 관리 (${threads.length}건)</h1>
+      ${rows}
+    </div></body></html>`;
+  res.send(html);
+});
+
+// 관리자 쪽지 대화 보기 + 답장
+router.get('/messages/:id', isLoggedIn, isAdmin, (req, res) => {
+  const thread = db.prepare('SELECT dt.*, u.nickname, u.name FROM dm_threads dt JOIN users u ON dt.user_id = u.id WHERE dt.id = ?').get(req.params.id);
+  if (!thread) return res.status(404).send('쪽지를 찾을 수 없습니다.');
+
+  db.prepare('UPDATE dm_messages SET is_read = 1 WHERE thread_id = ? AND sender_id != ?').run(thread.id, req.user.id);
+
+  const messages = db.prepare(`
+    SELECT dm.*, u.nickname, u.name, u.photo, u.role
+    FROM dm_messages dm JOIN users u ON dm.sender_id = u.id
+    WHERE dm.thread_id = ? ORDER BY dm.created_at ASC
+  `).all(thread.id);
+
+  const userName = thread.nickname || thread.name;
+  const msgHtml = messages.map(m => {
+    const isAdmin = m.role === 'admin';
+    const displayName = m.nickname || m.name;
+    const roleBadge = isAdmin ? '<span style="font-size:0.65rem;padding:2px 6px;background:rgba(168,85,247,0.2);color:#c084fc;border-radius:6px;margin-left:4px">관리자</span>' : '';
+    return `<div style="padding:14px 18px;border-radius:14px;margin-bottom:10px;max-width:85%;${isAdmin ? 'background:rgba(79,70,229,0.15);border:1px solid rgba(79,70,229,0.25);margin-left:auto' : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)'}">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.78rem">
+        <span style="font-weight:700;color:rgba(255,255,255,0.7)">${escapeHtml(displayName)}${roleBadge}</span>
+        <span style="color:rgba(255,255,255,0.25)">${new Date(m.created_at).toLocaleString('ko-KR')}</span>
+      </div>
+      <div style="font-size:0.9rem;color:rgba(255,255,255,0.6);line-height:1.7;white-space:pre-wrap">${escapeHtml(m.content)}</div>
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>${escapeHtml(thread.subject)} - 관리자 쪽지</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}.container{max-width:700px;margin:0 auto;padding:40px 20px}.back-link{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem;margin-bottom:20px;display:inline-block}h1{font-size:1.3rem;font-weight:900;margin-bottom:6px}.reply-form{display:flex;gap:10px;margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06)}.reply-form textarea{flex:1;padding:12px 16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;color:#fff;font-size:0.9rem;font-family:inherit;min-height:60px;resize:none}.reply-form textarea:focus{outline:none;border-color:rgba(79,70,229,0.5)}.btn-reply{padding:12px 24px;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:14px;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;align-self:flex-end}</style></head><body>
+    <nav>${buildNav(req.user)}</nav>
+    <div class="container">
+      <a href="/admin/messages" class="back-link">&larr; 쪽지 목록</a>
+      <h1>${escapeHtml(thread.subject)}</h1>
+      <div style="font-size:0.82rem;color:rgba(255,255,255,0.4);margin-bottom:20px">보낸 사람: ${escapeHtml(userName)}</div>
+      ${msgHtml}
+      <div class="reply-form">
+        <textarea id="reply-input" placeholder="답장을 입력하세요..."></textarea>
+        <button class="btn-reply" onclick="sendReply()">답장</button>
+      </div>
+    </div>
+    <script>
+      function sendReply() {
+        var content = document.getElementById('reply-input').value.trim();
+        if (!content) return;
+        fetch('/admin/messages/${thread.id}/reply', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+          body: JSON.stringify({ content: content })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+          if (d.ok) window.location.reload();
+          else alert(d.error);
+        });
+      }
+    </script></body></html>`;
+  res.send(html);
+});
+
+// 관리자 답장
+router.post('/messages/:id/reply', isLoggedIn, isAdmin, (req, res) => {
+  const thread = db.prepare('SELECT * FROM dm_threads WHERE id = ?').get(req.params.id);
+  if (!thread) return res.json({ ok: false, error: '쪽지를 찾을 수 없습니다.' });
+
+  const { content } = req.body;
+  if (!content) return res.json({ ok: false, error: '내용을 입력해주세요.' });
+
+  db.prepare('INSERT INTO dm_messages (thread_id, sender_id, content) VALUES (?, ?, ?)').run(thread.id, req.user.id, content);
+  db.prepare("UPDATE dm_threads SET updated_at = datetime('now') WHERE id = ?").run(thread.id);
+
+  notify(db, thread.user_id, 'points', '관리자 답장', `"${thread.subject}" 쪽지에 관리자가 답장했습니다.`, '/my/messages/' + thread.id);
+  res.json({ ok: true });
+});
+
 module.exports = router;

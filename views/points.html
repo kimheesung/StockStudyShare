@@ -147,13 +147,12 @@
 
   <div class="modal-overlay" id="modal">
     <div class="modal">
-      <h2>포인트 충전</h2>
-      <p class="modal-desc">아래 포인트를 충전하시겠습니까?</p>
-      <div class="modal-amount" id="modal-points"></div>
-      <div class="modal-price" id="modal-price"></div>
-      <div class="modal-actions">
-        <button class="btn-confirm" id="btn-confirm" onclick="confirmPurchase()">결제하기</button>
-        <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <div style="font-size:3rem;margin-bottom:12px">🔧</div>
+      <h2>결제 시스템 준비 중</h2>
+      <p class="modal-desc">포인트 결제 기능은 현재 준비 중입니다.<br>포인트 충전이 필요하시면 관리자에게 문의해주세요.</p>
+      <div class="modal-actions" style="flex-direction:column;gap:10px">
+        <a href="/my/messages/new?subject=포인트 충전 문의" style="flex:1;padding:14px;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:700;text-decoration:none;text-align:center">관리자에게 문의하기</a>
+        <button class="btn-cancel" onclick="closeModal()">닫기</button>
       </div>
     </div>
   </div>
@@ -183,42 +182,11 @@
     let selectedPrice = 0;
 
     function openModal(points, price) {
-      selectedPoints = points;
-      selectedPrice = price;
-      document.getElementById('modal-points').textContent = points.toLocaleString() + ' P';
-      document.getElementById('modal-price').textContent = price.toLocaleString() + 'P';
       document.getElementById('modal').classList.add('show');
     }
 
     function closeModal() {
       document.getElementById('modal').classList.remove('show');
-    }
-
-    async function confirmPurchase() {
-      const btn = document.getElementById('btn-confirm');
-      btn.disabled = true;
-      btn.textContent = '결제 처리중...';
-
-      try {
-        const res = await fetch('/my/points/purchase', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({ points: selectedPoints, price: selectedPrice }),
-        });
-        const data = await res.json();
-        if (data.ok) {
-          window.location.reload();
-        } else {
-          alert(data.error || '결제에 실패했습니다.');
-          btn.disabled = false;
-          btn.textContent = '결제하기';
-        }
-      } catch(e) {
-        alert('오류가 발생했습니다.');
-        btn.disabled = false;
-        btn.textContent = '결제하기';
-      }
     }
 
     document.getElementById('modal').addEventListener('click', function(e) {

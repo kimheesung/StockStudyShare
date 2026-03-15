@@ -515,4 +515,236 @@ router.get('/author-apply-status', isLoggedIn, (req, res) => {
   res.send(html);
 });
 
+// ── 쪽지(DM) 시스템 ──
+
+// 쪽지 목록
+router.get('/messages', isLoggedIn, (req, res) => {
+  const threads = db.prepare(`
+    SELECT dt.*,
+      (SELECT content FROM dm_messages WHERE thread_id = dt.id ORDER BY created_at DESC LIMIT 1) as last_message,
+      (SELECT COUNT(*) FROM dm_messages WHERE thread_id = dt.id AND is_read = 0 AND sender_id != ?) as unread_count
+    FROM dm_threads dt
+    WHERE dt.user_id = ?
+    ORDER BY dt.updated_at DESC
+  `).all(req.user.id, req.user.id);
+
+  const threadRows = threads.length > 0 ? threads.map(t => {
+    const timeAgo = getTimeAgo(t.updated_at);
+    return `<a href="/my/messages/${t.id}" class="thread-row ${t.unread_count > 0 ? 'unread' : ''}">
+      <div class="thread-main">
+        <div class="thread-subject">${escapeHtml(t.subject)}${t.unread_count > 0 ? ' <span class="unread-badge">' + t.unread_count + '</span>' : ''}</div>
+        <div class="thread-preview">${escapeHtml((t.last_message || '').slice(0, 60))}</div>
+      </div>
+      <div class="thread-time">${timeAgo}</div>
+    </a>`;
+  }).join('') : '<div class="empty-text">쪽지가 없습니다.</div>';
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>쪽지함 - StockStudyShare</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+      .container{max-width:700px;margin:0 auto;padding:40px 20px}
+      .back-link{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem;margin-bottom:20px;display:inline-block}
+      h1{font-size:1.5rem;font-weight:900;margin-bottom:20px}
+      h1 .highlight{background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+      .thread-row{display:flex;align-items:center;gap:14px;padding:16px 20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:8px;text-decoration:none;color:#fff;transition:all 0.2s}
+      .thread-row:hover{background:rgba(255,255,255,0.06)}
+      .thread-row.unread{border-left:3px solid #4f46e5;background:rgba(79,70,229,0.05)}
+      .thread-main{flex:1;min-width:0}
+      .thread-subject{font-size:0.95rem;font-weight:700;margin-bottom:4px}
+      .thread-preview{font-size:0.82rem;color:rgba(255,255,255,0.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .thread-time{font-size:0.75rem;color:rgba(255,255,255,0.25);flex-shrink:0}
+      .unread-badge{display:inline-block;padding:1px 7px;background:#4f46e5;color:#fff;border-radius:10px;font-size:0.68rem;font-weight:700;margin-left:6px}
+      .btn-new{display:inline-block;padding:10px 24px;background:linear-gradient(135deg,#4f46e5,#6366f1);border-radius:50px;color:#fff;text-decoration:none;font-size:0.85rem;font-weight:700;margin-bottom:20px}
+      .empty-text{color:rgba(255,255,255,0.25);text-align:center;padding:40px;font-size:0.9rem}
+    </style></head><body>
+    <nav>${buildNav(req.user)}</nav>
+    <div class="container">
+      <a href="/dashboard" class="back-link">&larr; 대시보드</a>
+      <h1><span class="highlight">쪽지함</span></h1>
+      <a href="/my/messages/new" class="btn-new">+ 새 쪽지</a>
+      ${threadRows}
+    </div></body></html>`;
+  res.send(html);
+});
+
+// 새 쪽지 작성
+router.get('/messages/new', isLoggedIn, (req, res) => {
+  const subject = req.query.subject || '';
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>새 쪽지 - StockStudyShare</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+      .container{max-width:600px;margin:0 auto;padding:40px 20px}
+      .back-link{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem;margin-bottom:20px;display:inline-block}
+      h1{font-size:1.5rem;font-weight:900;margin-bottom:20px}
+      h1 .highlight{background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+      .form-group{margin-bottom:20px}
+      .form-group label{display:block;font-size:0.9rem;font-weight:700;margin-bottom:8px;color:rgba(255,255,255,0.8)}
+      .form-group input,.form-group textarea{width:100%;padding:14px 18px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;color:#fff;font-size:0.95rem;font-family:inherit}
+      .form-group input:focus,.form-group textarea:focus{outline:none;border-color:rgba(79,70,229,0.5)}
+      .form-group textarea{min-height:150px;resize:vertical;line-height:1.7}
+      .btn-send{width:100%;padding:16px;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit}
+      .btn-send:disabled{opacity:0.5}
+    </style></head><body>
+    <nav>${buildNav(req.user)}</nav>
+    <div class="container">
+      <a href="/my/messages" class="back-link">&larr; 쪽지함</a>
+      <h1><span class="highlight">관리자에게</span> 쪽지 보내기</h1>
+      <div class="form-group">
+        <label>제목</label>
+        <input type="text" id="inp-subject" value="${escapeHtml(subject)}" placeholder="문의 제목">
+      </div>
+      <div class="form-group">
+        <label>내용</label>
+        <textarea id="inp-content" placeholder="문의 내용을 작성해주세요..."></textarea>
+      </div>
+      <button class="btn-send" id="btn-send" onclick="sendMessage()">보내기</button>
+    </div>
+    <script>
+      function sendMessage() {
+        var subject = document.getElementById('inp-subject').value.trim();
+        var content = document.getElementById('inp-content').value.trim();
+        if (!subject || !content) { alert('제목과 내용을 입력해주세요.'); return; }
+        var btn = document.getElementById('btn-send');
+        btn.disabled = true; btn.textContent = '전송 중...';
+        fetch('/my/messages/new', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+          body: JSON.stringify({ subject: subject, content: content })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+          if (d.ok) window.location.href = '/my/messages/' + d.threadId;
+          else { alert(d.error); btn.disabled = false; btn.textContent = '보내기'; }
+        });
+      }
+    </script></body></html>`;
+  res.send(html);
+});
+
+// 새 쪽지 전송
+router.post('/messages/new', isLoggedIn, (req, res) => {
+  const { subject, content } = req.body;
+  if (!subject || !content) return res.json({ ok: false, error: '제목과 내용을 입력해주세요.' });
+
+  const result = db.prepare('INSERT INTO dm_threads (user_id, subject) VALUES (?, ?)').run(req.user.id, subject);
+  const threadId = result.lastInsertRowid;
+  db.prepare('INSERT INTO dm_messages (thread_id, sender_id, content) VALUES (?, ?, ?)').run(threadId, req.user.id, content);
+
+  // 관리자에게 알림
+  const { notify } = require('../lib/helpers');
+  const admins = db.prepare("SELECT id FROM users WHERE role = 'admin'").all();
+  const userName = req.user.nickname || req.user.name;
+  for (const admin of admins) {
+    notify(db, admin.id, 'points', '새 쪽지', `${userName}님이 쪽지를 보냈습니다: ${subject}`, '/admin/messages/' + threadId);
+  }
+
+  res.json({ ok: true, threadId });
+});
+
+// 쪽지 대화 보기
+router.get('/messages/:id', isLoggedIn, (req, res) => {
+  const thread = db.prepare('SELECT * FROM dm_threads WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+  if (!thread) return res.status(404).send('쪽지를 찾을 수 없습니다.');
+
+  // 읽음 처리
+  db.prepare('UPDATE dm_messages SET is_read = 1 WHERE thread_id = ? AND sender_id != ?').run(thread.id, req.user.id);
+
+  const messages = db.prepare(`
+    SELECT dm.*, u.nickname, u.name, u.photo, u.role
+    FROM dm_messages dm
+    JOIN users u ON dm.sender_id = u.id
+    WHERE dm.thread_id = ?
+    ORDER BY dm.created_at ASC
+  `).all(thread.id);
+
+  const msgHtml = messages.map(m => {
+    const isMe = m.sender_id === req.user.id;
+    const displayName = m.nickname || m.name;
+    const roleBadge = m.role === 'admin' ? '<span style="font-size:0.65rem;padding:2px 6px;background:rgba(168,85,247,0.2);color:#c084fc;border-radius:6px;margin-left:4px">관리자</span>' : '';
+    return `<div class="msg ${isMe ? 'msg-me' : 'msg-other'}">
+      <div class="msg-header"><span class="msg-name">${escapeHtml(displayName)}${roleBadge}</span><span class="msg-time">${getTimeAgo(m.created_at)}</span></div>
+      <div class="msg-content">${escapeHtml(m.content)}</div>
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>${escapeHtml(thread.subject)} - 쪽지</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+      .container{max-width:700px;margin:0 auto;padding:40px 20px}
+      .back-link{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.9rem;margin-bottom:20px;display:inline-block}
+      h1{font-size:1.3rem;font-weight:900;margin-bottom:20px}
+      .msg{padding:14px 18px;border-radius:14px;margin-bottom:10px;max-width:85%}
+      .msg-me{background:rgba(79,70,229,0.15);border:1px solid rgba(79,70,229,0.25);margin-left:auto}
+      .msg-other{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)}
+      .msg-header{display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.78rem}
+      .msg-name{font-weight:700;color:rgba(255,255,255,0.7)}
+      .msg-time{color:rgba(255,255,255,0.25)}
+      .msg-content{font-size:0.9rem;color:rgba(255,255,255,0.6);line-height:1.7;white-space:pre-wrap}
+      .reply-form{display:flex;gap:10px;margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06)}
+      .reply-form textarea{flex:1;padding:12px 16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;color:#fff;font-size:0.9rem;font-family:inherit;min-height:60px;resize:none}
+      .reply-form textarea:focus{outline:none;border-color:rgba(79,70,229,0.5)}
+      .btn-reply{padding:12px 24px;background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;border-radius:14px;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;align-self:flex-end}
+    </style></head><body>
+    <nav>${buildNav(req.user)}</nav>
+    <div class="container">
+      <a href="/my/messages" class="back-link">&larr; 쪽지함</a>
+      <h1>${escapeHtml(thread.subject)}</h1>
+      ${msgHtml}
+      <div class="reply-form">
+        <textarea id="reply-input" placeholder="답장을 입력하세요..."></textarea>
+        <button class="btn-reply" onclick="sendReply()">답장</button>
+      </div>
+    </div>
+    <script>
+      function sendReply() {
+        var content = document.getElementById('reply-input').value.trim();
+        if (!content) return;
+        fetch('/my/messages/${thread.id}/reply', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+          body: JSON.stringify({ content: content })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+          if (d.ok) window.location.reload();
+          else alert(d.error);
+        });
+      }
+    </script></body></html>`;
+  res.send(html);
+});
+
+// 답장
+router.post('/messages/:id/reply', isLoggedIn, (req, res) => {
+  const thread = db.prepare('SELECT * FROM dm_threads WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+  if (!thread) return res.json({ ok: false, error: '쪽지를 찾을 수 없습니다.' });
+
+  const { content } = req.body;
+  if (!content) return res.json({ ok: false, error: '내용을 입력해주세요.' });
+
+  db.prepare('INSERT INTO dm_messages (thread_id, sender_id, content) VALUES (?, ?, ?)').run(thread.id, req.user.id, content);
+  db.prepare("UPDATE dm_threads SET updated_at = datetime('now') WHERE id = ?").run(thread.id);
+
+  const { notify } = require('../lib/helpers');
+  const admins = db.prepare("SELECT id FROM users WHERE role = 'admin'").all();
+  const userName = req.user.nickname || req.user.name;
+  for (const admin of admins) {
+    notify(db, admin.id, 'points', '쪽지 답장', `${userName}님이 답장했습니다: ${thread.subject}`, '/admin/messages/' + thread.id);
+  }
+
+  res.json({ ok: true });
+});
+
+function getTimeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr + 'Z').getTime()) / 1000);
+  if (diff < 60) return '방금 전';
+  if (diff < 3600) return Math.floor(diff / 60) + '분 전';
+  if (diff < 86400) return Math.floor(diff / 3600) + '시간 전';
+  if (diff < 604800) return Math.floor(diff / 86400) + '일 전';
+  return new Date(dateStr).toLocaleDateString('ko-KR');
+}
+
 module.exports = router;

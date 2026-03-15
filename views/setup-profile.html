@@ -51,8 +51,18 @@
 </head>
 <body>
   <div class="setup-card">
-    <h1><span class="highlight">프로필 설정</span></h1>
+    <h1><span class="highlight">환영합니다!</span></h1>
     <p class="setup-desc">StockStudyShare에서 사용할 닉네임을 설정해주세요.</p>
+
+    <!-- 오픈 이벤트 배너 -->
+    <div style="padding:18px 20px;background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(239,68,68,0.08));border:1px solid rgba(251,191,36,0.25);border-radius:16px;margin-bottom:20px;text-align:center">
+      <div style="font-size:1.3rem;margin-bottom:6px">🎉🎁</div>
+      <div style="font-size:0.95rem;font-weight:900;color:#fbbf24;margin-bottom:6px">오픈 이벤트 진행중!</div>
+      <div style="font-size:0.85rem;color:rgba(255,255,255,0.7);line-height:1.6">
+        지금 가입하시면 <strong style="color:#fbbf24;font-size:1.05rem">100,000P</strong>를 무상으로 드립니다!<br>
+        <span style="color:rgba(255,255,255,0.45);font-size:0.8rem">주변 분들에게도 알려주세요. 함께 투자 인사이트를 나눠요!</span>
+      </div>
+    </div>
 
     <div class="user-preview">
       <img src="{{photo}}" alt="">
@@ -73,9 +83,13 @@
       <div class="field">
         <label>추천인 닉네임 (선택)</label>
         <input type="text" name="referrer_nickname" id="referrer_nickname" placeholder="추천인의 닉네임을 입력하세요" autocomplete="off">
-        <p class="hint referrer-hint">추천인은 회원님의 활동 포인트 중 5%를 보너스로 받게 됩니다.</p>
+        <div style="padding:10px 14px;background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.15);border-radius:10px;margin-top:8px;font-size:0.78rem;color:rgba(255,255,255,0.5);line-height:1.7">
+          💡 <strong style="color:#4ade80">추천인 보너스 안내</strong><br>
+          추천인 닉네임을 입력하면, 추천인은 회원님이 획득하는 포인트의 <strong style="color:#4ade80">5%</strong>를 보너스로 받습니다.<br>
+          <span style="color:rgba(255,255,255,0.35)">가입 후 내 닉네임을 친구에게 알려주면, 친구가 활동할 때마다 나도 5% 보너스!</span>
+        </div>
       </div>
-      <button type="submit" class="btn-submit" id="submit-btn">시작하기</button>
+      <button type="submit" class="btn-submit" id="submit-btn">🚀 시작하기</button>
     </form>
   </div>
 
