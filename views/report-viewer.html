@@ -62,12 +62,15 @@
     .avg-star.filled { color: #fbbf24; }
     .avg-star.half { background: linear-gradient(90deg, #fbbf24 50%, rgba(255,255,255,0.15) 50%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .rating-summary .avg { font-size: 1.4rem; font-weight: 900; color: #fbbf24; }
-    .star-select { display: inline-flex; gap: 6px; margin-bottom: 14px; }
+    .star-select { display: inline-flex; gap: 8px; margin-bottom: 14px; }
     .star-btn {
-      font-size: 2rem; background: none; border: none; cursor: pointer;
-      color: rgba(255,255,255,0.15); transition: color 0.15s; line-height: 1;
+      font-size: 2.5rem; background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.15); transition: color 0.15s, transform 0.1s; line-height: 1;
+      padding: 8px; user-select: none; -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent; position: relative; z-index: 1;
     }
-    .star-btn:hover, .star-btn.active { color: #fbbf24; }
+    .star-btn:hover { color: #fbbf24; transform: scale(1.2); }
+    .star-btn.active { color: #fbbf24; }
     .star-btn.locked { cursor: default; }
     .rating-submit {
       padding: 10px 28px; background: linear-gradient(135deg, #f59e0b, #d97706);
