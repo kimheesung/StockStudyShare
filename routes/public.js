@@ -473,10 +473,6 @@ router.get('/dashboard', async (req, res) => {
   `).all(twoWeeksAgo.toISOString());
 
   // 수익률 TOP: entry_price 있는 리포트의 실시간 수익률 계산
-  // 수익률상승률(3개월): 최근 3개월 내 발행 리포트의 수익률 높은 순
-  const threeMonthsAgoForReturn = new Date();
-  threeMonthsAgoForReturn.setMonth(threeMonthsAgoForReturn.getMonth() - 3);
-
   const topReturnReports = await (async () => {
     const candidates = db.prepare(`
       SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
@@ -489,10 +485,9 @@ router.get('/dashboard', async (req, res) => {
       WHERE r.status = 'on_sale'
         AND r.entry_price IS NOT NULL AND r.entry_price > 0
         AND r.stock_code IS NOT NULL AND r.stock_code != ''
-        AND r.published_at >= ?
       ORDER BY r.published_at DESC
       LIMIT 30
-    `).all(threeMonthsAgoForReturn.toISOString());
+    `).all();
     if (candidates.length === 0) return [];
 
     const symbolMap = {};
