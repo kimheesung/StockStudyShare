@@ -21,12 +21,14 @@
     .section-title .icon { font-size: 1.2rem; }
     .updated { font-size: 0.72rem; color: rgba(255,255,255,0.25); margin-bottom: 24px; }
 
-    /* 시장 지표 카드 */
-    .market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 28px; }
+    /* 시장 지표 - 카테고리 그룹 */
+    .market-grid { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+    .market-group-title { font-size: 0.82rem; font-weight: 700; color: rgba(255,255,255,0.5); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .market-group-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
     .market-card { padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
-    .market-card .name { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
-    .market-card .price { font-size: 0.95rem; font-weight: 900; }
-    .market-card .change { font-size: 0.72rem; font-weight: 700; }
+    .market-name { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
+    .market-price { font-size: 0.95rem; font-weight: 900; }
+    .market-change { font-size: 0.72rem; font-weight: 700; }
     .up { color: #ef4444; }
     .down { color: #3b82f6; }
 
@@ -108,7 +110,7 @@
       nav { padding: 12px 16px; }
       .container { padding: 24px 16px; }
       .section-title { font-size: 1rem; margin-bottom: 12px; }
-      .market-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px; }
+      .market-group-items { grid-template-columns: repeat(2, 1fr); gap: 8px; }
       .market-card { padding: 14px; }
       .market-card .price { font-size: 1rem; }
       .report-grid { grid-template-columns: 1fr; gap: 12px; }

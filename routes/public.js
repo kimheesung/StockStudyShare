@@ -401,32 +401,34 @@ router.get('/dashboard', async (req, res) => {
     fetchDartDisclosures(),
   ]);
 
-  const cards = marketData.map(m => {
-    if (m.price === null) {
+  // 카테고리별 그룹핑
+  const categoryOrder = ['지수', '반도체', '환율', '원자재', '암호화폐'];
+  const categoryIcons = { '지수': '📊', '반도체': '💾', '환율': '💱', '원자재': '🛢️', '암호화폐': '₿' };
+  const grouped = {};
+  for (const m of marketData) {
+    if (!grouped[m.category]) grouped[m.category] = [];
+    grouped[m.category].push(m);
+  }
+
+  const cards = categoryOrder.filter(cat => grouped[cat]).map(cat => {
+    const items = grouped[cat].map(m => {
+      if (m.price === null) {
+        return `<div class="market-card"><div class="market-name">${m.name}</div><div class="market-price">--</div></div>`;
+      }
+      const isUp = m.change >= 0;
+      const sign = isUp ? '+' : '';
+      const cls = isUp ? 'up' : 'down';
+      const priceStr = m.price >= 1000 ? m.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : m.price.toFixed(2);
+      const pctStr = `${sign}${m.changePercent.toFixed(2)}%`;
       return `<div class="market-card">
         <div class="market-name">${m.name}</div>
-        <div class="market-category">${m.category}</div>
-        <div class="market-price">--</div>
+        <div class="market-price">${priceStr}</div>
+        <div class="market-change ${cls}"><span class="change-arrow">${isUp ? '&#9650;' : '&#9660;'}</span> ${pctStr}</div>
       </div>`;
-    }
-
-    const isUp = m.change >= 0;
-    const sign = isUp ? '+' : '';
-    const cls = isUp ? 'up' : 'down';
-    const priceStr = m.price >= 1000 ? m.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : m.price.toFixed(2);
-    const changeStr = `${sign}${m.change.toFixed(2)}`;
-    const pctStr = `${sign}${m.changePercent.toFixed(2)}%`;
-
-    return `<div class="market-card">
-      <div class="market-header">
-        <div class="market-name">${m.name}</div>
-        <div class="market-category">${m.category}</div>
-      </div>
-      <div class="market-price">${priceStr}</div>
-      <div class="market-change ${cls}">
-        <span class="change-arrow">${isUp ? '&#9650;' : '&#9660;'}</span>
-        ${changeStr} (${pctStr})
-      </div>
+    }).join('');
+    return `<div class="market-group">
+      <div class="market-group-title">${categoryIcons[cat] || ''} ${cat}</div>
+      <div class="market-group-items">${items}</div>
     </div>`;
   }).join('');
 
