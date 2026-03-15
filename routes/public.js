@@ -142,7 +142,6 @@ const SYMBOLS = [
   // 지수
   { symbol: '^KS11', name: 'KOSPI', category: '지수' },
   { symbol: '^KQ11', name: 'KOSDAQ', category: '지수' },
-  { symbol: 'KM=F', name: 'KOSPI 야간선물', category: '지수' },
   { symbol: '^GSPC', name: 'S&P 500', category: '지수' },
   { symbol: '^IXIC', name: 'NASDAQ', category: '지수' },
   { symbol: '^DJI', name: 'Dow Jones', category: '지수' },
@@ -184,6 +183,26 @@ async function fetchMarketData() {
         return { ...s, price, change, changePercent, prevClose };
       } catch { return { ...s, price: null, change: null, changePercent: null }; }
     }));
+
+    // KOSPI 야간선물 (네이버 금융에서 가져오기)
+    try {
+      const nfResp = await fetch('https://polling.finance.naver.com/api/realtime?query=SERVICE_INDEX:KOSPI200F', {
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+      const nfJson = await nfResp.json();
+      const nfData = nfJson.result?.areas?.[0]?.datas?.[0];
+      if (nfData) {
+        const nfPrice = parseFloat(nfData.nv) / 100; // 네이버는 *100 단위
+        const nfChange = parseFloat(nfData.cv) / 100;
+        const nfPct = parseFloat(nfData.cr);
+        // KOSPI 다음에 삽입
+        const kospiIdx = results.findIndex(r => r.symbol === '^KS11');
+        results.splice(kospiIdx >= 0 ? kospiIdx + 1 : 2, 0, {
+          symbol: 'KOSPI200F', name: 'KOSPI 야간선물', category: '지수',
+          price: nfPrice, change: nfChange, changePercent: nfPct, prevClose: nfPrice - nfChange
+        });
+      }
+    } catch {}
 
     marketCache = { data: results, ts: now };
     return results;
@@ -250,36 +269,36 @@ async function fetchCreditData() {
   }
 
   try {
-    // DB에 저장된 신용잔고 데이터 조회 (AI 수집)
-    const dbRows = db.prepare('SELECT * FROM credit_data ORDER BY date DESC LIMIT 5').all();
-    if (dbRows.length > 0) {
-      creditCache = { data: dbRows, ts: now };
-      return dbRows;
-    }
-
-    // 네이버 금융 신용잔고 시도 (bizdate 파라미터)
-    const today = new Date();
-    const bizdate = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const resp = await fetch(`https://finance.naver.com/sise/sise_credit.naver?bizdate=${bizdate}`, {
+    // 네이버 금융 예탁금/신용잔고 (sise_deposit.naver)
+    const resp = await fetch('https://finance.naver.com/sise/sise_deposit.naver', {
       headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 'Referer': 'https://finance.naver.com' },
     });
-    const html = await resp.text();
+    const buf = Buffer.from(await resp.arrayBuffer());
+    let html;
+    try { html = require('iconv-lite').decode(buf, 'euc-kr'); } catch { html = buf.toString('utf8'); }
 
     const rows = [];
-    const tableMatch = html.match(/<table[^>]*class="type_1"[^>]*>([\s\S]*?)<\/table>/) || html.match(/<table[^>]*class="type2"[^>]*>([\s\S]*?)<\/table>/);
+    const tableMatch = html.match(/<table[^>]*class="type_1"[^>]*>([\s\S]*?)<\/table>/);
     if (tableMatch) {
       const trMatches = tableMatch[1].match(/<tr>([\s\S]*?)<\/tr>/g) || [];
       for (const tr of trMatches) {
         const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/g);
-        if (!tds || tds.length < 4) continue;
+        if (!tds || tds.length < 5) continue;
         const clean = (s) => s.replace(/<[^>]*>/g, '').replace(/,/g, '').replace(/&nbsp;/g, '').trim();
         const date = clean(tds[0]);
         if (!/\d{2}\.\d{2}\.\d{2}/.test(date)) continue;
+        // tds[0]=날짜, tds[1]=예탁금잔고, tds[2]=예탁금증감, tds[3]=신용잔고, tds[4]=신용증감
+        const depositBalance = parseInt(clean(tds[1])) || 0;
+        const depositChange = parseInt(clean(tds[2])) || 0;
+        const creditBalance = parseInt(clean(tds[3])) || 0;
+        const creditChange = parseInt(clean(tds[4])) || 0;
         rows.push({
           date,
-          newCredit: parseInt(clean(tds[1])) || 0,
-          repayment: parseInt(clean(tds[2])) || 0,
-          balance: parseInt(clean(tds[3])) || 0,
+          depositBalance,
+          depositChange,
+          balance: creditBalance,
+          newCredit: creditChange,
+          repayment: 0,
         });
         if (rows.length >= 5) break;
       }
@@ -594,9 +613,11 @@ router.get('/dashboard', async (req, res) => {
       const momRange1 = new Date(oneMonthAgo.getTime() - 3*86400000).toISOString().slice(0,10);
       const momRange2 = new Date(oneMonthAgo.getTime() + 3*86400000).toISOString().slice(0,10);
       const momDate = db.prepare('SELECT date as d FROM memory_prices WHERE date BETWEEN ? AND ? ORDER BY ABS(julianday(date) - julianday(?)) LIMIT 1').get(momRange1, momRange2, momDateStr)?.d;
+      // 제품명 정규화 (NAND 256GB TLC → 256GB TLC 등 통일)
+      function normProduct(name) { return name.replace(/^(NAND|DRAM)\s*/i, '').trim(); }
       const momMap = {};
       if (momDate && momDate !== latestDate) {
-        db.prepare('SELECT product, price FROM memory_prices WHERE date = ?').all(momDate).forEach(p => { momMap[p.product] = p.price; });
+        db.prepare('SELECT product, price FROM memory_prices WHERE date = ?').all(momDate).forEach(p => { momMap[normProduct(p.product)] = p.price; });
       }
       // DB에 전월 데이터 없으면 AI에게 비동기 요청 (다음 로드 시 반영)
       if (!momDate) {
@@ -626,7 +647,7 @@ router.get('/dashboard', async (req, res) => {
       memoryItems = memPrices.map(p => {
         const prev = prevMap[p.product];
         const change = (prev && prev > 0) ? ((p.price - prev) / prev * 100) : null;
-        const mom = momMap[p.product];
+        const mom = momMap[normProduct(p.product)];
         const momChange = (mom && mom > 0) ? ((p.price - mom) / mom * 100) : null;
         return { name: p.product, price: p.price, change, momChange, date: latestDate };
       });
