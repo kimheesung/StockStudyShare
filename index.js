@@ -140,6 +140,39 @@ app.get('/api/my-points', (req, res) => {
   res.json({ points: user ? user.points : 0 });
 });
 
+// ── 관리자 문의 API ──
+app.post('/api/admin-message', (req, res) => {
+  if (!req.isAuthenticated()) return res.json({ ok: false, error: '로그인이 필요합니다.' });
+  const { category, message } = req.body;
+  if (!message || !message.trim()) return res.json({ ok: false, error: '내용을 입력해주세요.' });
+
+  const catLabel = { feature: '기능 요청', bug: '버그 신고', general: '일반 문의', other: '기타' };
+  const subject = `[${catLabel[category] || '문의'}] ${(req.user.nickname || req.user.name)}`;
+
+  // 기존 쪽지 시스템으로 연결
+  const existingThread = db.prepare('SELECT id FROM dm_threads WHERE user_id = ?').get(req.user.id);
+  let threadId;
+  if (existingThread) {
+    threadId = existingThread.id;
+    db.prepare("UPDATE dm_threads SET subject = ?, updated_at = datetime('now') WHERE id = ?").run(subject, threadId);
+  } else {
+    const result = db.prepare('INSERT INTO dm_threads (user_id, subject) VALUES (?, ?)').run(req.user.id, subject);
+    threadId = result.lastInsertRowid;
+  }
+  db.prepare('INSERT INTO dm_messages (thread_id, sender_id, content) VALUES (?, ?, ?)').run(
+    threadId, req.user.id, `[${catLabel[category] || '문의'}]\n${message.trim()}`
+  );
+
+  // 관리자에게 알림
+  const { notify } = require('./lib/helpers');
+  const admins = db.prepare("SELECT id FROM users WHERE role = 'admin'").all();
+  for (const admin of admins) {
+    notify(db, admin.id, 'report_pending_admin', subject,
+      message.trim().slice(0, 100), '/admin/messages/' + threadId);
+  }
+  res.json({ ok: true });
+});
+
 // ── 알림 API ──
 app.get('/api/notifications', (req, res) => {
   if (!req.isAuthenticated()) return res.json({ items: [] });

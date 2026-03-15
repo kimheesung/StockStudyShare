@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
              FROM reports r
              JOIN users u ON r.author_id = u.id
              LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
-             WHERE r.status = 'on_sale'`;
+             WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')`;
   const params = [];
 
   if (sector) { sql += ` AND r.sector = ?`; params.push(sector); }
@@ -93,15 +93,15 @@ router.get('/', (req, res) => {
     SELECT u.id, u.name, u.photo, u.custom_photo, u.role, u.nickname,
            COALESCE(u.nickname, ap.display_name, u.name) as display_name,
            ap.bio, ap.sectors,
-           (SELECT COUNT(*) FROM reports WHERE author_id = u.id AND status = 'on_sale') as report_count,
+           (SELECT COUNT(*) FROM reports WHERE author_id = u.id AND status = 'on_sale' AND (type IS NULL OR type != 'visit_note')) as report_count,
            (SELECT COUNT(*) FROM orders o JOIN reports r2 ON o.report_id = r2.id WHERE r2.author_id = u.id) as total_sales,
-           (SELECT MAX(published_at) FROM reports WHERE author_id = u.id AND status = 'on_sale') as latest_published,
+           (SELECT MAX(published_at) FROM reports WHERE author_id = u.id AND status = 'on_sale' AND (type IS NULL OR type != 'visit_note')) as latest_published,
            (SELECT AVG(rr.rating) FROM report_ratings rr JOIN reports r3 ON rr.report_id = r3.id WHERE r3.author_id = u.id) as avg_rating,
            (SELECT COUNT(*) FROM report_ratings rr2 JOIN reports r4 ON rr2.report_id = r4.id WHERE r4.author_id = u.id) as rating_count,
            (SELECT COUNT(*) FROM follows WHERE author_id = u.id) as follower_count
     FROM users u
     LEFT JOIN author_profiles ap ON u.id = ap.user_id
-    WHERE (SELECT COUNT(*) FROM reports WHERE author_id = u.id AND status = 'on_sale') > 0
+    WHERE (SELECT COUNT(*) FROM reports WHERE author_id = u.id AND status = 'on_sale' AND (type IS NULL OR type != 'visit_note')) > 0
     ORDER BY latest_published DESC
   `).all();
 

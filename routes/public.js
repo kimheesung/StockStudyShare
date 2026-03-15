@@ -177,7 +177,7 @@ async function fetchTopGainers() {
       FROM reports r
       JOIN users u ON r.author_id = u.id
       LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
-      WHERE r.status = 'on_sale'
+      WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')
         AND r.stock_code IS NOT NULL AND r.stock_code != ''
         AND r.base_price IS NOT NULL AND r.base_price > 0
         AND r.published_at >= ? AND r.published_at <= ?
@@ -194,7 +194,7 @@ async function fetchTopGainers() {
         FROM reports r
         JOIN users u ON r.author_id = u.id
         LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
-        WHERE r.status = 'on_sale'
+        WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')
           AND r.stock_code IS NOT NULL AND r.stock_code != ''
           AND r.base_price IS NOT NULL AND r.base_price > 0
         ORDER BY r.published_at DESC
@@ -451,7 +451,7 @@ router.get('/dashboard', async (req, res) => {
     FROM reports r
     JOIN users u ON r.author_id = u.id
     LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
-    WHERE r.status = 'on_sale'
+    WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')
     ORDER BY r.published_at DESC
     LIMIT 6
   `).all();
@@ -467,7 +467,7 @@ router.get('/dashboard', async (req, res) => {
     FROM reports r
     JOIN users u ON r.author_id = u.id
     LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
-    WHERE r.status = 'on_sale'
+    WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')
     ORDER BY view_count DESC, r.published_at DESC
     LIMIT 6
   `).all(twoWeeksAgo.toISOString());
@@ -482,7 +482,7 @@ router.get('/dashboard', async (req, res) => {
       FROM reports r
       JOIN users u ON r.author_id = u.id
       LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
-      WHERE r.status = 'on_sale'
+      WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')
         AND r.entry_price IS NOT NULL AND r.entry_price > 0
         AND r.stock_code IS NOT NULL AND r.stock_code != ''
       ORDER BY r.published_at DESC
@@ -526,7 +526,7 @@ router.get('/dashboard', async (req, res) => {
     JOIN users u ON r.author_id = u.id
     LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
     JOIN follows f ON f.author_id = r.author_id AND f.follower_id = ?
-    WHERE r.status = 'on_sale'
+    WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')
     ORDER BY r.published_at DESC
     LIMIT 6
   `).all(req.user.id);
