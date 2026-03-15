@@ -231,7 +231,7 @@ app.get('/author-profile/:id', (req, res) => {
   const html = render('views/author-profile.html', {
     nav: buildNav(req.user),
     authorId: req.params.id,
-    displayName: escapeHtml(profile.display_name || profile.nickname || profile.name),
+    displayName: escapeHtml(profile.nickname || profile.display_name || profile.name),
     bio: escapeHtml(profile.bio || ''),
     sectors: escapeHtml(profile.sectors || ''),
     photo: profile.photo || '',

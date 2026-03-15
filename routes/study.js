@@ -28,7 +28,7 @@ router.get('/', isLoggedIn, (req, res) => {
 
   // 전체 스터디방: 모집중(pending 지원 받는 방) 우선, 최근 리포트 순
   let sql = `
-    SELECT sr.*, sr.points, u.name as owner_name, u.photo as owner_photo,
+    SELECT sr.*, sr.points, COALESCE(u.nickname, u.name) as owner_name, u.photo as owner_photo,
            (SELECT COUNT(*) FROM study_members WHERE room_id = sr.id) as member_count,
            (SELECT COUNT(*) FROM study_applications WHERE room_id = sr.id AND status = 'pending') as pending_apps,
            (SELECT MAX(r.published_at) FROM reports r
@@ -359,7 +359,7 @@ router.post('/:id/charge', isLoggedIn, (req, res) => {
       // 스터디방 포인트 충전
       db.prepare('UPDATE study_rooms SET points = points + ? WHERE id = ?').run(plan.points, room.id);
       db.prepare('INSERT INTO study_point_logs (room_id, amount, type, description) VALUES (?, ?, ?, ?)').run(
-        room.id, plan.points, 'member_transfer', `${req.user.name || '멤버'} 포인트 이전 충전`
+        room.id, plan.points, 'member_transfer', `${req.user.nickname || req.user.name || '멤버'} 포인트 이전 충전`
       );
     });
     transferTx();
@@ -367,7 +367,7 @@ router.post('/:id/charge', isLoggedIn, (req, res) => {
     // 실제 구매(결제): 기존 mock 결제 방식
     db.prepare('UPDATE study_rooms SET points = points + ? WHERE id = ?').run(plan.points, room.id);
     db.prepare('INSERT INTO study_point_logs (room_id, amount, type, description) VALUES (?, ?, ?, ?)').run(
-      room.id, plan.points, 'purchase', `${req.user.name || '멤버'} 결제 충전`
+      room.id, plan.points, 'purchase', `${req.user.nickname || req.user.name || '멤버'} 결제 충전`
     );
   }
 
@@ -473,7 +473,7 @@ router.get('/:id', isLoggedIn, (req, res) => {
 
   // 멤버 목록
   const members = db.prepare(`
-    SELECT u.id, u.name, u.photo, u.role, sm.joined_at
+    SELECT u.id, COALESCE(u.nickname, u.name) as name, u.photo, u.custom_photo, u.role, sm.joined_at
     FROM study_members sm
     JOIN users u ON sm.user_id = u.id
     WHERE sm.room_id = ?
@@ -486,7 +486,7 @@ router.get('/:id', isLoggedIn, (req, res) => {
       ? `<form method="POST" action="/study/${room.id}/kick" style="display:inline"><input type="hidden" name="user_id" value="${m.id}"><button type="submit" class="btn-kick">내보내기</button></form>`
       : '';
     return `<div class="member-card">
-      <img src="${m.photo || ''}" alt="">
+      <img src="${m.custom_photo || m.photo || ''}" alt="">
       <div class="member-info">
         <span class="member-name">${escapeHtml(m.name)}</span>
         ${isRoomOwner ? '<span class="owner-badge">스터디장</span>' : '<span class="member-badge">스터디원</span>'}
@@ -633,7 +633,7 @@ router.get('/:id/applications', isLoggedIn, (req, res) => {
   if (!room || room.owner_id !== req.user.id) return res.status(403).send('권한이 없습니다.');
 
   const apps = db.prepare(`
-    SELECT sa.*, u.name, u.email, u.photo
+    SELECT sa.*, COALESCE(u.nickname, u.name) as name, u.email, u.photo, u.custom_photo
     FROM study_applications sa
     JOIN users u ON sa.user_id = u.id
     WHERE sa.room_id = ? AND sa.status = 'pending'

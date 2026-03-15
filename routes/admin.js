@@ -391,7 +391,7 @@ router.post('/users/:id/role', isLoggedIn, isAdmin, (req, res) => {
 router.get('/flags', isLoggedIn, isAdmin, (req, res) => {
   const statusFilter = req.query.status || 'pending';
   const flags = db.prepare(`
-    SELECT f.*, r.title as report_title, u.name as reporter_name
+    SELECT f.*, r.title as report_title, COALESCE(u.nickname, u.name) as reporter_name
     FROM report_flags f
     JOIN reports r ON f.report_id = r.id
     JOIN users u ON f.reporter_id = u.id
@@ -436,7 +436,7 @@ router.post('/flags/:id/resolve', isLoggedIn, isAdmin, (req, res) => {
 // 스터디방 포인트 관리
 router.get('/study-rooms', isLoggedIn, isAdmin, (req, res) => {
   const rooms = db.prepare(`
-    SELECT sr.*, u.name as owner_name, u.nickname as owner_nickname,
+    SELECT sr.*, COALESCE(u.nickname, u.name) as owner_name,
       (SELECT COUNT(*) FROM study_members WHERE room_id = sr.id) as member_count
     FROM study_rooms sr
     JOIN users u ON sr.owner_id = u.id
@@ -511,7 +511,7 @@ router.get('/study-rooms', isLoggedIn, isAdmin, (req, res) => {
 
 // 스터디방 포인트 상세 (관리자)
 router.get('/study-rooms/:id', isLoggedIn, isAdmin, (req, res) => {
-  const room = db.prepare('SELECT sr.*, u.name as owner_name FROM study_rooms sr JOIN users u ON sr.owner_id = u.id WHERE sr.id = ?').get(req.params.id);
+  const room = db.prepare('SELECT sr.*, COALESCE(u.nickname, u.name) as owner_name FROM study_rooms sr JOIN users u ON sr.owner_id = u.id WHERE sr.id = ?').get(req.params.id);
   if (!room) return res.status(404).send('스터디방을 찾을 수 없습니다.');
 
   const logs = db.prepare('SELECT * FROM study_point_logs WHERE room_id = ? ORDER BY created_at DESC LIMIT 200').all(room.id);

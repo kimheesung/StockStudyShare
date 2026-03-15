@@ -251,7 +251,7 @@ router.post('/profile', isLoggedIn, (req, res) => {
 router.get('/purchases', isLoggedIn, (req, res) => {
   const orders = db.prepare(`
     SELECT o.*, r.title, r.stock_name, r.stock_code, r.author_id,
-           u.name as author_name, ap.display_name
+           COALESCE(u.nickname, ap.display_name, u.name) as author_name
     FROM orders o
     JOIN reports r ON o.report_id = r.id
     JOIN users u ON r.author_id = u.id
