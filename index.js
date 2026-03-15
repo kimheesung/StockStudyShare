@@ -52,6 +52,8 @@ passport.use(new GoogleStrategy({
   const id = profile.id;
   const name = profile.displayName;
   const email = profile.emails?.[0]?.value || '';
+  console.log(`[LOGIN] id=${id} email=${email} name=${name} ADMIN_IDS=${ADMIN_GOOGLE_IDS.join(',')}`);
+
   const photo = profile.photos?.[0]?.value || '';
 
   let user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
