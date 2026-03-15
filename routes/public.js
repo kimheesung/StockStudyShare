@@ -100,6 +100,7 @@ const SYMBOLS = [
   // 지수
   { symbol: '^KS11', name: 'KOSPI', category: '지수' },
   { symbol: '^KQ11', name: 'KOSDAQ', category: '지수' },
+  { symbol: 'KM=F', name: 'KOSPI 야간선물', category: '지수' },
   { symbol: '^GSPC', name: 'S&P 500', category: '지수' },
   { symbol: '^IXIC', name: 'NASDAQ', category: '지수' },
   { symbol: '^DJI', name: 'Dow Jones', category: '지수' },
@@ -522,15 +523,27 @@ router.get('/dashboard', async (req, res) => {
     const latestDate = db.prepare('SELECT MAX(date) as d FROM memory_prices').get()?.d;
     const memPrices = latestDate ? db.prepare('SELECT * FROM memory_prices WHERE date = ? ORDER BY type, product').all(latestDate) : [];
     if (memPrices.length > 0) {
+      // 전일 대비
       const prevDate = db.prepare('SELECT MAX(date) as d FROM memory_prices WHERE date < ?').get(latestDate)?.d;
       const prevMap = {};
       if (prevDate) {
         db.prepare('SELECT product, price FROM memory_prices WHERE date = ?').all(prevDate).forEach(p => { prevMap[p.product] = p.price; });
       }
+      // 전월 대비 (약 30일 전)
+      const oneMonthAgo = new Date(latestDate);
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      const momDateStr = oneMonthAgo.toISOString().slice(0, 10);
+      const momDate = db.prepare('SELECT MIN(date) as d FROM memory_prices WHERE date >= ?').get(momDateStr)?.d;
+      const momMap = {};
+      if (momDate && momDate !== latestDate) {
+        db.prepare('SELECT product, price FROM memory_prices WHERE date = ?').all(momDate).forEach(p => { momMap[p.product] = p.price; });
+      }
       memoryItems = memPrices.map(p => {
         const prev = prevMap[p.product];
         const change = (prev && prev > 0) ? ((p.price - prev) / prev * 100) : null;
-        return { name: p.product, price: p.price, change, date: latestDate };
+        const mom = momMap[p.product];
+        const momChange = (mom && mom > 0) ? ((p.price - mom) / mom * 100) : null;
+        return { name: p.product, price: p.price, change, momChange, date: latestDate };
       });
       // grouped에 추가
       grouped['메모리 스팟가격'] = memoryItems;
@@ -551,10 +564,18 @@ router.get('/dashboard', async (req, res) => {
     const sign = isUp ? '+' : '';
     const cls = isUp ? 'up' : 'down';
     const pctStr = `${sign}${changeVal.toFixed(isMemory ? 1 : 2)}%`;
+    // 전월비 표시 (메모리 스팟가격만)
+    let momHtml = '';
+    if (isMemory && m.momChange !== null && m.momChange !== undefined) {
+      const momUp = m.momChange >= 0;
+      const momSign = momUp ? '+' : '';
+      momHtml = `<div style="font-size:0.6rem;color:${momUp ? 'rgba(239,68,68,0.7)' : 'rgba(59,130,246,0.7)'};margin-top:1px">전월비 ${momSign}${m.momChange.toFixed(1)}%</div>`;
+    }
     return `<div class="market-card">
       <div class="market-name">${escapeHtml(m.name)}</div>
       <div class="market-price">${priceStr}</div>
       <div class="market-change ${cls}"><span class="change-arrow">${isUp ? '&#9650;' : '&#9660;'}</span> ${pctStr}</div>
+      ${momHtml}
     </div>`;
   }
 
