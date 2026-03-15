@@ -98,18 +98,54 @@
       </div>
 
       <div class="form-group">
-        <label>리포트 공유 주기 <span class="required">*</span></label>
-        <p class="help-text">스터디원들이 리포트를 공유하는 주기를 선택해주세요</p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;background: rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.1);border-radius:12px;cursor:pointer;font-weight:500;font-size:0.9rem">
-            <input type="radio" name="study_plan" value="1달" style="accent-color:#a5b4fc" required> 1달
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;background: rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.1);border-radius:12px;cursor:pointer;font-weight:500;font-size:0.9rem">
-            <input type="radio" name="study_plan" value="2달" style="accent-color:#a5b4fc"> 2달
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;background: rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.1);border-radius:12px;cursor:pointer;font-weight:500;font-size:0.9rem">
-            <input type="radio" name="study_plan" value="3달" style="accent-color:#a5b4fc"> 3달
-          </label>
+        <label>리포트 공유 운영계획 <span class="required">*</span></label>
+        <p class="help-text" style="margin-bottom:16px">스터디방의 리포트 공유 방식과 운영 방향을 구체적으로 작성해주세요</p>
+
+        <div style="margin-bottom:16px">
+          <label style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:6px">리포트 제출 주기</label>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;background:rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.1);border-radius:12px;cursor:pointer;font-weight:500;font-size:0.9rem">
+              <input type="radio" name="report_cycle" value="1달" style="accent-color:#a5b4fc" required> 1달
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;background:rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.1);border-radius:12px;cursor:pointer;font-weight:500;font-size:0.9rem">
+              <input type="radio" name="report_cycle" value="2달" style="accent-color:#a5b4fc"> 2달
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;background:rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.1);border-radius:12px;cursor:pointer;font-weight:500;font-size:0.9rem">
+              <input type="radio" name="report_cycle" value="3달" style="accent-color:#a5b4fc"> 3달
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <label style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:6px">주력 분석 섹터 <span style="color:#ef4444">*</span></label>
+          <p class="help-text">스터디에서 주로 다룰 섹터를 선택해주세요 (복수 선택 가능)</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;font-size:0.82rem"><input type="checkbox" name="sectors" value="IT/반도체" style="accent-color:#a5b4fc"> IT/반도체</label>
+            <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;font-size:0.82rem"><input type="checkbox" name="sectors" value="바이오/헬스케어" style="accent-color:#a5b4fc"> 바이오/헬스케어</label>
+            <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;font-size:0.82rem"><input type="checkbox" name="sectors" value="금융" style="accent-color:#a5b4fc"> 금융</label>
+            <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;font-size:0.82rem"><input type="checkbox" name="sectors" value="소비재" style="accent-color:#a5b4fc"> 소비재</label>
+            <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;font-size:0.82rem"><input type="checkbox" name="sectors" value="에너지/소재" style="accent-color:#a5b4fc"> 에너지/소재</label>
+            <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;font-size:0.82rem"><input type="checkbox" name="sectors" value="산업재" style="accent-color:#a5b4fc"> 산업재</label>
+            <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;font-size:0.82rem"><input type="checkbox" name="sectors" value="전섹터" style="accent-color:#a5b4fc"> 전섹터</label>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <label style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:6px">리포트 품질 관리 방안 <span style="color:#ef4444">*</span></label>
+          <p class="help-text">스터디원들의 리포트 품질을 어떻게 관리할 계획인지 작성해주세요</p>
+          <textarea name="quality_plan" rows="3" placeholder="예: 리포트 제출 전 스터디장이 1차 검토 후 피드백을 제공합니다. 투자 논거, 밸류에이션 근거가 명확하지 않은 리포트는 보완 요청 후 재제출을 받을 예정입니다." required></textarea>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <label style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:6px">스터디 운영 방식 <span style="color:#ef4444">*</span></label>
+          <p class="help-text">정기 모임, 리포트 피드백, 토론 등 운영 방식을 작성해주세요</p>
+          <textarea name="study_plan" rows="4" placeholder="예:&#10;- 매주 1회 온라인 종목 토론 (디스코드/줌)&#10;- 월 1회 리포트 제출 + 상호 피드백&#10;- 분기별 포트폴리오 수익률 리뷰&#10;- 우수 리포트 선정 및 외부 공개 추천" required></textarea>
+        </div>
+
+        <div>
+          <label style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:6px">스터디장 본인 소개 / 투자 경력</label>
+          <p class="help-text">본인의 투자 경력, 관심 분야, 스터디를 이끌 자격을 어필해주세요</p>
+          <textarea name="leader_intro" rows="3" placeholder="예: 국내 주식 5년 경력, 반도체/2차전지 섹터 전문. 증권사 리서치 인턴 경험, 블로그에 종목 분석 50편+ 게시"></textarea>
         </div>
       </div>
 

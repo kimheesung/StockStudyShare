@@ -176,6 +176,7 @@ app.use('/admin', require('./routes/admin'));
 app.use('/visit-notes', require('./routes/visitnotes'));
 app.use('/community', require('./routes/community'));
 app.use('/contest', require('./routes/contest'));
+app.use('/dart', require('./routes/dart'));
 
 app.get('/author-profile/:id', (req, res) => {
   const profile = db.prepare(`

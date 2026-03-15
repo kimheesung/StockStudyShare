@@ -246,16 +246,16 @@
       {{roomCards}}
     </div>
 
-    <a href="/ad-inquiry" class="ad-box-stl" id="ad-box-stl" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin:20px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);overflow:hidden;transition:all 0.2s">
-      <div id="ad-def-stl" style="text-align:center"><span style="font-size:0.82rem;color:rgba(255,255,255,0.25)">광고 문의하기</span></div>
-      <div id="ad-img-stl" style="display:none;width:100%;height:100%"></div>
-    </a>
-    <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-stl'),df=document.getElementById('ad-def-stl'),ld=document.getElementById('ad-img-stl');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
-
     <div class="empty-state" id="empty-state">
       <p>현재 개설된 스터디방이 없습니다.</p>
       <small>스터디장이 스터디방을 개설하면 여기에 표시됩니다.</small>
     </div>
+
+    <a href="/ad-inquiry" id="ad-box-stl" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin:20px 0 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);overflow:hidden;transition:all 0.2s">
+      <div id="ad-def-stl" style="text-align:center"><span style="font-size:0.82rem;color:rgba(255,255,255,0.25)">광고 문의하기</span></div>
+      <div id="ad-img-stl" style="display:none;width:100%;height:100%"></div>
+    </a>
+    <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-stl'),df=document.getElementById('ad-def-stl'),ld=document.getElementById('ad-img-stl');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
   </div>
 
   <!-- 스터디방 만들기 모달 -->

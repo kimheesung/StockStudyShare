@@ -150,9 +150,10 @@ router.get('/leader-apply', isLoggedIn, (req, res) => {
 
 // 스터디장 지원 제출
 router.post('/leader-apply', isLoggedIn, (req, res) => {
-  const { study_name, study_plan, agreement } = req.body;
+  const { study_name, report_cycle, quality_plan, study_plan, agreement, leader_intro } = req.body;
+  const sectors = Array.isArray(req.body.sectors) ? req.body.sectors.join(', ') : (req.body.sectors || '');
 
-  if (!study_name || !study_plan || !agreement) {
+  if (!study_name || !study_plan || !agreement || !quality_plan || !report_cycle) {
     return res.status(400).send('필수 항목을 모두 입력해주세요.');
   }
 
@@ -161,9 +162,27 @@ router.post('/leader-apply', isLoggedIn, (req, res) => {
     return res.redirect('/study/leader-apply-status');
   }
 
+  // 운영계획을 구조화하여 study_plan에 저장
+  const fullPlan = [
+    `[리포트 제출 주기] ${report_cycle}`,
+    `[주력 섹터] ${sectors || '미선택'}`,
+    `[품질 관리 방안]\n${quality_plan.trim()}`,
+    `[스터디 운영 방식]\n${study_plan.trim()}`,
+    leader_intro ? `[스터디장 소개]\n${leader_intro.trim()}` : '',
+  ].filter(Boolean).join('\n\n');
+
   db.prepare('INSERT INTO leader_applications (user_id, study_name, study_plan, agreement) VALUES (?, ?, ?, ?)').run(
-    req.user.id, study_name.trim(), study_plan.trim(), agreement.trim()
+    req.user.id, study_name.trim(), fullPlan, agreement.trim()
   );
+
+  // 관리자에게 알림
+  const applicantName = req.user.nickname || req.user.name;
+  const admins = db.prepare("SELECT id FROM users WHERE role = 'admin'").all();
+  for (const admin of admins) {
+    notify(db, admin.id, 'report_pending_admin', '스터디장 지원',
+      `${applicantName}님이 스터디장으로 지원했습니다. (${study_name.trim()})`,
+      '/admin/authors');
+  }
 
   res.redirect('/study/leader-apply-status');
 });
