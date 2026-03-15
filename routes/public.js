@@ -738,15 +738,22 @@ router.get('/dashboard', async (req, res) => {
   let creditRows = '';
   if (creditData && creditData.length > 0) {
     creditRows = creditData.map(r => {
+      const fmtChange = (n) => {
+        if (!n && n !== 0) return '-';
+        const cls = n > 0 ? 'up' : n < 0 ? 'down' : '';
+        const sign = n > 0 ? '+' : '';
+        return `<span class="investor-val ${cls}">${sign}${n.toLocaleString()}</span>`;
+      };
       return `<tr>
         <td>${r.date}</td>
-        <td>${r.newCredit.toLocaleString()}</td>
-        <td>${r.repayment.toLocaleString()}</td>
-        <td>${r.balance.toLocaleString()}</td>
+        <td>${(r.depositBalance || 0).toLocaleString()}</td>
+        <td>${fmtChange(r.depositChange || 0)}</td>
+        <td>${(r.balance || 0).toLocaleString()}</td>
+        <td>${fmtChange(r.newCredit || 0)}</td>
       </tr>`;
     }).join('');
   } else {
-    creditRows = '<tr><td colspan="4" style="text-align:center;color:rgba(255,255,255,0.3);padding:20px">데이터를 불러오는 중...</td></tr>';
+    creditRows = '<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,0.3);padding:20px">데이터를 불러오는 중...</td></tr>';
   }
 
   // 최신 리포트 (on_sale 상태, 최신순 6개)
