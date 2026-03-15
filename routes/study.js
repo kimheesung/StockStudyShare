@@ -507,7 +507,8 @@ router.get('/:id', isLoggedIn, (req, res) => {
   const placeholders = memberIds.map(() => '?').join(',');
   const reports = db.prepare(`
     SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at, r.created_at,
-           r.status, r.visibility, COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id
+           r.status, r.visibility, r.entry_price, r.stock_code, r.market_type,
+           COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id
     FROM reports r
     JOIN users u ON r.author_id = u.id
     LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
@@ -550,6 +551,11 @@ router.get('/:id', isLoggedIn, (req, res) => {
         <button onclick="voteReport(${room.id},${r.id},'dislike',this)" style="padding:4px 14px;border-radius:20px;font-size:0.78rem;cursor:pointer;font-family:inherit;border:none;transition:all 0.15s;${myVote?.vote === 'dislike' ? 'background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid rgba(239,68,68,0.3)' : 'background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.08)'}">👎 ${dislikes}</button>
       </div>` : (likes + dislikes > 0 ? `<div style="font-size:0.72rem;color:rgba(255,255,255,0.25);margin-top:8px">👍 ${likes} · 👎 ${dislikes}</div>` : '');
 
+    const hasEntryPrice = r.entry_price && r.entry_price > 0 && r.stock_code;
+    const returnHtml = hasEntryPrice
+      ? `<div class="report-return" data-report-id="${r.id}" style="font-size:0.78rem;color:rgba(255,255,255,0.3);margin-top:6px">수익률 로딩중...</div>`
+      : '';
+
     return `<div class="report-card" ${viewLink !== '#' ? `onclick="window.location='${viewLink}'" style="cursor:pointer"` : ''}>
       <div class="report-card-top">
         <span class="report-sector">${escapeHtml(r.sector || '기타')}</span>
@@ -557,6 +563,7 @@ router.get('/:id', isLoggedIn, (req, res) => {
       </div>
       <h4 class="report-title">${escapeHtml(r.title)}</h4>
       <div class="report-stock">${escapeHtml(r.stock_name)}</div>
+      ${returnHtml}
       <div class="report-meta">
         <span>${escapeHtml(r.author_name)}</span>
         <span>${new Date(r.created_at).toLocaleDateString('ko-KR')}</span>

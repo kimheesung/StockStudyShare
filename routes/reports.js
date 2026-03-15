@@ -620,43 +620,48 @@ router.get('/:id/pdf', isLoggedIn, async (req, res) => {
     const pdfBytes = require('fs').readFileSync(filePath);
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const pages = pdfDoc.getPages();
-    const watermarkText = `${req.user.nickname || req.user.name} (${req.user.email || req.user.id.slice(-6)})`;
+    // 워터마크: 영문만 사용 (pdf-lib 기본 폰트는 한글 미지원)
+    const email = req.user.email || '';
+    const idSuffix = req.user.id.slice(-8);
+    const watermarkMain = `StockStudyShare | ${email || 'ID:' + idSuffix}`;
+    const watermarkDiag = email || 'USER-' + idSuffix;
 
     for (const page of pages) {
       const { width, height } = page.getSize();
       // 대각선 워터마크 (여러 위치에 반복)
       const positions = [
-        { x: width * 0.05, y: height * 0.2 },
-        { x: width * 0.05, y: height * 0.55 },
-        { x: width * 0.05, y: height * 0.8 },
-        { x: width * 0.35, y: height * 0.35 },
-        { x: width * 0.35, y: height * 0.7 },
+        { x: width * 0.05, y: height * 0.15 },
+        { x: width * 0.05, y: height * 0.45 },
+        { x: width * 0.05, y: height * 0.75 },
+        { x: width * 0.3, y: height * 0.3 },
+        { x: width * 0.3, y: height * 0.6 },
+        { x: width * 0.55, y: height * 0.45 },
       ];
       for (const pos of positions) {
-        page.drawText(watermarkText, {
+        page.drawText(watermarkDiag, {
           x: pos.x,
           y: pos.y,
-          size: 24,
-          color: rgb(0.5, 0.5, 0.5),
-          opacity: 0.12,
+          size: 20,
+          color: rgb(0.6, 0.6, 0.6),
+          opacity: 0.1,
           rotate: degrees(35),
         });
       }
       // 상단 워터마크
-      page.drawText(`StockStudyShare | ${watermarkText}`, {
+      page.drawText(watermarkMain, {
         x: 10,
-        y: height - 15,
+        y: height - 12,
         size: 7,
         color: rgb(0.5, 0.5, 0.5),
-        opacity: 0.25,
+        opacity: 0.2,
       });
       // 하단 워터마크
-      page.drawText(`이 문서는 ${watermarkText} 님에게 제공된 사본입니다. 무단 배포를 금지합니다.`, {
+      page.drawText(`Licensed to ${watermarkDiag} - Unauthorized distribution prohibited`, {
         x: 10,
-        y: 10,
-        size: 7,
+        y: 8,
+        size: 6,
         color: rgb(0.5, 0.5, 0.5),
-        opacity: 0.25,
+        opacity: 0.2,
       });
     }
 

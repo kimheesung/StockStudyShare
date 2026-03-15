@@ -245,6 +245,25 @@
         }
       }).catch(function() { alert('오류가 발생했습니다.'); });
     }
+
+    // 스터디 리포트 수익률 로드
+    (function() {
+      var els = document.querySelectorAll('.report-return[data-report-id]');
+      if (!els.length) return;
+      els.forEach(function(el) {
+        var rid = el.dataset.reportId;
+        fetch('/api/report-performance/' + rid)
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.error) { el.textContent = ''; return; }
+            var isUp = d.totalReturn >= 0;
+            var sign = isUp ? '+' : '';
+            var cls = isUp ? '#ef4444' : '#3b82f6';
+            el.innerHTML = '<span style="font-weight:700;color:' + cls + '">' + sign + d.totalReturn.toFixed(2) + '%</span> <span style="color:rgba(255,255,255,0.25)">(' + d.daysSincePublish + '일)</span>';
+          })
+          .catch(function() { el.textContent = ''; });
+      });
+    })();
   </script>
 </body>
 </html>
