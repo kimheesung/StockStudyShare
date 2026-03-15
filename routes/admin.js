@@ -308,13 +308,16 @@ router.post('/reports/:id/dates', isLoggedIn, isAdmin, (req, res) => {
   const report = db.prepare('SELECT * FROM reports WHERE id = ?').get(req.params.id);
   if (!report) return res.status(404).send('리포트를 찾을 수 없습니다.');
 
-  const { created_at, published_at } = req.body;
+  let { created_at, published_at } = req.body;
 
+  // datetime-local 형식(T포함)을 SQLite 형식(공백)으로 변환
   if (created_at) {
+    created_at = created_at.replace('T', ' ');
     db.prepare('UPDATE reports SET created_at = ? WHERE id = ?').run(created_at, report.id);
   }
   if (published_at) {
-    db.prepare('UPDATE reports SET published_at = ?, entry_price = NULL WHERE id = ?').run(published_at, report.id);
+    published_at = published_at.replace('T', ' ');
+    db.prepare('UPDATE reports SET published_at = ?, entry_price = NULL, updated_at = datetime(\'now\') WHERE id = ?').run(published_at, report.id);
   }
 
   res.redirect(`/admin/reports/${report.id}`);
