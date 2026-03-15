@@ -14,20 +14,31 @@ async function fetchMemoryPricesFromAI() {
     const client = new Anthropic({ apiKey });
     const today = new Date().toISOString().slice(0, 10);
 
+    // 직전 거래일 계산 (토/일이면 금요일)
+    const todayDate = new Date();
+    const dayOfWeek = todayDate.getDay();
+    const prevDate = new Date(todayDate);
+    if (dayOfWeek === 0) prevDate.setDate(prevDate.getDate() - 2); // 일→금
+    else if (dayOfWeek === 1) prevDate.setDate(prevDate.getDate() - 3); // 월→금
+    else if (dayOfWeek === 6) prevDate.setDate(prevDate.getDate() - 1); // 토→금
+    else prevDate.setDate(prevDate.getDate() - 1); // 평일→전일
+    const prevDateStr = prevDate.toISOString().slice(0, 10);
+
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 500,
+      max_tokens: 800,
       messages: [{
         role: 'user',
-        content: `오늘 날짜: ${today}. 현재 반도체 메모리 스팟 가격을 알려줘. 정확한 최신 가격이 없으면 가장 최근 알려진 가격을 알려줘.
+        content: `오늘: ${today}, 직전 거래일: ${prevDateStr}. 반도체 메모리 스팟 가격을 오늘과 직전 거래일 두 날짜 모두 알려줘. 정확한 가격이 없으면 가장 최근 알려진 가격 기준으로 알려줘.
 
-다음 항목을 JSON으로만 출력해:
-- DDR5 16GB (PC 모듈) 스팟 가격 (USD)
-- DDR4 8GB (PC 모듈) 스팟 가격 (USD)
-- NAND 256GB TLC 스팟 가격 (USD)
-- NAND 512GB TLC 스팟 가격 (USD)
+항목:
+- DDR5 16GB (PC 모듈) 스팟 (USD)
+- DDR4 8GB (PC 모듈) 스팟 (USD)
+- NAND 256GB TLC 스팟 (USD)
+- NAND 512GB TLC 스팟 (USD)
 
-형식: {"items":[{"type":"RAM","product":"DDR5 16GB","price":숫자,"unit":"USD"},...]}`
+JSON만 출력:
+{"today":"${today}","prev":"${prevDateStr}","items":[{"type":"RAM","product":"DDR5 16GB","price_today":숫자,"price_prev":숫자,"unit":"USD"},...]}`
       }],
     });
 
@@ -39,13 +50,16 @@ async function fetchMemoryPricesFromAI() {
     if (!data.items || !Array.isArray(data.items)) return;
 
     for (const item of data.items) {
-      if (!item.type || !item.product || !item.price) continue;
-      // 오늘 이미 같은 제품 가격이 있으면 스킵
-      const existing = db.prepare('SELECT id FROM memory_prices WHERE product = ? AND date = ?').get(item.product, today);
-      if (!existing) {
-        db.prepare('INSERT INTO memory_prices (type, product, price, unit, date) VALUES (?, ?, ?, ?, ?)').run(
-          item.type, item.product, item.price, item.unit || 'USD', today
-        );
+      if (!item.type || !item.product) continue;
+      // 오늘 가격 저장
+      if (item.price_today) {
+        const ex1 = db.prepare('SELECT id FROM memory_prices WHERE product = ? AND date = ?').get(item.product, today);
+        if (!ex1) db.prepare('INSERT INTO memory_prices (type, product, price, unit, date) VALUES (?, ?, ?, ?, ?)').run(item.type, item.product, item.price_today, item.unit || 'USD', today);
+      }
+      // 직전 거래일 가격 저장 (전일 대비 변동률 계산용)
+      if (item.price_prev) {
+        const ex2 = db.prepare('SELECT id FROM memory_prices WHERE product = ? AND date = ?').get(item.product, data.prev || prevDateStr);
+        if (!ex2) db.prepare('INSERT INTO memory_prices (type, product, price, unit, date) VALUES (?, ?, ?, ?, ?)').run(item.type, item.product, item.price_prev, item.unit || 'USD', data.prev || prevDateStr);
       }
     }
     console.log(`[Memory Prices] Updated ${data.items.length} items for ${today}`);
@@ -89,18 +103,17 @@ const SYMBOLS = [
   { symbol: '^GSPC', name: 'S&P 500', category: '지수' },
   { symbol: '^IXIC', name: 'NASDAQ', category: '지수' },
   { symbol: '^DJI', name: 'Dow Jones', category: '지수' },
-  // 환율
-  { symbol: 'KRW=X', name: 'USD/KRW', category: '환율' },
-  { symbol: 'JPY=X', name: 'USD/JPY', category: '환율' },
+  // 환율/원자재 (합침: 윗줄 환율, 아래줄 원자재)
+  { symbol: 'KRW=X', name: 'USD/KRW', category: '환율/원자재', sub: '환율' },
+  { symbol: 'JPY=X', name: 'USD/JPY', category: '환율/원자재', sub: '환율' },
+  { symbol: 'GC=F', name: 'Gold', category: '환율/원자재', sub: '원자재' },
+  { symbol: 'CL=F', name: 'WTI Oil', category: '환율/원자재', sub: '원자재' },
   // 반도체
   { symbol: '^SOX', name: 'SOX 반도체지수', category: '반도체' },
   { symbol: '005930.KS', name: '삼성전자', category: '반도체' },
   { symbol: '000660.KS', name: 'SK하이닉스', category: '반도체' },
   { symbol: 'MU', name: 'RAM 선행 (Micron)', category: '반도체' },
   { symbol: 'WDC', name: 'NAND 선행 (WD)', category: '반도체' },
-  // 원자재
-  { symbol: 'GC=F', name: 'Gold', category: '원자재' },
-  { symbol: 'CL=F', name: 'WTI Oil', category: '원자재' },
   // 암호화폐
   { symbol: 'BTC-USD', name: 'Bitcoin', category: '암호화폐' },
 ];
@@ -495,47 +508,82 @@ router.get('/dashboard', async (req, res) => {
   ]);
 
   // 카테고리별 그룹핑
-  const categoryOrder = ['지수', '환율', '반도체', '원자재', '암호화폐'];
-  const categoryIcons = { '지수': '📊', '반도체': '💾', '환율': '💱', '원자재': '🛢️', '암호화폐': '₿' };
+  const categoryOrder = ['지수', '환율/원자재', '반도체', '메모리 스팟가격', '암호화폐'];
+  const categoryIcons = { '지수': '📊', '반도체': '💾', '환율/원자재': '💱', '메모리 스팟가격': '💾', '암호화폐': '₿' };
   const grouped = {};
   for (const m of marketData) {
     if (!grouped[m.category]) grouped[m.category] = [];
     grouped[m.category].push(m);
   }
 
-  const cards = categoryOrder.filter(cat => grouped[cat]).map(cat => {
-    const items = grouped[cat].map(m => {
-      if (m.price === null) {
-        return `<div class="market-card"><div class="market-name">${m.name}</div><div class="market-price">--</div></div>`;
+  // 메모리 스팟 가격 데이터 준비
+  let memoryItems = [];
+  try {
+    const latestDate = db.prepare('SELECT MAX(date) as d FROM memory_prices').get()?.d;
+    const memPrices = latestDate ? db.prepare('SELECT * FROM memory_prices WHERE date = ? ORDER BY type, product').all(latestDate) : [];
+    if (memPrices.length > 0) {
+      const prevDate = db.prepare('SELECT MAX(date) as d FROM memory_prices WHERE date < ?').get(latestDate)?.d;
+      const prevMap = {};
+      if (prevDate) {
+        db.prepare('SELECT product, price FROM memory_prices WHERE date = ?').all(prevDate).forEach(p => { prevMap[p.product] = p.price; });
       }
-      const isUp = m.change >= 0;
-      const sign = isUp ? '+' : '';
-      const cls = isUp ? 'up' : 'down';
-      const priceStr = m.price >= 1000 ? m.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : m.price.toFixed(2);
-      const pctStr = `${sign}${m.changePercent.toFixed(2)}%`;
-      return `<div class="market-card">
-        <div class="market-name">${m.name}</div>
-        <div class="market-price">${priceStr}</div>
-        <div class="market-change ${cls}"><span class="change-arrow">${isUp ? '&#9650;' : '&#9660;'}</span> ${pctStr}</div>
+      memoryItems = memPrices.map(p => {
+        const prev = prevMap[p.product];
+        const change = (prev && prev > 0) ? ((p.price - prev) / prev * 100) : null;
+        return { name: p.product, price: p.price, change, date: latestDate };
+      });
+      // grouped에 추가
+      grouped['메모리 스팟가격'] = memoryItems;
+    }
+  } catch(e) {}
+
+  function renderMarketCard(m) {
+    if (m.price === null || m.price === undefined) {
+      return `<div class="market-card"><div class="market-name">${escapeHtml(m.name)}</div><div class="market-price">--</div></div>`;
+    }
+    const isMemory = m.date; // 메모리 스팟가격 구분
+    const priceStr = isMemory ? `$${m.price.toFixed(2)}` : (m.price >= 1000 ? m.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : m.price.toFixed(2));
+    const changeVal = isMemory ? m.change : m.changePercent;
+    if (changeVal === null || changeVal === undefined) {
+      return `<div class="market-card"><div class="market-name">${escapeHtml(m.name)}</div><div class="market-price">${priceStr}</div></div>`;
+    }
+    const isUp = changeVal >= 0;
+    const sign = isUp ? '+' : '';
+    const cls = isUp ? 'up' : 'down';
+    const pctStr = `${sign}${changeVal.toFixed(isMemory ? 1 : 2)}%`;
+    return `<div class="market-card">
+      <div class="market-name">${escapeHtml(m.name)}</div>
+      <div class="market-price">${priceStr}</div>
+      <div class="market-change ${cls}"><span class="change-arrow">${isUp ? '&#9650;' : '&#9660;'}</span> ${pctStr}</div>
+    </div>`;
+  }
+
+  const cards = categoryOrder.filter(cat => grouped[cat] && grouped[cat].length > 0).map(cat => {
+    let innerHtml = '';
+
+    if (cat === '환율/원자재') {
+      // 윗줄: 환율, 아래줄: 원자재
+      const fxItems = grouped[cat].filter(m => m.sub === '환율');
+      const commodityItems = grouped[cat].filter(m => m.sub === '원자재');
+      innerHtml = `
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.35);margin-bottom:4px">환율</div>
+        <div class="market-group-items">${fxItems.map(renderMarketCard).join('')}</div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.35);margin:8px 0 4px">원자재</div>
+        <div class="market-group-items">${commodityItems.map(renderMarketCard).join('')}</div>`;
+    } else if (cat === '메모리 스팟가격') {
+      const dateLabel = memoryItems.length > 0 ? ` (${memoryItems[0].date})` : '';
+      innerHtml = `<div class="market-group-items">${grouped[cat].map(renderMarketCard).join('')}</div>`;
+      return `<div class="market-group">
+        <div class="market-group-title">${categoryIcons[cat] || ''} ${cat}<span style="font-size:0.65rem;color:rgba(255,255,255,0.2);margin-left:6px">${dateLabel}</span></div>
+        ${innerHtml}
       </div>`;
-    }).join('');
-    // 반도체 그룹에 메모리 스팟 가격 추가
-    let memoryHtml = '';
-    if (cat === '반도체') {
-      const memPrices = db.prepare('SELECT * FROM memory_prices WHERE date = (SELECT MAX(date) FROM memory_prices) ORDER BY type, product').all();
-      if (memPrices.length > 0) {
-        memoryHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05)">'
-          + '<div style="font-size:0.68rem;color:rgba(255,255,255,0.3);margin-bottom:6px">메모리 스팟 가격 (' + memPrices[0].date + ')</div>'
-          + '<div class="market-group-items">'
-          + memPrices.map(p => `<div class="market-card"><div class="market-name">${escapeHtml(p.product)}</div><div class="market-price">$${p.price.toFixed(2)}</div></div>`).join('')
-          + '</div></div>';
-      }
+    } else {
+      innerHtml = `<div class="market-group-items">${grouped[cat].map(renderMarketCard).join('')}</div>`;
     }
 
     return `<div class="market-group">
       <div class="market-group-title">${categoryIcons[cat] || ''} ${cat}</div>
-      <div class="market-group-items">${items}</div>
-      ${memoryHtml}
+      ${innerHtml}
     </div>`;
   }).join('');
 
