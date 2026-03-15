@@ -117,6 +117,8 @@ const SYMBOLS = [
   { symbol: 'WDC', name: 'NAND 선행 (WD)', category: '반도체' },
   // 암호화폐
   { symbol: 'BTC-USD', name: 'Bitcoin', category: '암호화폐' },
+  { symbol: 'ETH-USD', name: 'Ethereum', category: '암호화폐' },
+  { symbol: 'ANT-USD', name: 'ANT', category: '암호화폐' },
 ];
 
 async function fetchMarketData() {
@@ -354,6 +356,14 @@ router.get('/ad-inquiry', (req, res) => {
     nav: user ? buildNav(user) : '<a href="/" class="logo">StockStudyShare</a>',
     userName: user ? escapeHtml(user.nickname || user.name || '') : '',
     userEmail: user ? escapeHtml(user.email || '') : '',
+  });
+  res.send(html);
+});
+
+// 서비스 가이드
+router.get('/guide', (req, res) => {
+  const html = render('views/guide.html', {
+    nav: req.user ? buildNav(req.user) : '',
   });
   res.send(html);
 });
