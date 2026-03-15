@@ -607,7 +607,12 @@ router.get('/:id/pdf', isLoggedIn, async (req, res) => {
     return res.status(403).send('이 PDF를 열람할 권한이 없습니다.');
   }
 
-  const filePath = require('path').join(__dirname, '..', report.pdf_path);
+  const dataDir = process.env.DATA_DIR || require('path').join(__dirname, '..');
+  let filePath = require('path').join(dataDir, report.pdf_path);
+  // DATA_DIR에 없으면 기존 경로에서도 탐색
+  if (!require('fs').existsSync(filePath)) {
+    filePath = require('path').join(__dirname, '..', report.pdf_path);
+  }
   if (!require('fs').existsSync(filePath)) return res.status(404).send('PDF 파일을 찾을 수 없습니다.');
 
   try {
