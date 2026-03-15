@@ -55,8 +55,11 @@ passport.use(new GoogleStrategy({
     // 가입 환영 포인트 로그
     db.prepare("INSERT INTO point_logs (user_id, amount, type, description) VALUES (?, 100000, 'welcome', '가입 환영 포인트')").run(id);
   } else {
-    // 기존 유저: 이름/사진 업데이트
+    // 기존 유저: 이름/사진 업데이트 + 관리자 승격 체크
     db.prepare('UPDATE users SET name = ?, photo = ? WHERE id = ?').run(name, photo, id);
+    if (ADMIN_GOOGLE_IDS.includes(id) && user.role !== 'admin') {
+      db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(id);
+    }
     user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
   }
   return done(null, user);
