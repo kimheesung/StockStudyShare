@@ -261,15 +261,54 @@ async function fetchInvestorData() {
   }
 }
 
-// 신용잔고 데이터 (네이버 금융)
+// 신용잔고 데이터 (1순위: KOFIA 금융투자협회, 2순위: 네이버 금융)
 async function fetchCreditData() {
   const now = Date.now();
   if (creditCache.data && (now - creditCache.ts) < CACHE_TTL) {
     return creditCache.data;
   }
 
+  // 1순위: KOFIA 금융투자협회 API
   try {
-    // 네이버 금융 예탁금/신용잔고 (sise_deposit.naver)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 14);
+    const fmt = d => d.toISOString().slice(0, 10).replace(/-/g, '');
+
+    const kofiaResp = await fetch('https://freesis.kofia.or.kr/meta/getMetaDataTable.do', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://freesis.kofia.or.kr/stat/FreeSIS.do?parentDivId=MSIS10000000000000&serviceId=STATSCU0100000070',
+      },
+      body: `serviceId=STATSCU0100000070&cmmCode=&searchStartDate=${fmt(startDate)}&searchEndDate=${fmt(endDate)}`,
+    });
+    const kofiaText = await kofiaResp.text();
+    const kofiaJson = JSON.parse(kofiaText);
+
+    if (kofiaJson && kofiaJson.data && kofiaJson.data.length > 0) {
+      const rows = kofiaJson.data.slice(0, 5).map(r => ({
+        date: r.STD_DT || r.stdDt || '',
+        depositBalance: parseInt(r.DPSIT_BAL || r.dpsitBal || 0),
+        depositChange: parseInt(r.DPSIT_CHG || r.dpsitChg || 0),
+        balance: parseInt(r.CRDT_BAL || r.crdtBal || 0),
+        newCredit: parseInt(r.CRDT_NEW || r.crdtNew || 0),
+        repayment: parseInt(r.CRDT_RPAY || r.crdtRpay || 0),
+        source: 'kofia',
+      }));
+      if (rows.length > 0) {
+        console.log('[Credit] KOFIA data loaded:', rows.length, 'rows');
+        creditCache = { data: rows, ts: now };
+        return rows;
+      }
+    }
+  } catch (e) {
+    console.error('[Credit] KOFIA API error:', e.message);
+  }
+
+  // 2순위: 네이버 금융 (fallback)
+  try {
     const resp = await fetch('https://finance.naver.com/sise/sise_deposit.naver', {
       headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 'Referer': 'https://finance.naver.com' },
     });
@@ -287,7 +326,6 @@ async function fetchCreditData() {
         const clean = (s) => s.replace(/<[^>]*>/g, '').replace(/,/g, '').replace(/&nbsp;/g, '').trim();
         const date = clean(tds[0]);
         if (!/\d{2}\.\d{2}\.\d{2}/.test(date)) continue;
-        // tds[0]=날짜, tds[1]=예탁금잔고, tds[2]=예탁금증감, tds[3]=신용잔고, tds[4]=신용증감
         const depositBalance = parseInt(clean(tds[1])) || 0;
         const depositChange = parseInt(clean(tds[2])) || 0;
         const creditBalance = parseInt(clean(tds[3])) || 0;
@@ -298,7 +336,7 @@ async function fetchCreditData() {
           depositChange,
           balance: creditBalance,
           newCredit: creditChange,
-          repayment: 0,
+          source: 'naver',
         });
         if (rows.length >= 5) break;
       }
@@ -308,7 +346,7 @@ async function fetchCreditData() {
     creditCache = { data: result, ts: now };
     return result;
   } catch (e) {
-    console.error('Credit data fetch error:', e.message);
+    console.error('[Credit] Naver fallback error:', e.message);
     return creditCache.data || null;
   }
 }
