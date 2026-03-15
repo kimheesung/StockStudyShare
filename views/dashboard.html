@@ -89,6 +89,16 @@
     .see-all { display: inline-block; color: #a5b4fc; text-decoration: none; font-size: 0.85rem; margin-bottom: 36px; }
     .see-all:hover { color: #fff; }
 
+    /* 실시간 실적 카드 */
+    .earning-card { display:block; min-width:220px; max-width:260px; padding:14px 16px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; transition:all 0.2s; flex-shrink:0; text-decoration:none; color:#fff; }
+    .earning-card:hover { background:rgba(255,255,255,0.06); border-color:rgba(79,70,229,0.3); transform:translateY(-2px); }
+    .earning-badge { display:inline-block; font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:10px; margin-bottom:8px; }
+    .earning-corp { font-size:0.92rem; font-weight:900; margin-bottom:4px; }
+    .earning-market { font-size:0.65rem; font-weight:500; padding:1px 6px; background:rgba(255,255,255,0.06); border-radius:6px; color:rgba(255,255,255,0.4); margin-left:4px; }
+    .earning-revenue { font-size:0.82rem; color:rgba(255,255,255,0.5); margin-bottom:2px; }
+    .earning-surprise { font-size:1.1rem; margin-bottom:4px; }
+    .earning-date { font-size:0.68rem; color:rgba(255,255,255,0.2); }
+
     /* 주요 공시 - 가로 스크롤 */
     .dart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
     .dart-header .btn-excel {
@@ -141,6 +151,12 @@
     </div>
 
     <a href="/report-dashboard" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:rgba(79,70,229,0.1);border:1px solid rgba(79,70,229,0.25);border-radius:14px;color:#a5b4fc;text-decoration:none;font-size:0.85rem;font-weight:700;margin-bottom:24px;transition:all 0.2s">🏠 리포트 대시보드 바로가기 →</a>
+
+    <!-- 실시간 실적 (어닝서프라이즈) -->
+    <h2 class="section-title" style="margin-bottom:10px"><span class="icon">💰</span> 실시간 실적</h2>
+    <div class="dart-scroll" id="earnings-scroll">
+      {{earningsCards}}
+    </div>
 
     <!-- 주요 공시 -->
     <div class="dart-header">

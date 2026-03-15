@@ -4,6 +4,75 @@ const db = require('../lib/db');
 const { render, buildNav, escapeHtml, adBannerHtml } = require('../lib/helpers');
 const router = express.Router();
 
+// ── 메모리 스팟 가격 자동 업데이트 (Claude AI) ──
+async function fetchMemoryPricesFromAI() {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return;
+
+  try {
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey });
+    const today = new Date().toISOString().slice(0, 10);
+
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 500,
+      messages: [{
+        role: 'user',
+        content: `오늘 날짜: ${today}. 현재 반도체 메모리 스팟 가격을 알려줘. 정확한 최신 가격이 없으면 가장 최근 알려진 가격을 알려줘.
+
+다음 항목을 JSON으로만 출력해:
+- DDR5 16GB (PC 모듈) 스팟 가격 (USD)
+- DDR4 8GB (PC 모듈) 스팟 가격 (USD)
+- NAND 256GB TLC 스팟 가격 (USD)
+- NAND 512GB TLC 스팟 가격 (USD)
+
+형식: {"items":[{"type":"RAM","product":"DDR5 16GB","price":숫자,"unit":"USD"},...]}`
+      }],
+    });
+
+    const content = response.content[0].text;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return;
+
+    const data = JSON.parse(jsonMatch[0]);
+    if (!data.items || !Array.isArray(data.items)) return;
+
+    for (const item of data.items) {
+      if (!item.type || !item.product || !item.price) continue;
+      // 오늘 이미 같은 제품 가격이 있으면 스킵
+      const existing = db.prepare('SELECT id FROM memory_prices WHERE product = ? AND date = ?').get(item.product, today);
+      if (!existing) {
+        db.prepare('INSERT INTO memory_prices (type, product, price, unit, date) VALUES (?, ?, ?, ?, ?)').run(
+          item.type, item.product, item.price, item.unit || 'USD', today
+        );
+      }
+    }
+    console.log(`[Memory Prices] Updated ${data.items.length} items for ${today}`);
+  } catch (e) {
+    console.error('[Memory Prices] AI fetch error:', e.message);
+  }
+}
+
+// 서버 시작 시 + 매일 아침 7시(KST) 실행
+(function scheduleMemoryPriceUpdate() {
+  // 서버 시작 시 오늘 데이터 없으면 즉시 실행
+  const today = new Date().toISOString().slice(0, 10);
+  const existing = db.prepare('SELECT id FROM memory_prices WHERE date = ? LIMIT 1').get(today);
+  if (!existing) {
+    setTimeout(() => fetchMemoryPricesFromAI(), 10000); // 10초 후 실행
+  }
+
+  // 매시간 체크 → KST 7시(UTC 22시)면 업데이트
+  setInterval(() => {
+    const now = new Date();
+    const kstHour = (now.getUTCHours() + 9) % 24;
+    if (kstHour === 7 && now.getMinutes() < 5) {
+      fetchMemoryPricesFromAI();
+    }
+  }, 5 * 60 * 1000); // 5분마다 체크
+})();
+
 // 시장 데이터 캐시 (5분)
 let marketCache = { data: null, ts: 0 };
 let investorCache = { data: null, ts: 0 };
@@ -27,8 +96,8 @@ const SYMBOLS = [
   { symbol: '^SOX', name: 'SOX 반도체지수', category: '반도체' },
   { symbol: '005930.KS', name: '삼성전자', category: '반도체' },
   { symbol: '000660.KS', name: 'SK하이닉스', category: '반도체' },
-  { symbol: 'MU', name: 'Micron (RAM)', category: '반도체' },
-  { symbol: 'WDC', name: 'WD (NAND)', category: '반도체' },
+  { symbol: 'MU', name: 'RAM 선행 (Micron)', category: '반도체' },
+  { symbol: 'WDC', name: 'NAND 선행 (WD)', category: '반도체' },
   // 원자재
   { symbol: 'GC=F', name: 'Gold', category: '원자재' },
   { symbol: 'CL=F', name: 'WTI Oil', category: '원자재' },
@@ -373,6 +442,29 @@ async function fetchDartDisclosures() {
       }
     }
 
+    // 매출액 변동 공시에서 어닝 데이터 추출 → DB 저장
+    for (const r of results) {
+      if (r.label === '매출액 변동') {
+        try {
+          // 보고서명에서 금액 추출 시도
+          const nums = r.report_nm.match(/([\d,]+)\s*억/g);
+          if (nums && nums.length >= 1) {
+            const actual = parseInt(nums[0].replace(/[^\d]/g, ''));
+            const estimate = nums.length >= 2 ? parseInt(nums[1].replace(/[^\d]/g, '')) : null;
+            const surprise = estimate ? ((actual - estimate) / estimate * 100) : null;
+            const dateStr = r.rcept_dt ? `${r.rcept_dt.slice(0,4)}-${r.rcept_dt.slice(4,6)}-${r.rcept_dt.slice(6,8)}` : null;
+            const existing = db.prepare('SELECT id FROM earnings WHERE corp_name = ? AND rcept_no = ?').get(r.corp_name, r.rcept_no);
+            if (!existing) {
+              db.prepare(`INSERT OR IGNORE INTO earnings (corp_name, stock_code, market, period, revenue_actual, surprise_pct, rcept_no, reported_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(
+                r.corp_name, r.stock_code, r.corp_cls, dateStr || '', actual, surprise, r.rcept_no, dateStr
+              );
+            }
+          }
+        } catch {}
+      }
+    }
+
     // 최신순 정렬, 최대 20개
     results.sort((a, b) => b.rcept_dt.localeCompare(a.rcept_dt));
     const top = results.slice(0, 20);
@@ -427,9 +519,23 @@ router.get('/dashboard', async (req, res) => {
         <div class="market-change ${cls}"><span class="change-arrow">${isUp ? '&#9650;' : '&#9660;'}</span> ${pctStr}</div>
       </div>`;
     }).join('');
+    // 반도체 그룹에 메모리 스팟 가격 추가
+    let memoryHtml = '';
+    if (cat === '반도체') {
+      const memPrices = db.prepare('SELECT * FROM memory_prices WHERE date = (SELECT MAX(date) FROM memory_prices) ORDER BY type, product').all();
+      if (memPrices.length > 0) {
+        memoryHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05)">'
+          + '<div style="font-size:0.68rem;color:rgba(255,255,255,0.3);margin-bottom:6px">메모리 스팟 가격 (' + memPrices[0].date + ')</div>'
+          + '<div class="market-group-items">'
+          + memPrices.map(p => `<div class="market-card"><div class="market-name">${escapeHtml(p.product)}</div><div class="market-price">$${p.price.toFixed(2)}</div></div>`).join('')
+          + '</div></div>';
+      }
+    }
+
     return `<div class="market-group">
       <div class="market-group-title">${categoryIcons[cat] || ''} ${cat}</div>
       <div class="market-group-items">${items}</div>
+      ${memoryHtml}
     </div>`;
   }).join('');
 
@@ -671,12 +777,32 @@ router.get('/dashboard', async (req, res) => {
     </a>`;
   }).join('') : '<div style="min-width:280px;padding:30px;text-align:center;color:rgba(255,255,255,0.25);font-size:0.85rem">공시 데이터 없음</div>';
 
+  // 실시간 실적 (어닝서프라이즈)
+  const earnings = db.prepare('SELECT * FROM earnings ORDER BY reported_at DESC, created_at DESC LIMIT 10').all();
+  const earningsCards = earnings.length > 0 ? earnings.map(e => {
+    const isBeat = e.surprise_pct !== null && e.surprise_pct > 0;
+    const isMiss = e.surprise_pct !== null && e.surprise_pct < 0;
+    const surpriseStr = e.surprise_pct !== null ? `${e.surprise_pct > 0 ? '+' : ''}${e.surprise_pct.toFixed(1)}%` : '';
+    const badgeStyle = isBeat ? 'background:rgba(239,68,68,0.15);color:#ef4444' : isMiss ? 'background:rgba(59,130,246,0.15);color:#3b82f6' : 'background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4)';
+    const badgeText = isBeat ? '서프라이즈' : isMiss ? '미달' : '실적 발표';
+    const dartUrl = e.rcept_no ? `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${e.rcept_no}` : '#';
+    const revenueStr = e.revenue_actual ? `${e.revenue_actual.toLocaleString()}억` : '';
+    return `<a href="${dartUrl}" target="_blank" class="earning-card">
+      <div class="earning-badge" style="${badgeStyle}">${badgeText}</div>
+      <div class="earning-corp">${escapeHtml(e.corp_name)} <span class="earning-market">${e.market || ''}</span></div>
+      ${revenueStr ? `<div class="earning-revenue">매출 ${revenueStr}</div>` : ''}
+      ${surpriseStr ? `<div class="earning-surprise" style="color:${isBeat ? '#ef4444' : '#3b82f6'};font-weight:900">${surpriseStr}</div>` : ''}
+      <div class="earning-date">${e.reported_at || ''}</div>
+    </a>`;
+  }).join('') : '<div style="min-width:260px;padding:24px;text-align:center;color:rgba(255,255,255,0.2);font-size:0.82rem">실적 데이터 수집 중...</div>';
+
   const html = render('views/dashboard.html', {
     nav: buildNav(req.user),
     marketCards: cards,
     investorRows,
     creditRows,
     dartCards,
+    earningsCards,
     updatedAt: new Date().toLocaleString('ko-KR'),
     adBanner: adBannerHtml(),
   });
