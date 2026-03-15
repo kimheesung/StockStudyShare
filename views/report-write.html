@@ -223,7 +223,7 @@
 
     <!-- 파일/URL로 불러오기 -->
     <div class="import-section" id="import-section">
-      <h3>100point 써서 기존 작성된 나의 리포트 파일 또는 URL 내용 불러와서 적기</h3>
+      <h3>기존 작성된 나의 리포트 파일 또는 URL 내용 불러와서 적기(100point)</h3>
       <div class="import-row">
         <div class="import-file-wrap">
           <label>PDF / Word 파일</label>
@@ -239,7 +239,7 @@
       <div class="import-status" id="import-status"></div>
     </div>
 
-    <form method="POST" action="/author/reports/{{reportId}}{{mode}}">
+    <form method="POST" action="/author/reports/{{reportId}}{{mode}}" enctype="multipart/form-data">
       <div class="form-row">
         <div class="form-group">
           <label>종목명 <span class="required">*</span></label>
@@ -325,6 +325,12 @@
       <div class="form-group">
         <label>참고 자료 (References)</label>
         <textarea name="references_text">{{referencesText}}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>리포트 PDF 첨부</label>
+        <div class="hint">PDF 파일을 첨부하면 구매자가 워터마크가 적용된 PDF를 열람할 수 있습니다. (최대 20MB)</div>
+        <input type="file" name="report_pdf" accept=".pdf" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:0.85rem;font-family:inherit">
       </div>
 
       <hr class="section-divider">

@@ -7,7 +7,9 @@ const db = require('../lib/db');
 const { render, isLoggedIn, isAuthor, buildNav, escapeHtml, notify, adBannerHtml } = require('../lib/helpers');
 const router = express.Router();
 
-// 파일 업로드 설정 (메모리 저장, 10MB 제한)
+const fs = require('fs');
+
+// 파일 업로드 설정 (메모리 저장, 10MB 제한) - AI 분석용
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -15,6 +17,21 @@ const upload = multer({
     const ext = path.extname(file.originalname).toLowerCase();
     if (['.pdf', '.doc', '.docx'].includes(ext)) cb(null, true);
     else cb(new Error('PDF 또는 Word 파일만 업로드 가능합니다.'));
+  },
+});
+
+// 리포트 PDF 업로드 설정 (디스크 저장, 20MB 제한)
+const reportPdfDir = path.join(__dirname, '..', 'uploads', 'reports');
+if (!fs.existsSync(reportPdfDir)) fs.mkdirSync(reportPdfDir, { recursive: true });
+const reportPdfUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, reportPdfDir),
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')),
+  }),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (path.extname(file.originalname).toLowerCase() === '.pdf') cb(null, true);
+    else cb(new Error('PDF 파일만 업로드 가능합니다.'));
   },
 });
 
@@ -750,7 +767,7 @@ async function fetchCurrentPrice(stockCode, marketType) {
 }
 
 // 리포트 저장 (새로 작성)
-router.post('/reports/new', isLoggedIn, isAuthor, async (req, res) => {
+router.post('/reports/new', isLoggedIn, isAuthor, reportPdfUpload.single('report_pdf'), async (req, res) => {
   const action = req.body.action; // 'draft' or 'submit'
   const visibilityRaw = req.body.visibility || 'study_only';
   // both = 스터디 + 외부 동시 공개 → DB에는 'public'으로 저장 (스터디방에도 연결)
@@ -778,19 +795,21 @@ router.post('/reports/new', isLoggedIn, isAuthor, async (req, res) => {
     basePrice = await fetchCurrentPrice(req.body.stock_code, req.body.market_type);
   }
 
+  const pdfPath = req.file ? `/uploads/reports/${req.file.filename}` : null;
+
   db.prepare(`INSERT INTO reports
     (author_id, title, stock_name, stock_code, market_type, sector, summary, thesis,
      investment_points, valuation_basis, risks, bear_case, references_text,
      holding_disclosure, conflict_disclosure, base_price, sale_price,
-     visibility, max_buyers, study_room_id, status, published_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+     visibility, max_buyers, study_room_id, status, published_at, pdf_path)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     req.user.id, req.body.title, req.body.stock_name, req.body.stock_code || '',
     req.body.market_type || '', req.body.sector || '', req.body.summary,
     req.body.thesis || '', req.body.investment_points || '', req.body.valuation_basis || '',
     req.body.risks || '', req.body.bear_case || '', req.body.references_text || '',
     req.body.holding_disclosure || '', req.body.conflict_disclosure || '',
     basePrice, salePrice, visibility, maxBuyers, studyRoomId, status,
-    publishedAt
+    publishedAt, pdfPath
   );
 
   // 스터디장 승인 필요 시 스터디장에게 알림

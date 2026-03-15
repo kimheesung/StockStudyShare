@@ -404,6 +404,8 @@ router.get('/:id/view', isLoggedIn, (req, res) => {
     myRating: myRating ? String(myRating.rating) : '0',
     canRate: canRate ? 'true' : '',
     reportSalePrice: String(report.sale_price || 0),
+    hasPdf: report.pdf_path ? 'true' : '',
+    pdfUrl: report.pdf_path ? `/reports/${report.id}/pdf` : '',
     adBanner: adBannerHtml(),
   });
   res.send(html);
@@ -499,6 +501,66 @@ router.post('/:id/flag', isLoggedIn, (req, res) => {
   }
 
   res.redirect(`/reports/${report.id}?flagged=1`);
+});
+
+// 워터마크 PDF 다운로드
+router.get('/:id/pdf', isLoggedIn, async (req, res) => {
+  const report = db.prepare('SELECT * FROM reports WHERE id = ?').get(req.params.id);
+  if (!report || !report.pdf_path) return res.status(404).send('PDF가 없습니다.');
+
+  // 접근 권한 확인
+  const isOwner = req.user.id === report.author_id;
+  const isAdminUser = req.user.role === 'admin';
+  const hasPurchased = !!db.prepare('SELECT id FROM orders WHERE user_id = ? AND report_id = ?').get(req.user.id, report.id);
+  const isFree = report.sale_price === 0;
+  const isStudyMember = report.study_room_id
+    ? !!db.prepare('SELECT id FROM study_members WHERE room_id = ? AND user_id = ?').get(report.study_room_id, req.user.id)
+    : false;
+
+  if (!isOwner && !isAdminUser && !isFree && !hasPurchased && !isStudyMember) {
+    return res.status(403).send('이 PDF를 열람할 권한이 없습니다.');
+  }
+
+  const filePath = require('path').join(__dirname, '..', report.pdf_path);
+  if (!require('fs').existsSync(filePath)) return res.status(404).send('PDF 파일을 찾을 수 없습니다.');
+
+  try {
+    const { PDFDocument, rgb, degrees } = require('pdf-lib');
+    const pdfBytes = require('fs').readFileSync(filePath);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const pages = pdfDoc.getPages();
+    const watermarkText = `${req.user.nickname || req.user.name} (${req.user.email || req.user.id.slice(-6)})`;
+
+    for (const page of pages) {
+      const { width, height } = page.getSize();
+      // 대각선 워터마크
+      page.drawText(watermarkText, {
+        x: width * 0.1,
+        y: height * 0.3,
+        size: 28,
+        color: rgb(0.7, 0.7, 0.7),
+        opacity: 0.15,
+        rotate: degrees(45),
+      });
+      // 하단 워터마크
+      page.drawText(`StockStudyShare | ${watermarkText}`, {
+        x: 10,
+        y: 10,
+        size: 8,
+        color: rgb(0.6, 0.6, 0.6),
+        opacity: 0.3,
+      });
+    }
+
+    const watermarkedBytes = await pdfDoc.save();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(report.title)}.pdf"`);
+    res.send(Buffer.from(watermarkedBytes));
+  } catch (e) {
+    console.error('Watermark error:', e.message);
+    // 워터마크 실패 시 원본 전송
+    res.sendFile(filePath);
+  }
 });
 
 module.exports = router;

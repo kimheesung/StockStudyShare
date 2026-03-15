@@ -131,6 +131,15 @@
       <div id="perf-content" style="display:none"></div>
     </div>
 
+    <!-- PDF 뷰어 -->
+    <div id="pdf-viewer" style="display:none;margin-bottom:24px">
+      <div style="padding:16px 20px;background:rgba(79,70,229,0.08);border:1px solid rgba(79,70,229,0.2);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700;font-size:0.95rem">📄 리포트 PDF</span>
+        <a id="pdf-download-btn" href="" download style="padding:8px 18px;background:linear-gradient(135deg,#4f46e5,#6366f1);border-radius:50px;color:#fff;text-decoration:none;font-size:0.8rem;font-weight:700">다운로드</a>
+      </div>
+      <iframe id="pdf-iframe" style="width:100%;height:600px;border:1px solid rgba(255,255,255,0.1);border-top:none;border-radius:0 0 16px 16px;background:#fff" frameborder="0"></iframe>
+    </div>
+
     <div class="section">
       <h3>요약 (Summary)</h3>
       <p>{{summary}}</p>
@@ -190,6 +199,15 @@
     </div>
   </div>
   <script>
+    // PDF 뷰어 표시
+    (function() {
+      if ('{{hasPdf}}' === 'true') {
+        document.getElementById('pdf-viewer').style.display = 'block';
+        document.getElementById('pdf-iframe').src = '{{pdfUrl}}';
+        document.getElementById('pdf-download-btn').href = '{{pdfUrl}}';
+      }
+    })();
+
     // 평균 별점 시각화
     (function() {
       var avg = parseFloat('{{avgRating}}') || 0;
