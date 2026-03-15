@@ -650,14 +650,114 @@ router.get('/dashboard', async (req, res) => {
     marketCards: cards,
     investorRows,
     creditRows,
-    latestCards,
-    hotCards,
-    topReturnCards,
-    followCards,
     dartCards,
     updatedAt: new Date().toLocaleString('ko-KR'),
     adBanner: adBannerHtml(),
   });
+  res.send(html);
+});
+
+// 리포트 대시보드
+router.get('/report-dashboard', async (req, res) => {
+  if (!req.isAuthenticated()) return res.redirect('/');
+
+  const purchasedSet = new Set();
+  const purchased = db.prepare('SELECT report_id FROM orders WHERE user_id = ?').all(req.user.id);
+  purchased.forEach(o => purchasedSet.add(o.report_id));
+
+  function buildCards(reports) {
+    if (!reports.length) return '<div class="report-empty">표시할 리포트가 없습니다.</div>';
+    return reports.map(r => {
+      const price = r.sale_price === 0 ? '무료' : r.sale_price.toLocaleString() + 'P';
+      const date = r.published_at ? new Date(r.published_at).toLocaleDateString('ko-KR') : '';
+      const owned = purchasedSet.has(r.id) ? '<span class="tag-owned">보유중</span>' : '';
+      return `<a href="/reports/${r.id}" class="report-card"><div class="report-card-top"><div class="report-card-top-left"><span class="report-sector">${escapeHtml(r.sector || '기타')}</span>${owned}</div><span class="report-price">${price}</span></div><h4 class="report-title">${escapeHtml(r.title)}</h4><div class="report-stock">${escapeHtml(r.stock_name)}</div><div class="report-meta"><span>${escapeHtml(r.author_name)}</span><span>${date}</span></div><div class="report-purchases">${r.purchase_count || 0}명 구매</div></a>`;
+    }).join('');
+  }
+
+  const baseQ = `SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at, r.stock_code,
+    COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id,
+    (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as purchase_count
+    FROM reports r JOIN users u ON r.author_id = u.id LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
+    WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')`;
+
+  const latestReports = db.prepare(baseQ + ` ORDER BY r.published_at DESC LIMIT 12`).all();
+  const twoWeeksAgo = new Date(); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  const hotReports = db.prepare(`SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
+    COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id,
+    (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as purchase_count,
+    (SELECT COUNT(*) FROM view_logs WHERE report_id = r.id AND created_at >= ?) as view_count
+    FROM reports r JOIN users u ON r.author_id = u.id LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
+    WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')
+    ORDER BY view_count DESC LIMIT 12`).all(twoWeeksAgo.toISOString());
+  const threeMonthsAgo = new Date(); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const topReturnReports = db.prepare(baseQ + ` AND r.entry_price IS NOT NULL AND r.entry_price > 0 AND r.published_at <= ? ORDER BY r.published_at ASC LIMIT 12`).all(threeMonthsAgo.toISOString());
+  const followReports = db.prepare(`SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
+    COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id,
+    (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as purchase_count
+    FROM reports r JOIN users u ON r.author_id = u.id LEFT JOIN author_profiles ap ON r.author_id = ap.user_id
+    JOIN follows f ON f.author_id = r.author_id AND f.follower_id = ?
+    WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')
+    ORDER BY r.published_at DESC LIMIT 12`).all(req.user.id);
+
+  const latestCards = buildCards(latestReports);
+  const hotCards = buildCards(hotReports);
+  const topReturnCards = buildCards(topReturnReports);
+  const followCards = buildCards(followReports);
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>리포트 대시보드 - StockStudyShare</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh}
+      .container{max-width:1100px;margin:0 auto;padding:40px 20px}
+      h1{font-size:1.6rem;font-weight:900;margin-bottom:20px}
+      h1 .highlight{background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+      .report-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.08)}
+      .report-tab{padding:12px 24px;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,0.4);font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s}
+      .report-tab:hover{color:rgba(255,255,255,0.7)}
+      .report-tab.active{color:#fff;border-bottom-color:#6366f1}
+      .report-tab-content{margin-bottom:8px}
+      .report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:36px}
+      .report-card{display:block;padding:18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;text-decoration:none;color:#fff;transition:all 0.3s}
+      .report-card:hover{background:rgba(255,255,255,0.07);transform:translateY(-3px);border-color:rgba(79,70,229,0.3)}
+      .report-card-top{display:flex;justify-content:space-between;margin-bottom:8px;align-items:center;gap:6px}
+      .report-card-top-left{display:flex;align-items:center;gap:6px}
+      .report-sector{font-size:0.7rem;padding:2px 8px;background:rgba(6,182,212,0.15);color:#67e8f9;border-radius:10px}
+      .report-price{font-size:0.8rem;font-weight:700;color:#fbbf24}
+      .report-title{font-size:0.95rem;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .report-stock{font-size:0.8rem;color:#67e8f9;margin-bottom:6px}
+      .report-meta{display:flex;justify-content:space-between;font-size:0.72rem;color:rgba(255,255,255,0.35)}
+      .report-purchases{font-size:0.72rem;color:rgba(255,255,255,0.3);margin-top:4px}
+      .report-empty{color:rgba(255,255,255,0.25);text-align:center;padding:30px;font-size:0.88rem}
+      .tag-owned{display:inline-block;padding:2px 8px;background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3);border-radius:10px;font-size:0.68rem;font-weight:700;margin-left:6px}
+      .see-all{display:inline-block;color:#a5b4fc;text-decoration:none;font-size:0.85rem;margin-bottom:36px}
+      .see-all:hover{color:#fff}
+    </style></head><body>
+    <nav>${buildNav(req.user)}</nav>
+    <div class="container">
+      <h1>🏠 <span class="highlight">리포트</span> 대시보드</h1>
+      <div class="report-tabs">
+        <button class="report-tab active" onclick="switchTab('latest')">📝 최신</button>
+        <button class="report-tab" onclick="switchTab('hot')">🔥 핫한</button>
+        <button class="report-tab" onclick="switchTab('topReturn')">💰 수익률 TOP</button>
+        <button class="report-tab" onclick="switchTab('follow')">⭐ 팔로우</button>
+      </div>
+      <div class="report-tab-content" id="tab-latest"><div class="report-grid">${latestCards}</div></div>
+      <div class="report-tab-content" id="tab-hot" style="display:none"><div class="report-grid">${hotCards}</div></div>
+      <div class="report-tab-content" id="tab-topReturn" style="display:none"><div class="report-grid">${topReturnCards}</div></div>
+      <div class="report-tab-content" id="tab-follow" style="display:none"><div class="report-grid">${followCards}</div></div>
+      <a href="/reports" class="see-all">전체 리포트 보기 →</a>
+    </div>
+    <script>
+      function switchTab(name){
+        document.querySelectorAll('.report-tab-content').forEach(function(el){el.style.display='none'});
+        document.querySelectorAll('.report-tab').forEach(function(el){el.classList.remove('active')});
+        document.getElementById('tab-'+name).style.display='block';
+        event.target.classList.add('active');
+      }
+    </script></body></html>`;
   res.send(html);
 });
 
