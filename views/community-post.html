@@ -107,7 +107,7 @@
     } else {
       document.getElementById('btn-report').textContent = '신고완료';
     }
-    if ('{{isAuthor}}' === 'true') {
+    if ('{{isAuthor}}' === 'true' || '{{isAdmin}}' === 'true') {
       document.getElementById('btn-delete').style.display = 'inline-block';
     }
 

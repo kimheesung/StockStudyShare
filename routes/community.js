@@ -64,16 +64,19 @@ router.get('/', isLoggedIn, (req, res) => {
   }).join('');
 
   // 글 목록
+  const isAdminUser = req.user.role === 'admin';
   const postRows = posts.length > 0 ? posts.map(p => {
     const commentCount = db.prepare('SELECT COUNT(*) as c FROM board_comments WHERE post_id = ?').get(p.id).c;
     const timeAgo = getTimeAgo(p.created_at);
     const displayName = p.board_nickname || '익명';
+    const adminDeleteBtn = isAdminUser ? `<button class="admin-del-btn" onclick="event.preventDefault();adminDelete(${p.id})" title="삭제">✕</button>` : '';
     return `
       <a href="/community/post/${p.id}" class="post-row">
         <div class="post-main">
           <div class="post-title">${escapeHtml(p.title)}</div>
           <div class="post-meta">${escapeHtml(displayName)} · ${timeAgo}${commentCount > 0 ? ` · 댓글 ${commentCount}` : ''}</div>
         </div>
+        ${adminDeleteBtn}
       </a>`;
   }).join('') : '<div class="empty-text">아직 글이 없습니다. 첫 글을 작성해보세요!</div>';
 
@@ -192,6 +195,7 @@ router.get('/post/:id', isLoggedIn, (req, res) => {
     commentCount: String(comments.length),
     alreadyReported: alreadyReported ? 'true' : '',
     isAuthor: isAuthor ? 'true' : '',
+    isAdmin: req.user.role === 'admin' ? 'true' : '',
     boardNickname: escapeHtml(boardNickname),
   });
   res.send(html);
@@ -241,10 +245,13 @@ router.post('/post/:id/report', isLoggedIn, (req, res) => {
   res.json({ ok: true, count: newCount, hidden });
 });
 
-// 글 삭제 (본인만)
+// 글 삭제 (본인 또는 관리자)
 router.post('/post/:id/delete', isLoggedIn, (req, res) => {
-  const post = db.prepare('SELECT * FROM board_posts WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
-  if (!post) return res.json({ ok: false, error: '삭제할 수 없습니다.' });
+  const post = db.prepare('SELECT * FROM board_posts WHERE id = ? AND is_deleted = 0').get(req.params.id);
+  if (!post) return res.json({ ok: false, error: '글을 찾을 수 없습니다.' });
+  if (post.user_id !== req.user.id && req.user.role !== 'admin') {
+    return res.json({ ok: false, error: '삭제 권한이 없습니다.' });
+  }
   db.prepare('UPDATE board_posts SET is_deleted = 1 WHERE id = ?').run(post.id);
   res.json({ ok: true });
 });
