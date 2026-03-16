@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>종목 공포도 - StockStudyShare</title>
+  <title>종목 민심 - StockStudyShare</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -88,18 +88,18 @@
 <body>
   <nav>{{nav}}</nav>
   <div class="container">
-    <h1>😱 <span class="highlight">종목 공포도</span></h1>
-    <p class="page-desc">네이버 종목 토론방의 분위기를 분석합니다. 비속어 비율이 높을수록 투자자들의 공포/분노가 큰 종목입니다.</p>
+    <h1>🗳️ <span class="highlight">종목 민심</span></h1>
+    <p class="page-desc">네이버 종목 토론방의 분위기를 분석합니다. 비속어 비율이 높을수록 해당 종목에 대한 투자자들의 불만이 큰 종목입니다.</p>
     <p class="updated">마지막 업데이트: {{updatedAt}}</p>
 
     <div class="summary-row">
       <div class="summary-card">
-        <div class="s-icon">🔥</div>
+        <div class="s-icon">🤬</div>
         <div class="s-value level-extreme">{{topFearName}}</div>
-        <div class="s-label">가장 공포 높은 종목</div>
+        <div class="s-label">민심 최악 종목</div>
       </div>
       <div class="summary-card">
-        <div class="s-icon">😱</div>
+        <div class="s-icon">📊</div>
         <div class="s-value">{{topFearPct}}%</div>
         <div class="s-label">최고 비속어 비율</div>
       </div>
@@ -116,11 +116,11 @@
     </div>
 
     <div class="legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> 극도 공포 (30%+)</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div> 높은 공포 (20~30%)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> 민심 최악 (30%+)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div> 불만 높음 (20~30%)</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> 보통 (10~20%)</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div> 평온 (5~10%)</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div> 매우 평온 (5% 미만)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div> 긍정적 (5~10%)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div> 민심 좋음 (5% 미만)</div>
     </div>
 
     <form class="search-bar" method="GET" action="/fear-index">
@@ -135,7 +135,7 @@
     <div class="info-box">
       <strong style="color:rgba(255,255,255,0.6)">📌 분석 방법</strong><br>
       네이버 금융 종목 토론방의 최근 게시글을 수집하여 비속어/욕설 비율을 산출합니다.<br>
-      비속어 비율이 높을수록 해당 종목에 대한 투자자들의 불만/공포가 높음을 의미합니다.<br>
+      비속어 비율이 높을수록 해당 종목에 대한 투자자들의 불만이 높음을 의미합니다.<br>
       매일 자정에 자동 업데이트됩니다. 투자 판단의 보조 지표로만 활용해주세요.
     </div>
   </div>

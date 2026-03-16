@@ -21,18 +21,22 @@
     .section-title .icon { font-size: 1.2rem; }
     .updated { font-size: 0.72rem; color: rgba(255,255,255,0.25); margin-bottom: 24px; }
 
-    /* 시장 지표 - 카테고리 그룹 */
-    .market-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
-    @media (max-width: 900px) { .market-grid { grid-template-columns: 1fr; } }
-    .market-group { padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; }
-    .market-group-title { font-size: 0.85rem; font-weight: 900; color: rgba(255,255,255,0.6); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .market-group-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
-    .market-card { display:block; padding: 10px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; transition: all 0.2s; text-decoration:none; color:inherit; }
-    .market-card:hover { background: rgba(255,255,255,0.08); border-color: rgba(79,70,229,0.3); transform:translateY(-1px); }
-    .market-name { font-size: 0.7rem; color: rgba(255,255,255,0.45); margin-bottom: 2px; }
-    .market-price { font-size: 0.9rem; font-weight: 900; }
-    .market-change { font-size: 0.7rem; font-weight: 700; }
-    .change-arrow { font-size: 0.6rem; }
+    /* 시장 지표 - 컴팩트 테이블 */
+    .market-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+    @media (max-width: 1000px) { .market-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 700px) { .market-grid { grid-template-columns: 1fr; } }
+    .market-group { padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; }
+    .market-group-title { font-size: 0.78rem; font-weight: 900; color: rgba(255,255,255,0.5); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+    .market-table { width: 100%; border-collapse: collapse; }
+    .market-table tr { border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .market-table tr:last-child { border-bottom: none; }
+    .market-table td { padding: 6px 2px; vertical-align: middle; }
+    .market-table .mt-name { font-size: 0.82rem; color: rgba(255,255,255,0.6); font-weight: 600; width: 38%; }
+    .market-table .mt-price { font-size: 0.92rem; font-weight: 900; text-align: right; width: 32%; }
+    .market-table .mt-change { font-size: 0.78rem; font-weight: 700; text-align: right; width: 18%; }
+    .market-table .mt-spark { width: 12%; text-align: right; }
+    .mt-spark svg { vertical-align: middle; }
+    .change-arrow { font-size: 0.62rem; }
     .up { color: #ef4444; }
     .down { color: #3b82f6; }
 
@@ -47,6 +51,14 @@
     .investor-val { font-weight: 700; }
     .investor-val.up { color: #ef4444; }
     .investor-val.down { color: #3b82f6; }
+
+    /* 금융정보 탭 */
+    .fi-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .fi-tab { padding: 12px 20px; background: none; border: none; border-bottom: 2px solid transparent; color: rgba(255,255,255,0.4); font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; white-space: nowrap; }
+    .fi-tab:hover { color: rgba(255,255,255,0.7); }
+    .fi-tab.active { color: #fff; border-bottom-color: #6366f1; }
+    .fi-content { display: none; margin-bottom: 24px; }
+    .fi-content.active { display: block; }
 
     /* 리포트 카드 */
     .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 36px; }
@@ -118,8 +130,9 @@
       nav { padding: 12px 16px; }
       .container { padding: 24px 16px; }
       .section-title { font-size: 1rem; margin-bottom: 12px; }
-      .market-group { padding: 12px; }
-      .market-group-items { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .market-group { padding: 10px; }
+      .market-table .mt-name { font-size: 0.68rem; }
+      .market-table .mt-price { font-size: 0.78rem; }
       .market-card { padding: 8px 10px; }
       .market-price { font-size: 0.85rem; }
       .report-grid { grid-template-columns: 1fr; gap: 12px; }
@@ -183,67 +196,104 @@
 
   <div class="container">
 
-    <!-- 시장 주요 지표 (최상단) -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <h2 class="section-title" style="margin-bottom:0"><span class="icon">📊</span> 시장 주요 지표 <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);font-weight:400">{{updatedAt}}</span></h2>
+    <!-- 금융정보 헤더 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 class="section-title" style="margin-bottom:0"><span class="icon">📊</span> 금융정보 <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);font-weight:400">{{updatedAt}}</span></h2>
       <a href="/guide" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(6,182,212,0.1));border:1px solid rgba(79,70,229,0.3);border-radius:50px;color:#a5b4fc;text-decoration:none;font-size:0.78rem;font-weight:700;transition:all 0.2s;white-space:nowrap;flex-shrink:0">📖 서비스 가이드</a>
     </div>
-    <div class="market-grid" id="market-grid">
-      {{marketCards}}
+
+    <!-- 금융정보 탭 -->
+    <div class="fi-tabs">
+      <button class="fi-tab active" onclick="switchFiTab('market')">📈 시장지표</button>
+      <button class="fi-tab" onclick="switchFiTab('earnings')">💰 실시간 실적</button>
+      <button class="fi-tab" onclick="switchFiTab('dart')">📋 주요공시</button>
+      <button class="fi-tab" onclick="switchFiTab('investor')">👥 수급/신용</button>
     </div>
 
-    <a href="/report-dashboard" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:rgba(79,70,229,0.1);border:1px solid rgba(79,70,229,0.25);border-radius:14px;color:#a5b4fc;text-decoration:none;font-size:0.85rem;font-weight:700;margin-bottom:24px;transition:all 0.2s">🏠 리포트 대시보드 바로가기 →</a>
-
-    <!-- 실시간 실적 (어닝서프라이즈) -->
-    <h2 class="section-title" style="margin-bottom:10px"><span class="icon">💰</span> 실시간 실적</h2>
-    <div class="dart-scroll" id="earnings-scroll">
-      {{earningsCards}}
+    <!-- 탭1: 시장 주요 지표 -->
+    <div class="fi-content active" id="fi-market">
+      <div class="market-grid" id="market-grid">
+        {{marketCards}}
+      </div>
+      <a href="/report-dashboard" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:rgba(79,70,229,0.1);border:1px solid rgba(79,70,229,0.25);border-radius:14px;color:#a5b4fc;text-decoration:none;font-size:0.85rem;font-weight:700;transition:all 0.2s">🏠 리포트 대시보드 바로가기 →</a>
     </div>
 
-    <!-- 주요 공시 -->
-    <div class="dart-header">
-      <div>
-        <h2 class="section-title" style="margin-bottom:4px"><span class="icon">📋</span> 주요 공시 <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);font-weight:400">(최근 3일)</span></h2>
-        <p style="font-size:0.75rem;color:rgba(255,255,255,0.25)">전환사채 · 유상증자 · 매출액 변동 · 대규모 투자</p>
+    <!-- 탭2: 실시간 실적 -->
+    <div class="fi-content" id="fi-earnings">
+      <div class="dart-scroll" id="earnings-scroll">
+        {{earningsCards}}
       </div>
     </div>
-    <div class="dart-scroll" id="dart-scroll">
-      {{dartCards}}
+
+    <!-- 탭3: 주요 공시 -->
+    <div class="fi-content" id="fi-dart">
+      <p style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-bottom:12px">전환사채 · 유상증자 · 매출액 변동 · 대규모 투자 (최근 3일)</p>
+      <div class="dart-scroll" id="dart-scroll">
+        {{dartCards}}
+      </div>
     </div>
 
+    <!-- 탭4: 투자자 매매동향 / 신용잔고 -->
+    <div class="fi-content" id="fi-investor">
+      <div class="data-grid">
+        <div class="data-card">
+          <h3>투자자별 매매동향 (억원)</h3>
+          <table>
+            <thead><tr><th>날짜</th><th>개인</th><th>외국인</th><th>기관</th></tr></thead>
+            <tbody>{{investorRows}}</tbody>
+          </table>
+        </div>
+        <div class="data-card">
+          <h3>예탁금 · 신용잔고 (억원)</h3>
+          <table>
+            <thead><tr><th>날짜</th><th>예탁금</th><th>예탁금 증감</th><th>신용잔고</th><th>신용 증감</th></tr></thead>
+            <tbody>{{creditRows}}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 리포트 -->
+    <h2 class="section-title" style="margin-top:8px"><span class="icon">📄</span> 리포트</h2>
+    <div class="report-tabs">
+      <button class="report-tab active" onclick="switchTab('topReturn')">📈 수익률 TOP</button>
+      <button class="report-tab" onclick="switchTab('hot')">🔥 핫한</button>
+      <button class="report-tab" onclick="switchTab('latest')">📝 최신</button>
+      <button class="report-tab" onclick="switchTab('follow')">⭐ 팔로우</button>
+    </div>
+    <div class="report-tab-content" id="tab-topReturn">
+      <div class="report-grid">{{topReturnCards}}</div>
+    </div>
+    <div class="report-tab-content" id="tab-hot" style="display:none">
+      <div class="report-grid">{{hotCards}}</div>
+    </div>
+    <div class="report-tab-content" id="tab-latest" style="display:none">
+      <div class="report-grid">{{latestCards}}</div>
+    </div>
+    <div class="report-tab-content" id="tab-follow" style="display:none">
+      <div class="report-grid">{{followCards}}</div>
+    </div>
+    <a href="/reports" class="see-all">전체 리포트 보기 →</a>
+
     <!-- 광고 배너 -->
-    <a href="/ad-inquiry" class="ad-box" id="ad-box" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin:20px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;color:rgba(255,255,255,0.3);overflow:hidden;transition:all 0.2s">
+    <a href="/ad-inquiry" id="ad-box" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin:20px 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;overflow:hidden;transition:all 0.2s">
       <div id="ad-default" style="text-align:center"><span style="font-size:0.82rem;color:rgba(255,255,255,0.25)">광고 문의하기</span></div>
       <div id="ad-loaded" style="display:none;width:100%;height:100%"></div>
     </a>
     <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box'),df=document.getElementById('ad-default'),ld=document.getElementById('ad-loaded');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
 
-    <!-- 투자자 매매동향 / 신용잔고 -->
-    <div class="data-grid">
-      <div class="data-card">
-        <h3>투자자별 매매동향 (억원)</h3>
-        <table>
-          <thead><tr><th>날짜</th><th>개인</th><th>외국인</th><th>기관</th></tr></thead>
-          <tbody>{{investorRows}}</tbody>
-        </table>
-      </div>
-      <div class="data-card">
-        <h3>예탁금 · 신용잔고 (억원)</h3>
-        <table>
-          <thead><tr><th>날짜</th><th>예탁금</th><th>예탁금 증감</th><th>신용잔고</th><th>신용 증감</th></tr></thead>
-          <tbody>{{creditRows}}</tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 하단 광고 배너 -->
-    <a href="/ad-inquiry" id="ad-box-btm" style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;margin:20px 0 0;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;text-decoration:none;overflow:hidden;transition:all 0.2s">
-      <div id="ad-def-btm" style="text-align:center"><span style="font-size:0.82rem;color:rgba(255,255,255,0.25)">광고 문의하기</span></div>
-      <div id="ad-img-btm" style="display:none;width:100%;height:100%"></div>
-    </a>
-    <script>(function(){fetch('/api/ads?position=dashboard').then(function(r){return r.json()}).then(function(a){if(a.length){var d=a[0],b=document.getElementById('ad-box-btm'),df=document.getElementById('ad-def-btm'),ld=document.getElementById('ad-img-btm');if(d.image_url){ld.innerHTML='<img src="'+d.image_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';if(d.link_url)b.href=d.link_url;b.target='_blank';df.style.display='none';ld.style.display='block';}}}).catch(function(){});})()</script>
-
   </div>
+  <script>
+    function switchFiTab(name) {
+      document.querySelectorAll('.fi-content').forEach(function(el) { el.classList.remove('active'); });
+      document.querySelectorAll('.fi-tab').forEach(function(el) { el.classList.remove('active'); });
+      document.getElementById('fi-' + name).classList.add('active');
+      var tabs = document.querySelectorAll('.fi-tab');
+      var names = ['market','earnings','dart','investor'];
+      var idx = names.indexOf(name);
+      if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
+    }
+  </script>
   <script>
     var tabOrder = ['topReturn','hot','latest','follow'];
     var currentTabIdx = 0;

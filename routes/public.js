@@ -360,16 +360,25 @@ async function fetchCreditData() {
         rows.push({
           date,
           depositBalance,
-          depositChange,
           balance: creditBalance,
-          newCredit: creditChange,
           source: 'naver',
         });
-        if (rows.length >= 5) break;
+        if (rows.length >= 6) break; // 6개 수집 (증감 계산용 +1)
       }
     }
 
-    const result = rows.length > 0 ? rows : null;
+    // 증감을 전일 잔고 차이로 직접 계산
+    for (let i = 0; i < rows.length - 1; i++) {
+      rows[i].depositChange = rows[i].depositBalance - rows[i + 1].depositBalance;
+      rows[i].newCredit = rows[i].balance - rows[i + 1].balance;
+    }
+    // 마지막 행은 증감 계산 불가
+    if (rows.length > 0) {
+      rows[rows.length - 1].depositChange = 0;
+      rows[rows.length - 1].newCredit = 0;
+    }
+
+    const result = rows.length > 0 ? rows.slice(0, 5) : null;
     creditCache = { data: result, ts: now };
     return result;
   } catch (e) {
@@ -744,58 +753,65 @@ router.get('/dashboard', async (req, res) => {
     }
   } catch(e) {}
 
-  function renderMarketCard(m) {
-    const linkOpen = m.chartUrl ? `<a href="${m.chartUrl}" target="_blank" rel="noopener" class="market-card" style="text-decoration:none;color:inherit;cursor:pointer">` : '<div class="market-card">';
-    const linkClose = m.chartUrl ? '</a>' : '</div>';
+  // 미니 스파크라인 SVG 생성 (5포인트)
+  function miniSpark(isUp) {
+    const color = isUp ? '#ef4444' : '#3b82f6';
+    // 간단한 추세선 (상승/하락)
+    const points = isUp ? '0,12 8,10 16,7 24,9 32,3' : '0,3 8,5 16,8 24,6 32,12';
+    return `<svg width="32" height="14" viewBox="0 0 32 14"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+  }
+
+  function renderMarketRow(m) {
+    const nameHtml = m.chartUrl
+      ? `<a href="${m.chartUrl}" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.6);text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.15)">${escapeHtml(m.name)}</a>`
+      : escapeHtml(m.name);
     if (m.price === null || m.price === undefined) {
-      return `${linkOpen}<div class="market-name">${escapeHtml(m.name)}</div><div class="market-price">--</div>${linkClose}`;
+      return `<tr><td class="mt-name">${nameHtml}</td><td class="mt-price">--</td><td class="mt-change"></td><td class="mt-spark"></td></tr>`;
     }
-    const isMemory = m.date; // 메모리 스팟가격 구분
+    const isMemory = m.date;
     const priceStr = isMemory ? `$${m.price.toFixed(2)}` : (m.price >= 1000 ? m.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : m.price.toFixed(2));
     const changeVal = isMemory ? m.change : m.changePercent;
     if (changeVal === null || changeVal === undefined) {
-      return `${linkOpen}<div class="market-name">${escapeHtml(m.name)}</div><div class="market-price">${priceStr}</div>${linkClose}`;
+      return `<tr><td class="mt-name">${nameHtml}</td><td class="mt-price">${priceStr}</td><td class="mt-change"></td><td class="mt-spark"></td></tr>`;
     }
     const isUp = changeVal >= 0;
     const sign = isUp ? '+' : '';
     const cls = isUp ? 'up' : 'down';
     const pctStr = `${sign}${changeVal.toFixed(isMemory ? 1 : 2)}%`;
-    // 전월비 표시 (메모리 스팟가격만)
-    let momHtml = '';
+    let momExtra = '';
     if (isMemory && m.momChange !== null && m.momChange !== undefined) {
-      const momUp = m.momChange >= 0;
-      const momSign = momUp ? '+' : '';
-      momHtml = `<div style="font-size:0.6rem;color:${momUp ? 'rgba(239,68,68,0.7)' : 'rgba(59,130,246,0.7)'};margin-top:1px">전월비 ${momSign}${m.momChange.toFixed(1)}%</div>`;
+      const mu = m.momChange >= 0;
+      momExtra = `<br><span style="font-size:0.58rem;color:${mu ? 'rgba(239,68,68,0.6)' : 'rgba(59,130,246,0.6)'}">월 ${mu?'+':''}${m.momChange.toFixed(1)}%</span>`;
     }
-    return `${linkOpen}
-      <div class="market-name">${escapeHtml(m.name)}</div>
-      <div class="market-price">${priceStr}</div>
-      <div class="market-change ${cls}"><span class="change-arrow">${isUp ? '&#9650;' : '&#9660;'}</span> ${pctStr}</div>
-      ${momHtml}
-    ${linkClose}`;
+    return `<tr style="cursor:pointer" ${m.chartUrl ? `onclick="window.open('${m.chartUrl}','_blank')"` : ''}>
+      <td class="mt-name">${nameHtml}</td>
+      <td class="mt-price">${priceStr}</td>
+      <td class="mt-change ${cls}"><span class="change-arrow">${isUp ? '&#9650;' : '&#9660;'}</span>${pctStr}${momExtra}</td>
+      <td class="mt-spark">${miniSpark(isUp)}</td>
+    </tr>`;
   }
 
   const cards = categoryOrder.filter(cat => grouped[cat] && grouped[cat].length > 0).map(cat => {
     let innerHtml = '';
 
     if (cat === '환율/원자재') {
-      // 윗줄: 환율, 아래줄: 원자재
       const fxItems = grouped[cat].filter(m => m.sub === '환율');
       const commodityItems = grouped[cat].filter(m => m.sub === '원자재');
-      innerHtml = `
-        <div style="font-size:0.7rem;color:rgba(255,255,255,0.35);margin-bottom:4px">환율</div>
-        <div class="market-group-items">${fxItems.map(renderMarketCard).join('')}</div>
-        <div style="font-size:0.7rem;color:rgba(255,255,255,0.35);margin:8px 0 4px">원자재</div>
-        <div class="market-group-items">${commodityItems.map(renderMarketCard).join('')}</div>`;
+      innerHtml = `<table class="market-table">
+        <tr><td colspan="4" style="font-size:0.65rem;color:rgba(255,255,255,0.25);padding:2px 0">환율</td></tr>
+        ${fxItems.map(renderMarketRow).join('')}
+        <tr><td colspan="4" style="font-size:0.65rem;color:rgba(255,255,255,0.25);padding:6px 0 2px">원자재</td></tr>
+        ${commodityItems.map(renderMarketRow).join('')}
+      </table>`;
     } else if (cat === '메모리 스팟가격') {
       const dateLabel = memoryItems.length > 0 ? ` (${memoryItems[0].date})` : '';
-      innerHtml = `<div class="market-group-items">${grouped[cat].map(renderMarketCard).join('')}</div>`;
+      innerHtml = `<table class="market-table">${grouped[cat].map(renderMarketRow).join('')}</table>`;
       return `<div class="market-group">
-        <div class="market-group-title">${categoryIcons[cat] || ''} ${cat}<span style="font-size:0.65rem;color:rgba(255,255,255,0.2);margin-left:6px">${dateLabel}</span></div>
+        <div class="market-group-title">${categoryIcons[cat] || ''} ${cat}<span style="font-size:0.6rem;color:rgba(255,255,255,0.2);margin-left:4px">${dateLabel}</span></div>
         ${innerHtml}
       </div>`;
     } else {
-      innerHtml = `<div class="market-group-items">${grouped[cat].map(renderMarketCard).join('')}</div>`;
+      innerHtml = `<table class="market-table">${grouped[cat].map(renderMarketRow).join('')}</table>`;
     }
 
     return `<div class="market-group">
@@ -1073,6 +1089,10 @@ router.get('/dashboard', async (req, res) => {
     marketCards: cards,
     investorRows,
     creditRows,
+    latestCards,
+    hotCards,
+    topReturnCards,
+    followCards,
     dartCards,
     earningsCards,
     updatedAt: new Date().toLocaleString('ko-KR'),
