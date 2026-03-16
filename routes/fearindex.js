@@ -13,30 +13,32 @@ const PROFANITY_WORDS = [
   '폭락', '망했', '폭망', '깡통', '물렸', '손절', '개미털', '작전', '세력놈',
 ];
 
-// 네이버 종목 토론방 게시글 수집
+// 네이버 종목 토론방 게시글 수집 (3페이지, 약 50~60개)
 async function fetchNaverDiscussion(stockCode) {
+  const allTitles = [];
   try {
-    const url = `https://finance.naver.com/item/board.naver?code=${stockCode}`;
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
-    });
-    const html = await resp.text();
+    for (let page = 1; page <= 3; page++) {
+      const url = `https://finance.naver.com/item/board.naver?code=${stockCode}&page=${page}`;
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
+      });
+      const html = await resp.text();
 
-    const titles = [];
-    // 게시글 제목 추출
-    const titleMatches = html.match(/<td class="title"[^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/g) || [];
-    for (const m of titleMatches) {
-      const textMatch = m.match(/<a[^>]*>([\s\S]*?)<\/a>/);
-      if (textMatch) {
-        const title = textMatch[1].replace(/<[^>]*>/g, '').trim();
-        if (title) titles.push(title);
+      const titleMatches = html.match(/<td class="title"[^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/g) || [];
+      for (const m of titleMatches) {
+        const textMatch = m.match(/<a[^>]*>([\s\S]*?)<\/a>/);
+        if (textMatch) {
+          const title = textMatch[1].replace(/<[^>]*>/g, '').trim();
+          if (title) allTitles.push(title);
+        }
       }
+      // 페이지 간 딜레이 (네이버 차단 방지)
+      if (page < 3) await new Promise(r => setTimeout(r, 500));
     }
-    return titles;
   } catch (e) {
     console.error(`[Fear] Fetch error for ${stockCode}:`, e.message);
-    return [];
   }
+  return allTitles;
 }
 
 // 비속어 비율 계산
@@ -63,13 +65,13 @@ function analyzeProfanity(titles) {
   };
 }
 
-// 공포 레벨 판정
+// 민심 레벨 판정
 function getFearLevel(ratio) {
-  if (ratio >= 30) return { level: 'extreme', emoji: '🔥', label: '극도 공포' };
-  if (ratio >= 20) return { level: 'high', emoji: '😱', label: '높은 공포' };
-  if (ratio >= 10) return { level: 'moderate', emoji: '😰', label: '보통' };
-  if (ratio >= 5) return { level: 'normal', emoji: '😐', label: '평온' };
-  return { level: 'calm', emoji: '😌', label: '매우 평온' };
+  if (ratio >= 30) return { level: 'extreme', emoji: '🤬', label: '민심 최악' };
+  if (ratio >= 20) return { level: 'high', emoji: '😤', label: '불만 높음' };
+  if (ratio >= 10) return { level: 'moderate', emoji: '😐', label: '보통' };
+  if (ratio >= 5) return { level: 'normal', emoji: '😊', label: '긍정적' };
+  return { level: 'calm', emoji: '🥰', label: '민심 좋음' };
 }
 
 // 데일리 크롤링 (주요 종목)
@@ -129,8 +131,8 @@ async function dailyFearCheck() {
         fear.level, result.words.join(','), today
       );
 
-      // 네이버 부하 방지
-      await new Promise(r => setTimeout(r, 1000));
+      // 네이버 부하 방지 (3페이지 수집으로 요청 증가)
+      await new Promise(r => setTimeout(r, 2000));
     } catch (e) {
       console.error(`[Fear] Error for ${stock.name}:`, e.message);
     }
