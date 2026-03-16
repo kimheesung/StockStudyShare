@@ -140,26 +140,26 @@ const DART_CACHE_TTL = 30 * 60 * 1000; // 30분
 
 const SYMBOLS = [
   // 지수
-  { symbol: '^KS11', name: 'KOSPI', category: '지수' },
-  { symbol: '^KQ11', name: 'KOSDAQ', category: '지수' },
-  { symbol: '^GSPC', name: 'S&P 500', category: '지수' },
-  { symbol: '^IXIC', name: 'NASDAQ', category: '지수' },
-  { symbol: '^DJI', name: 'Dow Jones', category: '지수' },
-  // 환율/원자재 (합침: 윗줄 환율, 아래줄 원자재)
-  { symbol: 'KRW=X', name: 'USD/KRW', category: '환율/원자재', sub: '환율' },
-  { symbol: 'JPY=X', name: 'USD/JPY', category: '환율/원자재', sub: '환율' },
-  { symbol: 'GC=F', name: 'Gold', category: '환율/원자재', sub: '원자재' },
-  { symbol: 'CL=F', name: 'WTI Oil', category: '환율/원자재', sub: '원자재' },
+  { symbol: '^KS11', name: 'KOSPI', category: '지수', chartUrl: 'https://finance.naver.com/sise/sise_index.naver?code=KOSPI' },
+  { symbol: '^KQ11', name: 'KOSDAQ', category: '지수', chartUrl: 'https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ' },
+  { symbol: '^GSPC', name: 'S&P 500', category: '지수', chartUrl: 'https://www.investing.com/indices/us-spx-500' },
+  { symbol: '^IXIC', name: 'NASDAQ', category: '지수', chartUrl: 'https://www.investing.com/indices/nasdaq-composite' },
+  { symbol: '^DJI', name: 'Dow Jones', category: '지수', chartUrl: 'https://www.investing.com/indices/us-30' },
+  // 환율/원자재
+  { symbol: 'KRW=X', name: 'USD/KRW', category: '환율/원자재', sub: '환율', chartUrl: 'https://www.investing.com/currencies/usd-krw' },
+  { symbol: 'JPY=X', name: 'USD/JPY', category: '환율/원자재', sub: '환율', chartUrl: 'https://www.investing.com/currencies/usd-jpy' },
+  { symbol: 'GC=F', name: 'Gold', category: '환율/원자재', sub: '원자재', chartUrl: 'https://www.investing.com/commodities/gold' },
+  { symbol: 'CL=F', name: 'WTI Oil', category: '환율/원자재', sub: '원자재', chartUrl: 'https://www.investing.com/commodities/crude-oil' },
   // 반도체
-  { symbol: '^SOX', name: 'SOX 반도체지수', category: '반도체' },
-  { symbol: '005930.KS', name: '삼성전자', category: '반도체' },
-  { symbol: '000660.KS', name: 'SK하이닉스', category: '반도체' },
-  { symbol: 'MU', name: 'RAM 선행 (Micron)', category: '반도체' },
-  { symbol: 'WDC', name: 'NAND 선행 (WD)', category: '반도체' },
+  { symbol: '^SOX', name: 'SOX 반도체지수', category: '반도체', chartUrl: 'https://www.investing.com/indices/phlx-semiconductor' },
+  { symbol: '005930.KS', name: '삼성전자', category: '반도체', chartUrl: 'https://finance.naver.com/item/main.naver?code=005930' },
+  { symbol: '000660.KS', name: 'SK하이닉스', category: '반도체', chartUrl: 'https://finance.naver.com/item/main.naver?code=000660' },
+  { symbol: 'MU', name: 'RAM 선행 (Micron)', category: '반도체', chartUrl: 'https://www.investing.com/equities/micron-technology' },
+  { symbol: 'WDC', name: 'NAND 선행 (WD)', category: '반도체', chartUrl: 'https://www.investing.com/equities/western-digital' },
   // 암호화폐
-  { symbol: 'BTC-USD', name: 'Bitcoin', category: '암호화폐' },
-  { symbol: 'ETH-USD', name: 'Ethereum', category: '암호화폐' },
-  { symbol: 'ANT-USD', name: 'ANT', category: '암호화폐' },
+  { symbol: 'BTC-USD', name: 'Bitcoin', category: '암호화폐', chartUrl: 'https://www.investing.com/crypto/bitcoin' },
+  { symbol: 'ETH-USD', name: 'Ethereum', category: '암호화폐', chartUrl: 'https://www.investing.com/crypto/ethereum' },
+  { symbol: 'ANT-USD', name: 'ANT', category: '암호화폐', chartUrl: 'https://www.investing.com/crypto/aragon' },
 ];
 
 async function fetchMarketData() {
@@ -199,6 +199,7 @@ async function fetchMarketData() {
         const kospiIdx = results.findIndex(r => r.symbol === '^KS11');
         results.splice(kospiIdx >= 0 ? kospiIdx + 1 : 2, 0, {
           symbol: 'KOSPI200F', name: 'KOSPI 야간선물', category: '지수',
+          chartUrl: 'https://finance.naver.com/sise/sise_index.naver?code=KPI200',
           price: nfPrice, change: nfChange, changePercent: nfPct, prevClose: nfPrice - nfChange
         });
       }
@@ -718,14 +719,16 @@ router.get('/dashboard', async (req, res) => {
   } catch(e) {}
 
   function renderMarketCard(m) {
+    const linkOpen = m.chartUrl ? `<a href="${m.chartUrl}" target="_blank" rel="noopener" class="market-card" style="text-decoration:none;color:inherit;cursor:pointer">` : '<div class="market-card">';
+    const linkClose = m.chartUrl ? '</a>' : '</div>';
     if (m.price === null || m.price === undefined) {
-      return `<div class="market-card"><div class="market-name">${escapeHtml(m.name)}</div><div class="market-price">--</div></div>`;
+      return `${linkOpen}<div class="market-name">${escapeHtml(m.name)}</div><div class="market-price">--</div>${linkClose}`;
     }
     const isMemory = m.date; // 메모리 스팟가격 구분
     const priceStr = isMemory ? `$${m.price.toFixed(2)}` : (m.price >= 1000 ? m.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : m.price.toFixed(2));
     const changeVal = isMemory ? m.change : m.changePercent;
     if (changeVal === null || changeVal === undefined) {
-      return `<div class="market-card"><div class="market-name">${escapeHtml(m.name)}</div><div class="market-price">${priceStr}</div></div>`;
+      return `${linkOpen}<div class="market-name">${escapeHtml(m.name)}</div><div class="market-price">${priceStr}</div>${linkClose}`;
     }
     const isUp = changeVal >= 0;
     const sign = isUp ? '+' : '';
@@ -738,12 +741,12 @@ router.get('/dashboard', async (req, res) => {
       const momSign = momUp ? '+' : '';
       momHtml = `<div style="font-size:0.6rem;color:${momUp ? 'rgba(239,68,68,0.7)' : 'rgba(59,130,246,0.7)'};margin-top:1px">전월비 ${momSign}${m.momChange.toFixed(1)}%</div>`;
     }
-    return `<div class="market-card">
+    return `${linkOpen}
       <div class="market-name">${escapeHtml(m.name)}</div>
       <div class="market-price">${priceStr}</div>
       <div class="market-change ${cls}"><span class="change-arrow">${isUp ? '&#9650;' : '&#9660;'}</span> ${pctStr}</div>
       ${momHtml}
-    </div>`;
+    ${linkClose}`;
   }
 
   const cards = categoryOrder.filter(cat => grouped[cat] && grouped[cat].length > 0).map(cat => {
