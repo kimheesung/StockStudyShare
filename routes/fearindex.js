@@ -20,9 +20,7 @@ async function fetchNaverDiscussion(stockCode) {
     const resp = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' },
     });
-    const buf = Buffer.from(await resp.arrayBuffer());
-    let html;
-    try { html = require('iconv-lite').decode(buf, 'euc-kr'); } catch { html = buf.toString('utf8'); }
+    const html = await resp.text();
 
     const titles = [];
     // 게시글 제목 추출
