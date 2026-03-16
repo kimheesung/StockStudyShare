@@ -78,10 +78,10 @@ passport.use(new GoogleStrategy({
     const isAdminUser = ADMIN_GOOGLE_IDS.includes(id);
     const role = isAdminUser ? 'admin' : 'user';
     const nickname = isAdminUser ? (process.env.ADMIN_NICKNAME || '에드가') : null;
-    db.prepare('INSERT INTO users (id, name, email, photo, role, nickname, points) VALUES (?, ?, ?, ?, ?, ?, 1000000)').run(id, name, email, photo, role, nickname);
+    db.prepare('INSERT INTO users (id, name, email, photo, role, nickname, points) VALUES (?, ?, ?, ?, ?, ?, 200000)').run(id, name, email, photo, role, nickname);
     user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
     // 가입 환영 포인트 로그
-    db.prepare("INSERT INTO point_logs (user_id, amount, type, description) VALUES (?, 1000000, 'welcome', '가입 환영 포인트 (오픈 이벤트)')").run(id);
+    db.prepare("INSERT INTO point_logs (user_id, amount, type, description) VALUES (?, 200000, 'welcome', '베타 서비스 가입 환영 포인트')").run(id);
   } else {
     // 기존 유저: 이름/사진 업데이트
     db.prepare('UPDATE users SET name = ?, photo = ? WHERE id = ?').run(name, photo, id);
