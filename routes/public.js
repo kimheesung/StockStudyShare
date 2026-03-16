@@ -805,8 +805,18 @@ router.get('/dashboard', async (req, res) => {
     </tr>`;
   }
 
+  const marketTime = marketCache.ts ? new Date(marketCache.ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+  const categoryUpdateInfo = {
+    '지수': `실시간 · ${marketTime}`,
+    '환율/원자재': `1분 갱신 · ${marketTime}`,
+    '반도체': `1분 갱신 · ${marketTime}`,
+    '메모리 스팟가격': memoryItems.length > 0 ? `일 1회 · ${memoryItems[0].date}` : '일 1회',
+    '암호화폐': `실시간 · ${marketTime}`,
+  };
+
   const cards = categoryOrder.filter(cat => grouped[cat] && grouped[cat].length > 0).map(cat => {
     let innerHtml = '';
+    const updateLabel = categoryUpdateInfo[cat] || '';
 
     if (cat === '환율/원자재') {
       const fxItems = grouped[cat].filter(m => m.sub === '환율');
@@ -817,19 +827,12 @@ router.get('/dashboard', async (req, res) => {
         <tr><td colspan="4" style="font-size:0.65rem;color:rgba(255,255,255,0.25);padding:6px 0 2px">원자재</td></tr>
         ${commodityItems.map(renderMarketRow).join('')}
       </table>`;
-    } else if (cat === '메모리 스팟가격') {
-      const dateLabel = memoryItems.length > 0 ? ` (${memoryItems[0].date})` : '';
-      innerHtml = `<table class="market-table">${grouped[cat].map(renderMarketRow).join('')}</table>`;
-      return `<div class="market-group">
-        <div class="market-group-title">${categoryIcons[cat] || ''} ${cat}<span style="font-size:0.6rem;color:rgba(255,255,255,0.2);margin-left:4px">${dateLabel}</span></div>
-        ${innerHtml}
-      </div>`;
     } else {
       innerHtml = `<table class="market-table">${grouped[cat].map(renderMarketRow).join('')}</table>`;
     }
 
     return `<div class="market-group">
-      <div class="market-group-title">${categoryIcons[cat] || ''} ${cat}</div>
+      <div class="market-group-title">${categoryIcons[cat] || ''} ${cat}<span style="font-size:0.58rem;color:rgba(255,255,255,0.18);margin-left:6px;font-weight:400">${updateLabel}</span></div>
       ${innerHtml}
     </div>`;
   }).join('');
