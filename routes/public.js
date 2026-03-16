@@ -1095,7 +1095,13 @@ router.get('/report-dashboard', async (req, res) => {
       const price = r.sale_price === 0 ? '무료' : r.sale_price.toLocaleString() + 'P';
       const date = r.published_at ? new Date(r.published_at).toLocaleDateString('ko-KR') : '';
       const owned = purchasedSet.has(r.id) ? '<span class="tag-owned">보유중</span>' : '';
-      return `<a href="/reports/${r.id}" class="report-card"><div class="report-card-top"><div class="report-card-top-left"><span class="report-sector">${escapeHtml(r.sector || '기타')}</span>${owned}</div><span class="report-price">${price}</span></div><h4 class="report-title">${escapeHtml(r.title)}</h4><div class="report-stock">${escapeHtml(r.stock_name)}</div><div class="report-meta"><span>${escapeHtml(r.author_name)}</span><span>${date}</span></div><div class="report-purchases">${r.purchase_count || 0}명 구매</div></a>`;
+      let returnHtml = '';
+      if (r.returnPct !== undefined) {
+        const isUp = r.returnPct >= 0;
+        const sign = isUp ? '+' : '';
+        returnHtml = `<div style="font-size:0.85rem;font-weight:900;margin-top:6px;color:${isUp ? '#4ade80' : '#ef4444'}">${sign}${r.returnPct.toFixed(1)}%</div>`;
+      }
+      return `<a href="/reports/${r.id}" class="report-card"><div class="report-card-top"><div class="report-card-top-left"><span class="report-sector">${escapeHtml(r.sector || '기타')}</span>${owned}</div><span class="report-price">${price}</span></div><h4 class="report-title">${escapeHtml(r.title)}</h4><div class="report-stock">${escapeHtml(r.stock_name)}</div>${returnHtml}<div class="report-meta"><span>${escapeHtml(r.author_name)}</span><span>${date}</span></div><div class="report-purchases">${r.purchase_count || 0}명 구매</div></a>`;
     }).join('');
   }
 
@@ -1115,7 +1121,37 @@ router.get('/report-dashboard', async (req, res) => {
     WHERE r.status = 'on_sale' AND (r.type IS NULL OR r.type != 'visit_note')
     ORDER BY view_count DESC LIMIT 12`).all(twoWeeksAgo.toISOString());
   const threeMonthsAgo = new Date(); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-  const topReturnReports = db.prepare(baseQ + ` AND r.entry_price IS NOT NULL AND r.entry_price > 0 AND r.published_at <= ? ORDER BY r.published_at ASC LIMIT 12`).all(threeMonthsAgo.toISOString());
+  const topReturnCandidates = db.prepare(baseQ + ` AND r.entry_price IS NOT NULL AND r.entry_price > 0 AND r.stock_code IS NOT NULL AND r.stock_code != '' ORDER BY r.published_at DESC LIMIT 30`).all();
+
+  // 현재가 조회하여 수익률 계산
+  let topReturnReports = [];
+  if (topReturnCandidates.length > 0) {
+    const symbolMap = {};
+    for (const r of topReturnCandidates) {
+      const code = r.stock_code.replace(/[^0-9A-Za-z]/g, '');
+      symbolMap[r.id] = /^\d{6}$/.test(code) ? `${code}.KS` : code;
+    }
+    const uniqueSymbols = [...new Set(Object.values(symbolMap))];
+    const priceMap = {};
+    await Promise.all(uniqueSymbols.map(async (sym) => {
+      try {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d`;
+        const resp = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const json = await resp.json();
+        const price = json.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if (price) priceMap[sym] = price;
+      } catch {}
+    }));
+    const withReturn = topReturnCandidates.map(r => {
+      const sym = symbolMap[r.id];
+      const cur = priceMap[sym];
+      if (!cur || !r.entry_price) return null;
+      const returnPct = ((cur - r.entry_price) / r.entry_price) * 100;
+      return { ...r, returnPct, currentPrice: cur };
+    }).filter(Boolean);
+    withReturn.sort((a, b) => b.returnPct - a.returnPct);
+    topReturnReports = withReturn.slice(0, 12);
+  }
   const followReports = db.prepare(`SELECT r.id, r.title, r.stock_name, r.sector, r.sale_price, r.published_at,
     COALESCE(u.nickname, ap.display_name, u.name) as author_name, r.author_id,
     (SELECT COUNT(*) FROM orders WHERE report_id = r.id) as purchase_count
