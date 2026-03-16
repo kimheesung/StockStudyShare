@@ -72,13 +72,13 @@ router.get('/api/pending-preview', isLoggedIn, isAdmin, (req, res) => {
     title = '스터디장 지원서 대기';
     link = '/admin/authors';
     items = db.prepare(`
-      SELECT a.id, u.name, u.nickname, u.email, u.photo, a.experience, a.created_at
+      SELECT a.id, u.name, u.nickname, u.email, u.photo, a.study_name, a.study_plan, a.created_at
       FROM leader_applications a JOIN users u ON a.user_id = u.id
       WHERE a.status = 'pending' ORDER BY a.created_at DESC LIMIT 10
     `).all().map(a => ({
       label: a.nickname || a.name,
       sub: a.email,
-      detail: a.experience ? a.experience.slice(0, 80) + (a.experience.length > 80 ? '...' : '') : '',
+      detail: a.study_name ? `${a.study_name} - ${(a.study_plan || '').slice(0, 60)}${(a.study_plan || '').length > 60 ? '...' : ''}` : '',
       time: a.created_at,
       photo: a.photo,
     }));
