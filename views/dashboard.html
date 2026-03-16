@@ -101,12 +101,6 @@
 
     /* 주요 공시 - 가로 스크롤 */
     .dart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-    .dart-header .btn-excel {
-      padding: 6px 16px; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25);
-      border-radius: 10px; color: #4ade80; font-size: 0.78rem; font-weight: 700; cursor: pointer;
-      font-family: inherit; text-decoration: none; transition: all 0.2s;
-    }
-    .dart-header .btn-excel:hover { background: rgba(34,197,94,0.22); }
     .dart-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; cursor: grab; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
     .dart-scroll::-webkit-scrollbar { height: 6px; }
     .dart-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
@@ -212,7 +206,6 @@
         <h2 class="section-title" style="margin-bottom:4px"><span class="icon">📋</span> 주요 공시 <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);font-weight:400">(최근 3일)</span></h2>
         <p style="font-size:0.75rem;color:rgba(255,255,255,0.25)">전환사채 · 유상증자 · 매출액 변동 · 대규모 투자</p>
       </div>
-      <a href="/api/dart-excel" class="btn-excel" id="btn-excel">📥 엑셀 다운로드</a>
     </div>
     <div class="dart-scroll" id="dart-scroll">
       {{dartCards}}
