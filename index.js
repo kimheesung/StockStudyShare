@@ -26,6 +26,11 @@ for (const adminId of ADMIN_GOOGLE_IDS) {
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// SVG Favicon
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f46e5"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#g)"/><text x="16" y="23" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="20" fill="white">S</text></svg>`;
+app.get('/favicon.ico', (req, res) => { res.type('image/svg+xml').send(FAVICON_SVG); });
+app.get('/favicon.svg', (req, res) => { res.type('image/svg+xml').send(FAVICON_SVG); });
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
