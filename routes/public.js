@@ -205,27 +205,43 @@ async function fetchMarketData() {
       }
     } catch {}
 
-    // 삼성전자/SK하이닉스 NXT 야간거래 반영 (네이버 실시간, 개별 요청)
+    // 삼성전자/SK하이닉스 NXT + 정규장 실시간 반영 (네이버 모바일 API)
     const nxtCodes = ['005930', '000660'];
     await Promise.all(nxtCodes.map(async (code) => {
       try {
-        const nxtResp = await fetch(`https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${code}`, {
+        const resp = await fetch(`https://m.stock.naver.com/api/stock/${code}/basic`, {
           headers: { 'User-Agent': 'Mozilla/5.0' }
         });
-        const nxtJson = await nxtResp.json();
-        const d = nxtJson.result?.areas?.[0]?.datas?.[0];
-        if (!d) return;
+        const data = await resp.json();
         const yahooSym = code + '.KS';
         const idx = results.findIndex(r => r.symbol === yahooSym);
         if (idx < 0) return;
-        const nPrice = parseInt(d.nv);
-        const nChange = parseInt(d.cv);
-        const nPct = parseFloat(d.cr);
-        if (nPrice > 0) {
-          results[idx].price = nPrice;
-          results[idx].change = nChange;
-          results[idx].changePercent = nPct;
-          results[idx].prevClose = nPrice - nChange;
+
+        const over = data.overMarketPriceInfo;
+        if (over && over.overMarketStatus === 'OPEN' && over.overPrice) {
+          // NXT 거래 중 (오전 8~9시 또는 오후 4~6시)
+          const nPrice = parseInt(over.overPrice.replace(/,/g, ''));
+          const nChange = parseInt((over.compareToPreviousClosePrice || '0').replace(/,/g, ''));
+          const nPct = parseFloat(over.fluctuationsRatio || 0);
+          const isDown = over.compareToPreviousPrice?.name === 'FALLING';
+          if (nPrice > 0) {
+            results[idx].price = nPrice;
+            results[idx].change = isDown ? -nChange : nChange;
+            results[idx].changePercent = isDown ? -nPct : nPct;
+            results[idx].prevClose = nPrice - results[idx].change;
+            results[idx].nxt = true;
+          }
+        } else if (data.closePrice) {
+          // 정규장 또는 장 마감 후
+          const nPrice = parseInt(data.closePrice.replace(/,/g, ''));
+          const nChange = parseInt((data.compareToPreviousClosePrice || '0').replace(/,/g, ''));
+          const nPct = parseFloat(data.fluctuationsRatio || 0);
+          if (nPrice > 0) {
+            results[idx].price = nPrice;
+            results[idx].change = nChange;
+            results[idx].changePercent = nPct;
+            results[idx].prevClose = nPrice - nChange;
+          }
         }
       } catch {}
     }));
@@ -761,9 +777,10 @@ router.get('/dashboard', async (req, res) => {
   }
 
   function renderMarketRow(m) {
+    const nxtBadge = m.nxt ? ' <span style="font-size:0.55rem;padding:1px 4px;background:rgba(251,191,36,0.15);color:#fbbf24;border-radius:4px;font-weight:700;vertical-align:middle">NXT</span>' : '';
     const nameHtml = m.chartUrl
-      ? `<a href="${m.chartUrl}" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.6);text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.15)">${escapeHtml(m.name)}</a>`
-      : escapeHtml(m.name);
+      ? `<a href="${m.chartUrl}" target="_blank" rel="noopener" style="color:rgba(255,255,255,0.6);text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.15)">${escapeHtml(m.name)}</a>${nxtBadge}`
+      : escapeHtml(m.name) + nxtBadge;
     if (m.price === null || m.price === undefined) {
       return `<tr><td class="mt-name">${nameHtml}</td><td class="mt-price">--</td><td class="mt-change"></td><td class="mt-spark"></td></tr>`;
     }
