@@ -61,6 +61,79 @@ router.post('/toggle-ad-banner', isLoggedIn, isAdmin, (req, res) => {
   res.json({ ok: true, show: newVal === 'true' });
 });
 
+// 대기 항목 미리보기 API
+router.get('/api/pending-preview', isLoggedIn, isAdmin, (req, res) => {
+  const type = req.query.type;
+  let items = [];
+  let title = '';
+  let link = '';
+
+  if (type === 'apps') {
+    title = '스터디장 지원서 대기';
+    link = '/admin/authors';
+    items = db.prepare(`
+      SELECT a.id, u.name, u.nickname, u.email, u.photo, a.experience, a.created_at
+      FROM leader_applications a JOIN users u ON a.user_id = u.id
+      WHERE a.status = 'pending' ORDER BY a.created_at DESC LIMIT 10
+    `).all().map(a => ({
+      label: a.nickname || a.name,
+      sub: a.email,
+      detail: a.experience ? a.experience.slice(0, 80) + (a.experience.length > 80 ? '...' : '') : '',
+      time: a.created_at,
+      photo: a.photo,
+    }));
+  } else if (type === 'reports') {
+    title = '리포트 검수 대기';
+    link = '/admin/reports';
+    items = db.prepare(`
+      SELECT r.id, r.title, r.stock_name, r.created_at, COALESCE(u.nickname, u.name) as author_name, u.photo
+      FROM reports r JOIN users u ON r.author_id = u.id
+      WHERE r.status IN ('submitted', 'pending_admin') AND (r.type IS NULL OR r.type != 'visit_note')
+      ORDER BY r.created_at DESC LIMIT 10
+    `).all().map(r => ({
+      label: r.title,
+      sub: r.author_name + (r.stock_name ? ' · ' + r.stock_name : ''),
+      detail: '',
+      time: r.created_at,
+      photo: r.photo,
+    }));
+  } else if (type === 'visit_notes') {
+    title = '탐방노트 검수 대기';
+    link = '/admin/reports?type=visit_note';
+    items = db.prepare(`
+      SELECT r.id, r.title, r.stock_name, r.created_at, COALESCE(u.nickname, u.name) as author_name, u.photo
+      FROM reports r JOIN users u ON r.author_id = u.id
+      WHERE r.type = 'visit_note' AND r.status IN ('submitted', 'pending_admin')
+      ORDER BY r.created_at DESC LIMIT 10
+    `).all().map(r => ({
+      label: r.title,
+      sub: r.author_name + (r.stock_name ? ' · ' + r.stock_name : ''),
+      detail: '',
+      time: r.created_at,
+      photo: r.photo,
+    }));
+  } else if (type === 'flags') {
+    title = '신고 대기';
+    link = '/admin/flags';
+    items = db.prepare(`
+      SELECT rf.id, rf.reason, rf.created_at, r.title as report_title, COALESCE(u.nickname, u.name) as reporter_name, u.photo
+      FROM report_flags rf
+      JOIN reports r ON rf.report_id = r.id
+      JOIN users u ON rf.user_id = u.id
+      WHERE rf.status = 'pending'
+      ORDER BY rf.created_at DESC LIMIT 10
+    `).all().map(f => ({
+      label: f.report_title,
+      sub: f.reporter_name + ' 신고',
+      detail: f.reason ? f.reason.slice(0, 80) : '',
+      time: f.created_at,
+      photo: f.photo,
+    }));
+  }
+
+  res.json({ title, link, items });
+});
+
 // 스터디장 지원서 관리
 router.get('/authors', isLoggedIn, isAdmin, (req, res) => {
   const statusFilter = req.query.status || 'pending';

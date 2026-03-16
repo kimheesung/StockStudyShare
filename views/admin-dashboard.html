@@ -68,15 +68,15 @@
     </div>
 
     <div class="admin-links">
-      <a href="/admin/authors" class="admin-link">
+      <a href="/admin/authors" class="admin-link" onclick="return showPreview(event,'apps')">
         <h3>스터디장 지원서 <span class="badge">{{pendingApps}}</span></h3>
         <p>스터디장 지원서를 심사합니다.</p>
       </a>
-      <a href="/admin/reports" class="admin-link">
+      <a href="/admin/reports" class="admin-link" onclick="return showPreview(event,'reports')">
         <h3>리포트 검수 <span class="badge">{{pendingReports}}</span></h3>
         <p>제출된 리포트를 검수합니다.</p>
       </a>
-      <a href="/admin/reports?type=visit_note" class="admin-link">
+      <a href="/admin/reports?type=visit_note" class="admin-link" onclick="return showPreview(event,'visit_notes')">
         <h3>탐방노트 검수 <span class="badge">{{pendingVisitNotes}}</span></h3>
         <p>제출된 탐방노트를 검수합니다.</p>
       </a>
@@ -88,7 +88,7 @@
         <h3>회원 관리</h3>
         <p>전체 회원 목록을 확인합니다.</p>
       </a>
-      <a href="/admin/flags" class="admin-link">
+      <a href="/admin/flags" class="admin-link" onclick="return showPreview(event,'flags')">
         <h3>신고 관리 <span class="badge">{{pendingFlags}}</span></h3>
         <p>접수된 신고를 처리합니다.</p>
       </a>
@@ -125,7 +125,53 @@
       </div>
     </div>
   </div>
+  <!-- 미리보기 팝업 -->
+  <div id="preview-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;align-items:center;justify-content:center">
+    <div style="background:#1a1a2e;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:28px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 id="preview-title" style="font-size:1.1rem;font-weight:900"></h3>
+        <button onclick="closePreview()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:1.2rem;cursor:pointer">&times;</button>
+      </div>
+      <div id="preview-body" style="margin-bottom:20px"></div>
+      <a id="preview-link" href="#" style="display:block;text-align:center;padding:12px;background:linear-gradient(135deg,#4f46e5,#6366f1);border-radius:12px;color:#fff;text-decoration:none;font-weight:700;font-size:0.9rem">자세히 보기</a>
+    </div>
+  </div>
+
   <script>
+    function showPreview(e, type) {
+      e.preventDefault();
+      var overlay = document.getElementById('preview-overlay');
+      overlay.style.display = 'flex';
+      document.getElementById('preview-body').innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px">불러오는 중...</div>';
+      fetch('/admin/api/pending-preview?type=' + type, { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          document.getElementById('preview-title').textContent = d.title;
+          document.getElementById('preview-link').href = d.link;
+          if (!d.items || d.items.length === 0) {
+            document.getElementById('preview-body').innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px">대기 항목이 없습니다.</div>';
+            return;
+          }
+          var html = d.items.map(function(item) {
+            var timeStr = item.time ? new Date(item.time).toLocaleString('ko-KR', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+            var photoHtml = item.photo ? '<img src="' + item.photo + '" style="width:32px;height:32px;border-radius:50%;flex-shrink:0">' : '<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08);flex-shrink:0"></div>';
+            return '<div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;margin-bottom:8px">'
+              + photoHtml
+              + '<div style="flex:1;min-width:0">'
+              + '<div style="font-size:0.9rem;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + item.label + '</div>'
+              + '<div style="font-size:0.78rem;color:rgba(255,255,255,0.4)">' + item.sub + '</div>'
+              + (item.detail ? '<div style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:4px;line-height:1.4">' + item.detail + '</div>' : '')
+              + '</div>'
+              + '<div style="font-size:0.7rem;color:rgba(255,255,255,0.25);flex-shrink:0;white-space:nowrap">' + timeStr + '</div>'
+              + '</div>';
+          }).join('');
+          document.getElementById('preview-body').innerHTML = html;
+        });
+      return false;
+    }
+    function closePreview() { document.getElementById('preview-overlay').style.display = 'none'; }
+    document.getElementById('preview-overlay').addEventListener('click', function(e) { if (e.target === this) closePreview(); });
+
     var showAd = '{{showAdBanner}}' === 'true';
     function updateToggle() {
       var btn = document.getElementById('ad-toggle');
