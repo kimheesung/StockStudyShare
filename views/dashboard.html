@@ -212,6 +212,7 @@
 
     <!-- 탭1: 시장 주요 지표 -->
     <div class="fi-content active" id="fi-market">
+      <div style="font-size:0.7rem;color:rgba(255,255,255,0.2);margin-bottom:8px;text-align:right">업데이트: {{marketUpdatedAt}}</div>
       <div class="market-grid" id="market-grid">
         {{marketCards}}
       </div>
@@ -220,6 +221,7 @@
 
     <!-- 탭2: 실시간 실적 -->
     <div class="fi-content" id="fi-earnings">
+      <div style="font-size:0.7rem;color:rgba(255,255,255,0.2);margin-bottom:8px;text-align:right">업데이트: {{earningsUpdatedAt}}</div>
       <div class="dart-scroll" id="earnings-scroll">
         {{earningsCards}}
       </div>
@@ -227,7 +229,10 @@
 
     <!-- 탭3: 주요 공시 -->
     <div class="fi-content" id="fi-dart">
-      <p style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-bottom:12px">전환사채 · 유상증자 · 매출액 변동 · 대규모 투자 (최근 3일)</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:0.75rem;color:rgba(255,255,255,0.25)">전환사채 · 유상증자 · 매출액 변동 · 대규모 투자 (최근 3일)</span>
+        <span style="font-size:0.7rem;color:rgba(255,255,255,0.2)">업데이트: {{dartUpdatedAt}}</span>
+      </div>
       <div class="dart-scroll" id="dart-scroll">
         {{dartCards}}
       </div>
@@ -235,6 +240,7 @@
 
     <!-- 탭4: 투자자 매매동향 / 신용잔고 -->
     <div class="fi-content" id="fi-investor">
+      <div style="font-size:0.7rem;color:rgba(255,255,255,0.2);margin-bottom:8px;text-align:right">업데이트: {{investorUpdatedAt}}</div>
       <div class="data-grid">
         <div class="data-card">
           <h3>투자자별 매매동향 (억원)</h3>

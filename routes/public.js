@@ -1110,6 +1110,10 @@ router.get('/dashboard', async (req, res) => {
     dartCards,
     earningsCards,
     updatedAt: new Date().toLocaleString('ko-KR'),
+    marketUpdatedAt: marketCache.ts ? new Date(marketCache.ts).toLocaleString('ko-KR') : '-',
+    earningsUpdatedAt: earningsCards ? new Date().toLocaleString('ko-KR') : '-',
+    dartUpdatedAt: dartCache.ts ? new Date(dartCache.ts).toLocaleString('ko-KR') : '-',
+    investorUpdatedAt: investorCache.ts ? new Date(investorCache.ts).toLocaleString('ko-KR') : '-',
     // adBanner: adBannerHtml(),
   });
   res.send(html);

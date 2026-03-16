@@ -236,7 +236,7 @@ router.get('/', async (req, res) => {
     currentSort: sort || '',
     currentQ: q || '',
     isLoggedIn: user ? 'true' : '',
-    adBanner: adBannerHtml(),
+    // adBanner: adBannerHtml(),
   });
   res.send(html);
 });
@@ -313,7 +313,7 @@ router.get('/:id', (req, res) => {
     userPoints: user ? String(user.points || 0) : '0',
     holdingDisclosure: escapeHtml(report.holding_disclosure || ''),
     conflictDisclosure: escapeHtml(report.conflict_disclosure || ''),
-    adBanner: adBannerHtml(),
+    // adBanner: adBannerHtml(),
   });
   res.send(html);
 });
@@ -491,7 +491,7 @@ router.get('/:id/view', isLoggedIn, (req, res) => {
     reportSalePrice: String(report.sale_price || 0),
     hasPdf: report.pdf_path ? 'true' : '',
     pdfUrl: report.pdf_path ? `/reports/${report.id}/pdf` : '',
-    adBanner: adBannerHtml(),
+    // adBanner: adBannerHtml(),
   });
   res.send(html);
 });

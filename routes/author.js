@@ -84,7 +84,7 @@ router.get('/dashboard', isLoggedIn, isAuthor, (req, res) => {
     displayName: escapeHtml(profile?.display_name || req.user.name),
     bio: escapeHtml(profile?.bio || ''),
     sectors: escapeHtml(profile?.sectors || ''),
-    adBanner: adBannerHtml(),
+    // adBanner: adBannerHtml(),
   });
   res.send(html);
 });

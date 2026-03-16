@@ -295,7 +295,7 @@ router.get('/purchases', isLoggedIn, (req, res) => {
     nav: buildNav(req.user),
     purchaseRows: rows || '<tr><td colspan="6" class="empty-text">구매 내역이 없습니다.</td></tr>',
     totalCount: String(orders.length),
-    adBanner: adBannerHtml(),
+    // adBanner: adBannerHtml(),
   });
   res.send(html);
 });
@@ -321,7 +321,7 @@ router.get('/points', isLoggedIn, (req, res) => {
     currentPoints: (req.user.points || 0).toLocaleString(),
     nickname: escapeHtml(req.user.nickname || req.user.name),
     pointHistory,
-    adBanner: adBannerHtml(),
+    // adBanner: adBannerHtml(),
   });
   res.send(html);
 });

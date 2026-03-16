@@ -119,7 +119,7 @@ router.get('/', isLoggedIn, (req, res) => {
     leaderApplyStatus,
     currentQ: escapeHtml(searchQ),
     userPoints: String((db.prepare('SELECT points FROM users WHERE id = ?').get(req.user.id) || {}).points || 0),
-    adBanner: adBannerHtml(),
+    // adBanner: adBannerHtml(),
   });
   res.send(html);
 });
