@@ -205,6 +205,32 @@ async function fetchMarketData() {
       }
     } catch {}
 
+    // 삼성전자/SK하이닉스 NXT 야간거래 반영 (네이버 실시간)
+    try {
+      const nxtResp = await fetch('https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:005930|SERVICE_ITEM:000660', {
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+      const nxtJson = await nxtResp.json();
+      const nxtDatas = nxtJson.result?.areas || [];
+      for (const area of nxtDatas) {
+        const d = area.datas?.[0];
+        if (!d) continue;
+        const code = d.cd; // '005930' or '000660'
+        const yahooSym = code + '.KS';
+        const idx = results.findIndex(r => r.symbol === yahooSym);
+        if (idx < 0) continue;
+        const nPrice = parseInt(d.nv);
+        const nChange = parseInt(d.cv);
+        const nPct = parseFloat(d.cr);
+        if (nPrice > 0) {
+          results[idx].price = nPrice;
+          results[idx].change = nChange;
+          results[idx].changePercent = nPct;
+          results[idx].prevClose = nPrice - nChange;
+        }
+      }
+    } catch {}
+
     marketCache = { data: results, ts: now };
     return results;
   } catch (e) {
