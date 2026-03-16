@@ -762,6 +762,8 @@ router.get('/reports/new', isLoggedIn, isAuthor, (req, res) => {
     conflictDisclosure: '',
     basePrice: '',
     salePrice: '',
+    writtenAt: '',
+    publishedDate: '',
     visibility: 'study_only',
     maxBuyers: '0',
     studyRoomOptions: getStudyRoomOptions(req.user.id, ''),
@@ -809,7 +811,10 @@ router.post('/reports/new', isLoggedIn, isAuthor, reportPdfUpload.single('report
   const salePrice = (visibility === 'public') ? (parseInt(req.body.sale_price) || 0) : 0;
   const maxBuyers = (visibility === 'public') ? (parseInt(req.body.max_buyers) || 0) : 0;
 
-  const publishedAt = (status !== 'draft') ? new Date().toISOString() : null;
+  // 사용자 지정 공개일 또는 현재 시각
+  const userPublishedDate = req.body.published_date ? new Date(req.body.published_date + 'T09:00:00+09:00').toISOString() : null;
+  const publishedAt = (status !== 'draft') ? (userPublishedDate || new Date().toISOString()) : null;
+  const writtenAt = req.body.written_at || null;
 
   // 제출 시 현재 주가를 기준가로 자동 설정
   let basePrice = 0;
@@ -823,15 +828,15 @@ router.post('/reports/new', isLoggedIn, isAuthor, reportPdfUpload.single('report
     (author_id, title, stock_name, stock_code, market_type, sector, summary, thesis,
      investment_points, valuation_basis, risks, bear_case, references_text,
      holding_disclosure, conflict_disclosure, base_price, sale_price,
-     visibility, max_buyers, study_room_id, status, published_at, pdf_path)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+     visibility, max_buyers, study_room_id, status, published_at, written_at, pdf_path)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     req.user.id, req.body.title, req.body.stock_name, req.body.stock_code || '',
     req.body.market_type || '', req.body.sector || '', req.body.summary,
     req.body.thesis || '', req.body.investment_points || '', req.body.valuation_basis || '',
     req.body.risks || '', req.body.bear_case || '', req.body.references_text || '',
     req.body.holding_disclosure || '', req.body.conflict_disclosure || '',
     basePrice, salePrice, visibility, maxBuyers, studyRoomId, status,
-    publishedAt, pdfPath
+    publishedAt, writtenAt, pdfPath
   );
 
   // 스터디장 승인 필요 시 스터디장에게 알림
@@ -884,6 +889,8 @@ router.get('/reports/:id/edit', isLoggedIn, isAuthor, (req, res) => {
     salePrice: String(report.sale_price || ''),
     visibility: report.visibility || 'study_only',
     maxBuyers: String(report.max_buyers || 0),
+    writtenAt: report.written_at || '',
+    publishedDate: report.published_at ? report.published_at.slice(0, 10) : '',
     studyRoomOptions: getStudyRoomOptions(req.user.id, report.study_room_id),
     myReportOptions: getMyReportOptions(req.user.id),
   });
@@ -915,7 +922,9 @@ router.post('/reports/:id/edit', isLoggedIn, isAuthor, async (req, res) => {
   const salePrice = (visibility === 'public') ? (parseInt(req.body.sale_price) || 0) : 0;
   const maxBuyers = (visibility === 'public') ? (parseInt(req.body.max_buyers) || 0) : 0;
 
-  const publishedAt = (status !== 'draft' && !report.published_at) ? new Date().toISOString() : null;
+  const userPublishedDate = req.body.published_date ? new Date(req.body.published_date + 'T09:00:00+09:00').toISOString() : null;
+  const publishedAt = (status !== 'draft' && !report.published_at) ? (userPublishedDate || new Date().toISOString()) : null;
+  const writtenAt = req.body.written_at || report.written_at || null;
 
   // 제출 시 현재 주가를 기준가로 자동 설정
   let basePrice = report.base_price || 0;
@@ -923,21 +932,24 @@ router.post('/reports/:id/edit', isLoggedIn, isAuthor, async (req, res) => {
     basePrice = await fetchCurrentPrice(req.body.stock_code, req.body.market_type);
   }
 
+  // 사용자가 공개일을 변경한 경우 직접 업데이트
+  const updatePublishedAt = userPublishedDate && report.published_at ? userPublishedDate : null;
+
   db.prepare(`UPDATE reports SET
     title=?, stock_name=?, stock_code=?, market_type=?, sector=?, summary=?, thesis=?,
     investment_points=?, valuation_basis=?, risks=?, bear_case=?, references_text=?,
     holding_disclosure=?, conflict_disclosure=?, base_price=?, sale_price=?,
-    visibility=?, max_buyers=?, study_room_id=?, status=?,
+    visibility=?, max_buyers=?, study_room_id=?, status=?, written_at=?,
     updated_at=datetime('now'),
-    published_at=COALESCE(published_at, ?)
+    published_at=COALESCE(?, published_at, ?)
     WHERE id = ? AND author_id = ?`).run(
     req.body.title, req.body.stock_name, req.body.stock_code || '',
     req.body.market_type || '', req.body.sector || '', req.body.summary,
     req.body.thesis || '', req.body.investment_points || '', req.body.valuation_basis || '',
     req.body.risks || '', req.body.bear_case || '', req.body.references_text || '',
     req.body.holding_disclosure || '', req.body.conflict_disclosure || '',
-    basePrice, salePrice, visibility, maxBuyers, studyRoomId, status,
-    publishedAt,
+    basePrice, salePrice, visibility, maxBuyers, studyRoomId, status, writtenAt,
+    updatePublishedAt, publishedAt,
     req.params.id, req.user.id
   );
 
