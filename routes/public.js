@@ -454,6 +454,29 @@ async function fetchTopGainers() {
   }
 }
 
+// ── 1분마다 대시보드 데이터 자동 갱신 ──
+(function scheduleDashboardRefresh() {
+  async function refreshAll() {
+    try {
+      await Promise.all([
+        fetchMarketData(),
+        fetchInvestorData(),
+        fetchCreditData(),
+        fetchDartDisclosures(),
+        fetchTopGainers(),
+      ]);
+      console.log(`[Dashboard] Auto-refresh done at ${new Date().toISOString()}`);
+    } catch (e) {
+      console.error('[Dashboard] Auto-refresh error:', e.message);
+    }
+  }
+  // 서버 시작 5초 후 첫 실행, 이후 1분마다
+  setTimeout(() => {
+    refreshAll();
+    setInterval(refreshAll, 60 * 1000);
+  }, 5000);
+})();
+
 // 광고 문의 페이지
 router.get('/ad-inquiry', (req, res) => {
   const user = req.user;
