@@ -159,7 +159,7 @@ const SYMBOLS = [
   // 암호화폐
   { symbol: 'BTC-USD', name: 'Bitcoin', category: '암호화폐', chartUrl: 'https://www.investing.com/crypto/bitcoin' },
   { symbol: 'ETH-USD', name: 'Ethereum', category: '암호화폐', chartUrl: 'https://www.investing.com/crypto/ethereum' },
-  { symbol: 'ANT-USD', name: 'ANT', category: '암호화폐', chartUrl: 'https://www.investing.com/crypto/aragon' },
+  { symbol: 'ANT-USD', name: 'ANT', category: '암호화폐', chartUrl: 'https://www.mexc.com/exchange/ANT_USDT' },
 ];
 
 async function fetchMarketData() {
