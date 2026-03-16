@@ -579,7 +579,7 @@ router.get('/study-status', isLoggedIn, isAdmin, (req, res) => {
         <div style="font-weight:700;color:#fbbf24;font-size:0.85rem">${(r.points || 0).toLocaleString()}P</div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.8rem">
-        ${r.pending_apps > 0 ? `<span style="padding:4px 12px;border-radius:10px;background:rgba(168,85,247,0.15);color:#c084fc;font-weight:700">가입 대기 ${r.pending_apps}건</span>` : ''}
+        ${r.pending_apps > 0 ? `<span onclick="showApps(${r.id},'${escapeHtml(r.name).replace(/'/g, "\\'")}')" style="padding:4px 12px;border-radius:10px;background:rgba(168,85,247,0.15);color:#c084fc;font-weight:700;cursor:pointer">가입 대기 ${r.pending_apps}건</span>` : ''}
         ${r.pending_leader > 0 ? `<span style="padding:4px 12px;border-radius:10px;background:rgba(251,191,36,0.15);color:#fbbf24;font-weight:700">스터디장 승인 대기 ${r.pending_leader}건</span>` : ''}
         ${r.pending_admin > 0 ? `<span style="padding:4px 12px;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;font-weight:700">관리자 승인 대기 ${r.pending_admin}건</span>` : ''}
         <span style="padding:4px 12px;border-radius:10px;background:rgba(74,222,128,0.1);color:#4ade80">공개중 ${r.published_count}건</span>
@@ -615,8 +615,103 @@ router.get('/study-status', isLoggedIn, isAdmin, (req, res) => {
         <div class="summary-card"><div class="summary-val">${rooms.length}</div><div class="summary-label">총 스터디방</div></div>
       </div>
       ${rows || '<div style="color:rgba(255,255,255,0.3);text-align:center;padding:40px">스터디방이 없습니다.</div>'}
-    </div></body></html>`;
+    </div>
+    <div id="app-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;align-items:center;justify-content:center">
+      <div style="background:#1a1a2e;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:28px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h3 id="app-title" style="font-size:1.05rem;font-weight:900"></h3>
+          <button onclick="closeApps()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:1.4rem;cursor:pointer">&times;</button>
+        </div>
+        <div id="app-body"></div>
+      </div>
+    </div>
+    <script>
+      function showApps(roomId, roomName) {
+        var ov = document.getElementById('app-overlay');
+        ov.style.display = 'flex';
+        document.getElementById('app-title').textContent = roomName + ' - 가입 대기';
+        document.getElementById('app-body').innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px">불러오는 중...</div>';
+        fetch('/admin/api/study-apps?room_id=' + roomId, { credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (!d.items || d.items.length === 0) {
+              document.getElementById('app-body').innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:20px">대기 항목이 없습니다.</div>';
+              return;
+            }
+            document.getElementById('app-body').innerHTML = d.items.map(function(a) {
+              var timeStr = a.created_at ? new Date(a.created_at).toLocaleString('ko-KR', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+              return '<div id="app-row-' + a.id + '" style="padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;margin-bottom:8px">'
+                + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+                + (a.photo ? '<img src="' + a.photo + '" style="width:32px;height:32px;border-radius:50%">' : '<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.08)"></div>')
+                + '<div style="flex:1"><div style="font-weight:700;font-size:0.9rem">' + a.name + '</div><div style="font-size:0.75rem;color:rgba(255,255,255,0.4)">' + a.email + ' · ' + timeStr + '</div></div>'
+                + '</div>'
+                + (a.intro ? '<div style="font-size:0.82rem;color:rgba(255,255,255,0.5);line-height:1.5;margin-bottom:10px;padding:10px;background:rgba(255,255,255,0.02);border-radius:8px">' + a.intro + '</div>' : '')
+                + (a.file_path ? '<div style="margin-bottom:10px"><a href="' + a.file_path + '" target="_blank" style="font-size:0.78rem;color:#a5b4fc">첨부파일 보기</a></div>' : '')
+                + '<div style="display:flex;gap:8px">'
+                + '<button onclick="handleApp(' + a.id + ',\\'approve\\')" style="flex:1;padding:8px;border-radius:10px;border:none;background:rgba(74,222,128,0.15);color:#4ade80;font-weight:700;font-size:0.82rem;cursor:pointer;font-family:inherit">승인</button>'
+                + '<button onclick="handleApp(' + a.id + ',\\'reject\\')" style="flex:1;padding:8px;border-radius:10px;border:none;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:700;font-size:0.82rem;cursor:pointer;font-family:inherit">거절</button>'
+                + '</div></div>';
+            }).join('');
+          });
+      }
+      function closeApps() { document.getElementById('app-overlay').style.display = 'none'; }
+      document.getElementById('app-overlay').addEventListener('click', function(e) { if (e.target === this) closeApps(); });
+      function handleApp(appId, action) {
+        fetch('/admin/api/study-apps/' + appId + '/' + action, { method: 'POST', credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.ok) {
+              var row = document.getElementById('app-row-' + appId);
+              row.style.opacity = '0.4';
+              row.innerHTML = '<div style="text-align:center;padding:10px;color:' + (action === 'approve' ? '#4ade80' : '#ef4444') + ';font-weight:700">' + (action === 'approve' ? '승인 완료' : '거절 완료') + '</div>';
+            } else { alert(d.error || '처리 실패'); }
+          });
+      }
+    </script>
+    </body></html>`;
   res.send(html);
+});
+
+// 가입 대기 API
+router.get('/api/study-apps', isLoggedIn, isAdmin, (req, res) => {
+  const roomId = req.query.room_id;
+  const items = db.prepare(`
+    SELECT sa.id, sa.created_at, sa.intro, sa.file_path,
+           COALESCE(u.nickname, u.name) as name, u.email, u.photo
+    FROM study_applications sa
+    JOIN users u ON sa.user_id = u.id
+    WHERE sa.room_id = ? AND sa.status = 'pending'
+    ORDER BY sa.created_at DESC
+  `).all(roomId);
+  res.json({ items });
+});
+
+router.post('/api/study-apps/:id/approve', isLoggedIn, isAdmin, (req, res) => {
+  const app = db.prepare("SELECT * FROM study_applications WHERE id = ? AND status = 'pending'").get(req.params.id);
+  if (!app) return res.json({ ok: false, error: '신청을 찾을 수 없습니다.' });
+
+  db.prepare("UPDATE study_applications SET status = 'approved', reviewed_at = datetime('now') WHERE id = ?").run(app.id);
+  // 멤버 추가
+  const existing = db.prepare('SELECT id FROM study_members WHERE room_id = ? AND user_id = ?').get(app.room_id, app.user_id);
+  if (!existing) {
+    db.prepare('INSERT INTO study_members (room_id, user_id) VALUES (?, ?)').run(app.room_id, app.user_id);
+  }
+  // 알림
+  const room = db.prepare('SELECT name FROM study_rooms WHERE id = ?').get(app.room_id);
+  const { notify } = require('../lib/helpers');
+  notify(db, app.user_id, 'report_approved', '스터디방 가입 승인', `"${room?.name || ''}" 스터디방 가입이 승인되었습니다!`, '/study/' + app.room_id);
+  res.json({ ok: true });
+});
+
+router.post('/api/study-apps/:id/reject', isLoggedIn, isAdmin, (req, res) => {
+  const app = db.prepare("SELECT * FROM study_applications WHERE id = ? AND status = 'pending'").get(req.params.id);
+  if (!app) return res.json({ ok: false, error: '신청을 찾을 수 없습니다.' });
+
+  db.prepare("UPDATE study_applications SET status = 'rejected', reviewed_at = datetime('now') WHERE id = ?").run(app.id);
+  const room = db.prepare('SELECT name FROM study_rooms WHERE id = ?').get(app.room_id);
+  const { notify } = require('../lib/helpers');
+  notify(db, app.user_id, 'report_rejected', '스터디방 가입 거절', `"${room?.name || ''}" 스터디방 가입이 거절되었습니다.`, '/study');
+  res.json({ ok: true });
 });
 
 // 스터디방 포인트 관리
