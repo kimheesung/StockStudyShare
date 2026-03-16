@@ -119,7 +119,7 @@ router.get('/api/pending-preview', isLoggedIn, isAdmin, (req, res) => {
       SELECT rf.id, rf.reason, rf.created_at, r.title as report_title, COALESCE(u.nickname, u.name) as reporter_name, u.photo
       FROM report_flags rf
       JOIN reports r ON rf.report_id = r.id
-      JOIN users u ON rf.user_id = u.id
+      JOIN users u ON rf.reporter_id = u.id
       WHERE rf.status = 'pending'
       ORDER BY rf.created_at DESC LIMIT 10
     `).all().map(f => ({
@@ -690,7 +690,7 @@ router.post('/api/study-apps/:id/approve', isLoggedIn, isAdmin, (req, res) => {
   const app = db.prepare("SELECT * FROM study_applications WHERE id = ? AND status = 'pending'").get(req.params.id);
   if (!app) return res.json({ ok: false, error: '신청을 찾을 수 없습니다.' });
 
-  db.prepare("UPDATE study_applications SET status = 'approved', reviewed_at = datetime('now') WHERE id = ?").run(app.id);
+  db.prepare("UPDATE study_applications SET status = 'approved' WHERE id = ?").run(app.id);
   // 멤버 추가
   const existing = db.prepare('SELECT id FROM study_members WHERE room_id = ? AND user_id = ?').get(app.room_id, app.user_id);
   if (!existing) {
@@ -707,7 +707,7 @@ router.post('/api/study-apps/:id/reject', isLoggedIn, isAdmin, (req, res) => {
   const app = db.prepare("SELECT * FROM study_applications WHERE id = ? AND status = 'pending'").get(req.params.id);
   if (!app) return res.json({ ok: false, error: '신청을 찾을 수 없습니다.' });
 
-  db.prepare("UPDATE study_applications SET status = 'rejected', reviewed_at = datetime('now') WHERE id = ?").run(app.id);
+  db.prepare("UPDATE study_applications SET status = 'rejected' WHERE id = ?").run(app.id);
   const room = db.prepare('SELECT name FROM study_rooms WHERE id = ?').get(app.room_id);
   const { notify } = require('../lib/helpers');
   notify(db, app.user_id, 'report_rejected', '스터디방 가입 거절', `"${room?.name || ''}" 스터디방 가입이 거절되었습니다.`, '/study');
