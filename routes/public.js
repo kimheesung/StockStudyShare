@@ -68,24 +68,22 @@ JSON만 출력:
   }
 }
 
-// 서버 시작 시 + 매일 아침 7시(KST) 실행
+// 서버 시작 시 + 매일 자동 실행 (오늘 데이터 없으면 갱신)
 (function scheduleMemoryPriceUpdate() {
-  // 서버 시작 시 오늘 데이터 없으면 즉시 실행
-  const today = new Date().toISOString().slice(0, 10);
-  const existing = db.prepare('SELECT id FROM memory_prices WHERE date = ? LIMIT 1').get(today);
-  if (!existing) {
-    setTimeout(() => fetchMemoryPricesFromAI(), 10000); // 10초 후 실행
-  }
-
-  // 매시간 체크 → KST 7시(UTC 22시)면 업데이트
-  setInterval(() => {
+  function checkAndUpdate() {
     const now = new Date();
-    const kstHour = (now.getUTCHours() + 9) % 24;
-    if (kstHour === 7 && now.getMinutes() < 5) {
+    const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const today = kstDate.toISOString().slice(0, 10);
+    const existing = db.prepare('SELECT id FROM memory_prices WHERE date = ? LIMIT 1').get(today);
+    if (!existing) {
+      console.log(`[Memory] No data for ${today}, fetching...`);
       fetchMemoryPricesFromAI();
       fetchCreditDataFromAI();
     }
-  }, 5 * 60 * 1000); // 5분마다 체크
+  }
+  // 서버 시작 15초 후 첫 체크, 이후 30분마다 체크
+  setTimeout(checkAndUpdate, 15000);
+  setInterval(checkAndUpdate, 30 * 60 * 1000);
 })();
 
 // 신용잔고 AI 수집
