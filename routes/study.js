@@ -251,7 +251,7 @@ router.get('/:id/points', isLoggedIn, (req, res) => {
   const logs = db.prepare('SELECT * FROM study_point_logs WHERE room_id = ? ORDER BY created_at DESC LIMIT 100').all(room.id);
 
   const typeLabels = {
-    sales_revenue: '판매 수익',
+    sales_revenue: '포인트 적립',
     monthly_fee: '월 운영비',
     admin_adjust: '관리자 조정',
     member_fee: '가입비 수입',
@@ -526,7 +526,7 @@ router.get('/:id', isLoggedIn, (req, res) => {
   const reportCards = reports.length > 0 ? reports.map(r => {
     let tag = '스터디 전용';
     let tagStyle = 'color:#4ade80';
-    if (r.visibility === 'public' && r.status === 'on_sale') { tag = '외부 판매중'; tagStyle = 'color:#a5b4fc'; }
+    if (r.visibility === 'public' && r.status === 'on_sale') { tag = '외부 공개중'; tagStyle = 'color:#a5b4fc'; }
     else if (r.status === 'pending_leader') { tag = '스터디장 승인 대기'; tagStyle = 'color:#fbbf24'; }
     else if (r.status === 'pending_admin') { tag = '관리자 승인 대기'; tagStyle = 'color:#fb923c'; }
 

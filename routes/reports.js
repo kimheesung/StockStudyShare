@@ -361,7 +361,7 @@ router.post('/:id/purchase', isLoggedIn, (req, res) => {
           req.user.id, -price, 'purchase', `리포트 구매: ${report.title}`, report.id
         );
 
-        // 스터디방 리포트 수익 분배
+        // 스터디방 리포트 포인트 분배
         if (report.study_room_id) {
           // 구매자의 추천인 확인
           const buyerUser = db.prepare('SELECT referrer_id FROM users WHERE id = ?').get(req.user.id);
@@ -371,7 +371,7 @@ router.post('/:id/purchase', isLoggedIn, (req, res) => {
           const authorAmount = Math.floor(price * 0.70);
           db.prepare('UPDATE users SET points = points + ? WHERE id = ?').run(authorAmount, report.author_id);
           db.prepare('INSERT INTO point_logs (user_id, amount, type, description, related_user_id, related_report_id) VALUES (?, ?, ?, ?, ?, ?)').run(
-            report.author_id, authorAmount, 'sales_revenue', `리포트 판매 수익 (70%): ${report.title}`, req.user.id, report.id
+            report.author_id, authorAmount, 'sales_revenue', `리포트 포인트 적립 (70%): ${report.title}`, req.user.id, report.id
           );
 
           // admin
@@ -381,7 +381,7 @@ router.post('/:id/purchase', isLoggedIn, (req, res) => {
           if (admin) {
             db.prepare('UPDATE users SET points = points + ? WHERE id = ?').run(adminAmount, admin.id);
             db.prepare('INSERT INTO point_logs (user_id, amount, type, description, related_user_id, related_report_id) VALUES (?, ?, ?, ?, ?, ?)').run(
-              admin.id, adminAmount, 'sales_commission', `리포트 판매 수수료 (${Math.round(adminRate * 100)}%): ${report.title}`, req.user.id, report.id
+              admin.id, adminAmount, 'sales_commission', `플랫폼 운영 지원 (${Math.round(adminRate * 100)}%): ${report.title}`, req.user.id, report.id
             );
           }
 
@@ -402,7 +402,7 @@ router.post('/:id/purchase', isLoggedIn, (req, res) => {
             db.prepare('UPDATE study_rooms SET points = points + ? WHERE id = ?').run(studyAmount, report.study_room_id);
             // 스터디방 포인트 로그
             db.prepare('INSERT INTO study_point_logs (room_id, amount, type, description) VALUES (?, ?, ?, ?)').run(
-              report.study_room_id, studyAmount, 'sales_revenue', `리포트 판매 수익 (5%): ${report.title}`
+              report.study_room_id, studyAmount, 'sales_revenue', `스터디방 운영 지원 (5%): ${report.title}`
             );
           }
         } else {
@@ -568,7 +568,7 @@ router.post('/:id/flag', isLoggedIn, (req, res) => {
 
   const flagCount = db.prepare('SELECT COUNT(*) as c FROM report_flags WHERE report_id = ?').get(report.id).c;
 
-  // 5건 이상 신고 시 자동 판매중지
+  // 5건 이상 신고 시 자동 공개중지
   if (flagCount >= 5) {
     db.prepare("UPDATE reports SET status = 'suspended' WHERE id = ? AND status = 'on_sale'").run(report.id);
 
@@ -581,7 +581,7 @@ router.post('/:id/flag', isLoggedIn, (req, res) => {
     const admins = db.prepare("SELECT id FROM users WHERE role = 'admin'").all();
     for (const admin of admins) {
       notify(db, admin.id, 'report_pending_admin', '리포트 신고 누적',
-        `"${report.title}" 리포트가 신고 ${flagCount}건으로 자동 판매중지되었습니다. 확인이 필요합니다.`,
+        `"${report.title}" 리포트가 신고 ${flagCount}건으로 자동 공개중지되었습니다. 확인이 필요합니다.`,
         `/admin/reports?status=suspended`);
     }
   }

@@ -171,7 +171,7 @@ router.get('/reports', isLoggedIn, isAdmin, (req, res) => {
   const visLabel = { study_only: '스터디 전용', public: '외부 공개' };
   const statusLabel = {
     draft: '임시저장', study_published: '스터디 공개', pending_leader: '스터디장 대기',
-    pending_admin: '검수 대기', on_sale: '판매중', rejected: '반려됨', suspended: '판매중지'
+    pending_admin: '검수 대기', on_sale: '공개중', rejected: '반려됨', suspended: '공개중지'
   };
   const statusColor = {
     draft: 'rgba(255,255,255,0.1);color:rgba(255,255,255,0.5)',
@@ -296,7 +296,7 @@ router.post('/reports/:id/review', isLoggedIn, isAdmin, (req, res) => {
   // 리포트 승인(게재) 시 작성자에게 포인트 지급 + 알림
   if (action === 'approve' && newStatus === 'on_sale') {
     addPoints(db, report.author_id, 100, 'publish', `리포트 게재 승인: ${report.title}`, report.id);
-    notify(db, report.author_id, 'report_approved', '리포트 판매 승인', `"${report.title}" 리포트가 관리자 승인을 받아 외부 판매가 시작되었습니다! 🎉`, `/reports/${report.id}`);
+    notify(db, report.author_id, 'report_approved', '리포트 공개 승인', `"${report.title}" 리포트가 관리자 승인을 받아 외부 공개되었습니다! 🎉`, `/reports/${report.id}`);
     // 팔로워에게 알림
     const author = db.prepare('SELECT nickname, name FROM users WHERE id = ?').get(report.author_id);
     const authorName = author?.nickname || author?.name || '작성자';
@@ -509,7 +509,7 @@ router.get('/study-status', isLoggedIn, isAdmin, (req, res) => {
         ${r.pending_apps > 0 ? `<span style="padding:4px 12px;border-radius:10px;background:rgba(168,85,247,0.15);color:#c084fc;font-weight:700">가입 대기 ${r.pending_apps}건</span>` : ''}
         ${r.pending_leader > 0 ? `<span style="padding:4px 12px;border-radius:10px;background:rgba(251,191,36,0.15);color:#fbbf24;font-weight:700">스터디장 승인 대기 ${r.pending_leader}건</span>` : ''}
         ${r.pending_admin > 0 ? `<span style="padding:4px 12px;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;font-weight:700">관리자 승인 대기 ${r.pending_admin}건</span>` : ''}
-        <span style="padding:4px 12px;border-radius:10px;background:rgba(74,222,128,0.1);color:#4ade80">판매중 ${r.published_count}건</span>
+        <span style="padding:4px 12px;border-radius:10px;background:rgba(74,222,128,0.1);color:#4ade80">공개중 ${r.published_count}건</span>
         <span style="padding:4px 12px;border-radius:10px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4)">스터디 전용 ${r.study_only_count}건</span>
         <span style="padding:4px 12px;border-radius:10px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4)">전체 ${r.total_reports}건</span>
       </div>
@@ -628,7 +628,7 @@ router.get('/study-rooms/:id', isLoggedIn, isAdmin, (req, res) => {
   if (!room) return res.status(404).send('스터디방을 찾을 수 없습니다.');
 
   const logs = db.prepare('SELECT * FROM study_point_logs WHERE room_id = ? ORDER BY created_at DESC LIMIT 200').all(room.id);
-  const typeLabels = { sales_revenue: '판매 수익', monthly_fee: '월 운영비', admin_adjust: '관리자 조정', member_fee: '가입비 수입' };
+  const typeLabels = { sales_revenue: '포인트 적립', monthly_fee: '월 운영비', admin_adjust: '관리자 조정', member_fee: '가입비 수입' };
 
   const logRows = logs.length > 0 ? logs.map(l => `
     <tr>

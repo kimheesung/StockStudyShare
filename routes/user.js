@@ -240,7 +240,24 @@ router.post('/profile', isLoggedIn, (req, res) => {
 
   const bio = (req.body.bio || '').trim().slice(0, 200);
 
-  db.prepare('UPDATE users SET nickname = ?, bio = ? WHERE id = ?').run(nickname, bio || null, req.user.id);
+  // 닉네임 변경 시 3일 제한 (bio만 변경은 제한 없음)
+  const currentUser = db.prepare('SELECT nickname, nickname_changed_at FROM users WHERE id = ?').get(req.user.id);
+  const isNicknameChanged = currentUser.nickname !== nickname;
+
+  if (isNicknameChanged && currentUser.nickname_changed_at) {
+    const lastChanged = new Date(currentUser.nickname_changed_at);
+    const daysSince = (Date.now() - lastChanged.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSince < 3) {
+      const remainHours = Math.ceil((3 - daysSince) * 24);
+      return res.json({ ok: false, error: `닉네임은 3일에 한 번만 변경할 수 있습니다. (${remainHours}시간 후 가능)` });
+    }
+  }
+
+  if (isNicknameChanged) {
+    db.prepare("UPDATE users SET nickname = ?, bio = ?, nickname_changed_at = datetime('now') WHERE id = ?").run(nickname, bio || null, req.user.id);
+  } else {
+    db.prepare('UPDATE users SET bio = ? WHERE id = ?').run(bio || null, req.user.id);
+  }
   req.user.nickname = nickname;
   req.user.bio = bio || null;
 

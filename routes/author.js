@@ -50,7 +50,7 @@ router.get('/dashboard', isLoggedIn, isAuthor, (req, res) => {
   const statusMap = {
     draft: '임시저장', study_published: '스터디 공개',
     pending_leader: '스터디장 승인 대기', pending_admin: '관리자 승인 대기',
-    submitted: '검수 대기', on_sale: '외부 판매중', rejected: '반려됨', suspended: '판매중지'
+    submitted: '검수 대기', on_sale: '외부 공개중', rejected: '반려됨', suspended: '공개중지'
   };
 
   const reportRows = reports.map(r => `
@@ -63,7 +63,7 @@ router.get('/dashboard', isLoggedIn, isAuthor, (req, res) => {
       <td>
         ${['draft','rejected','pending_leader','pending_admin','submitted','study_published'].includes(r.status) ? `<a href="/author/reports/${r.id}/edit" class="btn-sm">수정</a>` : ''}
         ${r.status === 'on_sale' ? `<a href="/reports/${r.id}" class="btn-sm">보기</a>` : ''}
-        ${r.status === 'study_published' ? `<button class="btn-sm btn-publish" onclick="openPublishModal(${r.id}, '${escapeHtml(r.title).replace(/'/g, "\\'")}')">외부 판매</button>` : ''}
+        ${r.status === 'study_published' ? `<button class="btn-sm btn-publish" onclick="openPublishModal(${r.id}, '${escapeHtml(r.title).replace(/'/g, "\\'")}')">외부 공개</button>` : ''}
         <button class="btn-sm btn-delete" onclick="openDeleteModal(${r.id}, '${escapeHtml(r.title).replace(/'/g, "\\'")}')" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);cursor:pointer;font-family:inherit;margin-left:4px">삭제</button>
       </td>
     </tr>
@@ -859,7 +859,7 @@ router.get('/reports/:id/edit', isLoggedIn, isAuthor, (req, res) => {
   const report = db.prepare('SELECT * FROM reports WHERE id = ? AND author_id = ?').get(req.params.id, req.user.id);
   if (!report) return res.status(404).send('리포트를 찾을 수 없습니다.');
   if (!['draft', 'rejected', 'pending_leader', 'pending_admin', 'submitted', 'study_published'].includes(report.status)) {
-    return res.status(400).send('수정할 수 없는 상태입니다. (판매중/판매중지 상태에서는 수정 불가)');
+    return res.status(400).send('수정할 수 없는 상태입니다. (공개중/공개중지 상태에서는 수정 불가)');
   }
 
   const html = render('views/report-write.html', {
@@ -895,7 +895,7 @@ router.post('/reports/:id/edit', isLoggedIn, isAuthor, async (req, res) => {
   const report = db.prepare('SELECT * FROM reports WHERE id = ? AND author_id = ?').get(req.params.id, req.user.id);
   if (!report) return res.status(404).send('리포트를 찾을 수 없습니다.');
   if (!['draft', 'rejected', 'pending_leader', 'pending_admin', 'submitted', 'study_published'].includes(report.status)) {
-    return res.status(400).send('수정할 수 없는 상태입니다. (판매중/판매중지 상태에서는 수정 불가)');
+    return res.status(400).send('수정할 수 없는 상태입니다. (공개중/공개중지 상태에서는 수정 불가)');
   }
 
   const action = req.body.action;
@@ -944,12 +944,12 @@ router.post('/reports/:id/edit', isLoggedIn, isAuthor, async (req, res) => {
   res.redirect('/author/dashboard');
 });
 
-// 스터디 공개 → 외부 판매 전환 신청
+// 스터디 공개 → 외부 공개 전환 신청
 router.post('/reports/:id/request-public', isLoggedIn, isAuthor, (req, res) => {
   const report = db.prepare('SELECT * FROM reports WHERE id = ? AND author_id = ?').get(req.params.id, req.user.id);
   if (!report) return res.status(404).send('리포트를 찾을 수 없습니다.');
   if (report.status !== 'study_published') {
-    return res.status(400).send('스터디 공개 상태의 리포트만 외부 판매로 전환할 수 있습니다.');
+    return res.status(400).send('스터디 공개 상태의 리포트만 외부 공개로 전환할 수 있습니다.');
   }
 
   const salePrice = parseInt(req.body.sale_price) || 0;

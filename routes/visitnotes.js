@@ -270,7 +270,7 @@ router.post('/:id/purchase', isLoggedIn, (req, res) => {
         const authorAmount = Math.floor(price * 0.70);
         db.prepare('UPDATE users SET points = points + ? WHERE id = ?').run(authorAmount, report.author_id);
         db.prepare('INSERT INTO point_logs (user_id, amount, type, description, related_user_id, related_report_id) VALUES (?, ?, ?, ?, ?, ?)').run(
-          report.author_id, authorAmount, 'sales_revenue', `탐방노트 판매 수익 (70%): ${report.title}`, req.user.id, report.id
+          report.author_id, authorAmount, 'sales_revenue', `탐방노트 포인트 적립 (70%): ${report.title}`, req.user.id, report.id
         );
 
         // 플랫폼(admin) 25%
@@ -279,7 +279,7 @@ router.post('/:id/purchase', isLoggedIn, (req, res) => {
         if (admin) {
           db.prepare('UPDATE users SET points = points + ? WHERE id = ?').run(adminAmount, admin.id);
           db.prepare('INSERT INTO point_logs (user_id, amount, type, description, related_user_id, related_report_id) VALUES (?, ?, ?, ?, ?, ?)').run(
-            admin.id, adminAmount, 'sales_commission', `탐방노트 수수료 (25%): ${report.title}`, req.user.id, report.id
+            admin.id, adminAmount, 'sales_commission', `플랫폼 운영 지원 (25%): ${report.title}`, req.user.id, report.id
           );
         }
 
